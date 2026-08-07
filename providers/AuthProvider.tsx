@@ -1,5 +1,5 @@
 import React, { createContext, useContext } from "react";
-import { useAuth } from "../hooks/useAuth";
+import { useAuth } from "../services/hooks/useAuth";
 
 type AuthContextType = ReturnType<typeof useAuth>;
 
