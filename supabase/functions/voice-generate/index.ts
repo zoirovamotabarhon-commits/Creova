@@ -4,6 +4,20 @@ const openai = new OpenAI({
   apiKey: Deno.env.get("OPENAI_API_KEY"),
 });
 
+function arrayBufferToBase64(buffer: ArrayBuffer) {
+  const bytes = new Uint8Array(buffer);
+  let binary = "";
+  const chunkSize = 0x8000;
+
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode(
+      ...bytes.subarray(i, i + chunkSize)
+    );
+  }
+
+  return btoa(binary);
+}
+
 Deno.serve(async (req) => {
   try {
     if (req.method !== "POST") {
@@ -42,16 +56,12 @@ Deno.serve(async (req) => {
     });
 
     const audioBuffer = await speech.arrayBuffer();
-
-    const audioBase64 = btoa(
-      String.fromCharCode(...new Uint8Array(audioBuffer))
-    );
+    const audioBase64 = arrayBufferToBase64(audioBuffer);
 
     return new Response(
       JSON.stringify({
         success: true,
-        audioBase64,
-        mimeType: "audio/mpeg",
+        audioUrl: `data:audio/mpeg;base64,${audioBase64}`,
       }),
       {
         status: 200,
