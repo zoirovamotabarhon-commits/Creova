@@ -2,7 +2,8 @@ import { supabase } from "./supabase";
 
 export interface VideoResponse {
   success: boolean;
-  videoUrl?: string;
+  videoId?: string;
+  status?: string;
   error?: string;
 }
 
@@ -10,11 +11,18 @@ export const generateVideo = async (
   prompt: string
 ): Promise<VideoResponse> => {
   try {
+    if (!prompt.trim()) {
+      return {
+        success: false,
+        error: "Prompt is required.",
+      };
+    }
+
     const { data, error } = await supabase.functions.invoke(
       "video-generate",
       {
         body: {
-          prompt,
+          prompt: prompt.trim(),
         },
       }
     );
@@ -23,9 +31,17 @@ export const generateVideo = async (
       throw error;
     }
 
+    if (!data?.success) {
+      return {
+        success: false,
+        error: data?.error ?? "Video generation failed.",
+      };
+    }
+
     return {
       success: true,
-      videoUrl: data?.videoUrl ?? "",
+      videoId: data.videoId,
+      status: data.status,
     };
   } catch (error) {
     return {
