@@ -7,11 +7,13 @@ export interface VideoResponse {
   error?: string;
 }
 
-export const generateVideo = async (
+export async function generateVideo(
   prompt: string
-): Promise<VideoResponse> => {
+): Promise<VideoResponse> {
   try {
-    if (!prompt.trim()) {
+    const cleanPrompt = prompt.trim();
+
+    if (!cleanPrompt) {
       return {
         success: false,
         error: "Prompt is required.",
@@ -22,13 +24,16 @@ export const generateVideo = async (
       "video-generate",
       {
         body: {
-          prompt: prompt.trim(),
+          prompt: cleanPrompt,
         },
       }
     );
 
     if (error) {
-      throw error;
+      return {
+        success: false,
+        error: error.message,
+      };
     }
 
     if (!data?.success) {
@@ -52,4 +57,4 @@ export const generateVideo = async (
           : "Unknown error",
     };
   }
-};
+}
