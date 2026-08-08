@@ -1,10 +1,10 @@
-import OpenAI from "openai";
+import OpenAI from "npm:openai@6.49.0";
 
 const openai = new OpenAI({
   apiKey: Deno.env.get("OPENAI_API_KEY"),
 });
 
-function arrayBufferToBase64(buffer: ArrayBuffer) {
+function arrayBufferToBase64(buffer: ArrayBuffer): string {
   const bytes = new Uint8Array(buffer);
   let binary = "";
   const chunkSize = 0x8000;
@@ -28,14 +28,17 @@ Deno.serve(async (req) => {
         }),
         {
           status: 405,
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+          },
         }
       );
     }
 
-    const { text } = await req.json();
+    const body = await req.json();
+    const text = body?.text;
 
-    if (!text) {
+    if (typeof text !== "string" || !text.trim()) {
       return new Response(
         JSON.stringify({
           success: false,
@@ -43,7 +46,9 @@ Deno.serve(async (req) => {
         }),
         {
           status: 400,
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+          },
         }
       );
     }
@@ -51,11 +56,16 @@ Deno.serve(async (req) => {
     const speech = await openai.audio.speech.create({
       model: "gpt-4o-mini-tts",
       voice: "alloy",
-      input: text,
+      input: text.trim(),
       response_format: "mp3",
     });
 
     const audioBuffer = await speech.arrayBuffer();
+
+    if (!audioBuffer.byteLength) {
+      throw new Error("Audio generation returned empty data.");
+    }
+
     const audioBase64 = arrayBufferToBase64(audioBuffer);
 
     return new Response(
@@ -65,7 +75,9 @@ Deno.serve(async (req) => {
       }),
       {
         status: 200,
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
       }
     );
   } catch (error) {
@@ -75,11 +87,13 @@ Deno.serve(async (req) => {
         error:
           error instanceof Error
             ? error.message
-            : "Unknown error",
+            : "Voice generation failed.",
       }),
       {
         status: 500,
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
       }
     );
   }
