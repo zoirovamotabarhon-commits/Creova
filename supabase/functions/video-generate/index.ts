@@ -1,4 +1,4 @@
-import OpenAI from "openai";
+import OpenAI from "npm:openai@6.49.0";
 
 const openai = new OpenAI({
   apiKey: Deno.env.get("OPENAI_API_KEY"),
@@ -14,40 +14,47 @@ Deno.serve(async (req) => {
         }),
         {
           status: 405,
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+          },
         }
       );
     }
 
-    const { prompt } = await req.json();
+    const body = await req.json();
+    const prompt = body?.prompt;
 
-    if (!prompt) {
+    if (typeof prompt !== "string" || !prompt.trim()) {
       return new Response(
         JSON.stringify({
           success: false,
-          error: "Prompt is required",
+          error: "Prompt is required.",
         }),
         {
           status: 400,
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+          },
         }
       );
     }
 
-    const response = await openai.videos.create({
+    const video = await openai.videos.create({
       model: "sora-2",
-      prompt,
+      prompt: prompt.trim(),
     });
 
     return new Response(
       JSON.stringify({
         success: true,
-        videoId: response.id,
-        status: response.status,
+        videoId: video.id,
+        status: video.status,
       }),
       {
         status: 200,
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
       }
     );
   } catch (error) {
@@ -57,11 +64,13 @@ Deno.serve(async (req) => {
         error:
           error instanceof Error
             ? error.message
-            : "Unknown error",
+            : "Video generation failed.",
       }),
       {
         status: 500,
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
       }
     );
   }
