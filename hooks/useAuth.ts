@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Session, User } from "@supabase/supabase-js";
-import { supabase } from "../supabase";
+import { supabase } from "../services/supabase";
 
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
@@ -33,4 +33,4 @@ export function useAuth() {
     loading,
     isAuthenticated: !!user,
   };
-      }
+}
