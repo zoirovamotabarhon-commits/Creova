@@ -1,9 +1,11 @@
 import React, { createContext, useContext } from "react";
-import { useAuth } from "../services/hooks/useAuth";
+import { useAuth } from "../hooks/useAuth";
 
 type AuthContextType = ReturnType<typeof useAuth>;
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<AuthContextType | undefined>(
+  undefined
+);
 
 export function AuthProvider({
   children,
