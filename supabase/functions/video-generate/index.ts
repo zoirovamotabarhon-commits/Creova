@@ -4,38 +4,73 @@ const openai = new OpenAI({
   apiKey: Deno.env.get("OPENAI_API_KEY"),
 });
 
+function jsonResponse(
+  body: Record<string, unknown>,
+  status = 200
+) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+}
+
 Deno.serve(async (req) => {
   try {
     if (req.method !== "POST") {
-      return new Response(
-        JSON.stringify({
+      return jsonResponse(
+        {
           success: false,
           error: "Method not allowed",
-        }),
-        {
-          status: 405,
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
+        },
+        405
       );
     }
 
     const body = await req.json();
+
+    /*
+     * VIDEO STATUS
+     *
+     * Агар videoId келса, мавжуд video generation
+     * job ҳолатини текширамиз.
+     */
+    if (
+      typeof body?.videoId === "string" &&
+      body.videoId.trim()
+    ) {
+      const videoId = body.videoId.trim();
+
+      const video = await openai.videos.retrieve(videoId);
+
+      return jsonResponse({
+        success: true,
+        videoId: video.id,
+        status: video.status,
+        progress: video.progress ?? 0,
+        error: video.error ?? null,
+      });
+    }
+
+    /*
+     * CREATE VIDEO
+     *
+     * Агар videoId берилмаган бўлса, prompt орқали
+     * янги video generation job яратамиз.
+     */
     const prompt = body?.prompt;
 
-    if (typeof prompt !== "string" || !prompt.trim()) {
-      return new Response(
-        JSON.stringify({
+    if (
+      typeof prompt !== "string" ||
+      !prompt.trim()
+    ) {
+      return jsonResponse(
+        {
           success: false,
           error: "Prompt is required.",
-        }),
-        {
-          status: 400,
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
+        },
+        400
       );
     }
 
@@ -44,34 +79,22 @@ Deno.serve(async (req) => {
       prompt: prompt.trim(),
     });
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        videoId: video.id,
-        status: video.status,
-      }),
-      {
-        status: 200,
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }
-    );
+    return jsonResponse({
+      success: true,
+      videoId: video.id,
+      status: video.status,
+      progress: video.progress ?? 0,
+    });
   } catch (error) {
-    return new Response(
-      JSON.stringify({
+    return jsonResponse(
+      {
         success: false,
         error:
           error instanceof Error
             ? error.message
-            : "Video generation failed.",
-      }),
-      {
-        status: 500,
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }
+            : "Video operation failed.",
+      },
+      500
     );
   }
 });
