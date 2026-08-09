@@ -6,28 +6,30 @@ export interface VoiceResponse {
   error?: string;
 }
 
-export const generateVoice = async (
+export async function generateVoice(
   text: string
-): Promise<VoiceResponse> => {
+): Promise<VoiceResponse> {
+  const cleanText = text.trim();
+
+  if (!cleanText) {
+    return {
+      success: false,
+      error: "Text is required.",
+    };
+  }
+
   try {
-    const cleanText = text.trim();
-
-    if (!cleanText) {
-      return {
-        success: false,
-        error: "Text is required.",
-      };
-    }
-
-    const { data, error } =
-      await supabase.functions.invoke(
-        "voice-generate",
-        {
-          body: {
-            text: cleanText,
-          },
-        }
-      );
+    const {
+      data,
+      error,
+    } = await supabase.functions.invoke(
+      "voice-generate",
+      {
+        body: {
+          text: cleanText,
+        },
+      }
+    );
 
     if (error) {
       return {
@@ -36,12 +38,21 @@ export const generateVoice = async (
       };
     }
 
-    if (!data?.success) {
+    if (!data) {
       return {
         success: false,
         error:
-          data?.error ??
-          "Voice generation failed.",
+          "Voice server returned an empty response.",
+      };
+    }
+
+    if (data.success !== true) {
+      return {
+        success: false,
+        error:
+          typeof data.error === "string"
+            ? data.error
+            : "Voice generation failed.",
       };
     }
 
@@ -52,7 +63,7 @@ export const generateVoice = async (
       return {
         success: false,
         error:
-          "Voice service did not return an audio URL.",
+          "Voice server did not return an audio URL.",
       };
     }
 
@@ -66,7 +77,7 @@ export const generateVoice = async (
       error:
         error instanceof Error
           ? error.message
-          : "Unknown error",
+          : "Voice generation failed.",
     };
   }
-};
+}
