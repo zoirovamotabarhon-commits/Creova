@@ -21,14 +21,15 @@ export async function generateVideo(
       };
     }
 
-    const { data, error } = await supabase.functions.invoke(
-      "video-generate",
-      {
-        body: {
-          prompt: cleanPrompt,
-        },
-      }
-    );
+    const { data, error } =
+      await supabase.functions.invoke(
+        "video-generate",
+        {
+          body: {
+            prompt: cleanPrompt,
+          },
+        }
+      );
 
     if (error) {
       return {
@@ -37,7 +38,10 @@ export async function generateVideo(
       };
     }
 
-    if (!data?.success || !data?.videoId) {
+    if (
+      !data?.success ||
+      typeof data.videoId !== "string"
+    ) {
       return {
         success: false,
         error:
@@ -49,7 +53,7 @@ export async function generateVideo(
     return {
       success: true,
       videoId: data.videoId,
-      status: data.status,
+      status: data.status ?? "queued",
       progress:
         typeof data.progress === "number"
           ? data.progress
@@ -80,14 +84,15 @@ export async function getVideoStatus(
       };
     }
 
-    const { data, error } = await supabase.functions.invoke(
-      "video-generate",
-      {
-        body: {
-          videoId: cleanVideoId,
-        },
-      }
-    );
+    const { data, error } =
+      await supabase.functions.invoke(
+        "video-generate",
+        {
+          body: {
+            videoId: cleanVideoId,
+          },
+        }
+      );
 
     if (error) {
       return {
@@ -107,8 +112,8 @@ export async function getVideoStatus(
 
     return {
       success: true,
-      videoId: data.videoId,
-      status: data.status,
+      videoId: data.videoId ?? cleanVideoId,
+      status: data.status ?? "unknown",
       progress:
         typeof data.progress === "number"
           ? data.progress
