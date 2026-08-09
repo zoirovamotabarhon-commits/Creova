@@ -1,6 +1,7 @@
 import { router } from "expo-router";
 import {
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -9,80 +10,131 @@ import {
 const features = [
   {
     title: "🤖 AI Chat",
-    description: "CREOVA AI билан суҳбат",
+    description:
+      "CREOVA AI билан суҳбат",
     route: "/ai-chat",
   },
   {
     title: "🖼️ AI Image",
-    description: "AI орқали расм яратинг",
+    description:
+      "AI орқали расм яратинг",
     route: "/ai-image",
   },
   {
     title: "🎬 AI Video",
-    description: "AI орқали видео яратинг",
+    description:
+      "AI орқали видео яратинг",
     route: "/ai-video",
   },
   {
     title: "🎵 AI Music",
-    description: "AI орқали мусиқа яратинг",
+    description:
+      "AI орқали мусиқа яратинг",
     route: "/ai-music",
   },
 ];
 
 export default function DashboardScreen() {
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>CREOVA</Text>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={
+        styles.content
+      }
+      showsVerticalScrollIndicator={
+        false
+      }
+    >
+      <Text style={styles.title}>
+        CREOVA
+      </Text>
 
       <Text style={styles.subtitle}>
         AI имкониятларини танланг
       </Text>
 
       <View style={styles.grid}>
-        {features.map((feature) => (
-          <Pressable
-            key={feature.route}
-            style={styles.card}
-            onPress={() => router.push(feature.route as never)}
-          >
-            <Text style={styles.cardTitle}>
-              {feature.title}
-            </Text>
+        {features.map(
+          (feature) => (
+            <Pressable
+              key={feature.route}
+              style={styles.card}
+              onPress={() =>
+                router.push(
+                  feature.route
+                )
+              }
+            >
+              <Text
+                style={
+                  styles.cardTitle
+                }
+              >
+                {feature.title}
+              </Text>
 
-            <Text style={styles.cardDescription}>
-              {feature.description}
-            </Text>
-          </Pressable>
-        ))}
+              <Text
+                style={
+                  styles.cardDescription
+                }
+              >
+                {
+                  feature.description
+                }
+              </Text>
+            </Pressable>
+          )
+        )}
       </View>
 
       <Pressable
         style={styles.profileButton}
-        onPress={() => router.push("/profile")}
+        onPress={() =>
+          router.push(
+            "/profile"
+          )
+        }
       >
-        <Text style={styles.profileButtonText}>
+        <Text
+          style={
+            styles.profileButtonText
+          }
+        >
           Профиль
         </Text>
       </Pressable>
 
       <Pressable
         style={styles.settingsButton}
-        onPress={() => router.push("/settings")}
+        onPress={() =>
+          router.push(
+            "/settings"
+          )
+        }
       >
-        <Text style={styles.settingsButtonText}>
+        <Text
+          style={
+            styles.settingsButtonText
+          }
+        >
           Созламалар
         </Text>
       </Pressable>
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#0F172A",
+    backgroundColor:
+      "#0F172A",
+  },
+
+  content: {
     padding: 20,
     paddingTop: 60,
+    paddingBottom: 30,
   },
 
   title: {
@@ -105,9 +157,11 @@ const styles = StyleSheet.create({
   },
 
   card: {
-    backgroundColor: "#1E293B",
+    backgroundColor:
+      "#1E293B",
     borderWidth: 1,
-    borderColor: "#334155",
+    borderColor:
+      "#334155",
     borderRadius: 16,
     padding: 18,
   },
@@ -126,10 +180,13 @@ const styles = StyleSheet.create({
 
   profileButton: {
     height: 50,
-    backgroundColor: "#2563EB",
+    backgroundColor:
+      "#2563EB",
     borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems:
+      "center",
+    justifyContent:
+      "center",
     marginTop: 28,
   },
 
@@ -143,9 +200,12 @@ const styles = StyleSheet.create({
     height: 50,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#334155",
-    alignItems: "center",
-    justifyContent: "center",
+    borderColor:
+      "#334155",
+    alignItems:
+      "center",
+    justifyContent:
+      "center",
     marginTop: 12,
   },
 
