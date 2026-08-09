@@ -15,23 +15,19 @@ import {
 
 export default function AIVideoScreen() {
   const [prompt, setPrompt] = useState("");
-  const [videoId, setVideoId] = useState<string | null>(
-    null
-  );
+  const [videoId, setVideoId] = useState<string | null>(null);
   const [status, setStatus] = useState("");
   const [progress, setProgress] = useState(0);
   const [loading, setLoading] = useState(false);
 
-  const pollingRef =
-    useRef<ReturnType<typeof setInterval> | null>(
-      null
-    );
+  const pollingRef = useRef<ReturnType<
+    typeof setInterval
+  > | null>(null);
 
   useEffect(() => {
     return () => {
       if (pollingRef.current) {
         clearInterval(pollingRef.current);
-        pollingRef.current = null;
       }
     };
   }, []);
@@ -43,9 +39,7 @@ export default function AIVideoScreen() {
     }
   };
 
-  const checkVideoStatus = async (
-    id: string
-  ): Promise<boolean> => {
+  const checkVideoStatus = async (id: string) => {
     const result = await getVideoStatus(id);
 
     if (!result.success) {
@@ -61,12 +55,10 @@ export default function AIVideoScreen() {
       return true;
     }
 
-    const currentStatus = result.status ?? "";
-
-    setStatus(currentStatus);
+    setStatus(result.status ?? "unknown");
     setProgress(result.progress ?? 0);
 
-    if (currentStatus === "completed") {
+    if (result.status === "completed") {
       stopPolling();
       setLoading(false);
 
@@ -79,8 +71,8 @@ export default function AIVideoScreen() {
     }
 
     if (
-      currentStatus === "failed" ||
-      currentStatus === "cancelled"
+      result.status === "failed" ||
+      result.status === "cancelled"
     ) {
       stopPolling();
       setLoading(false);
@@ -88,7 +80,7 @@ export default function AIVideoScreen() {
       Alert.alert(
         "Video yaratilmadi",
         result.error ??
-          `Video holati: ${currentStatus}`
+          `Video holati: ${result.status}`
       );
 
       return true;
@@ -116,8 +108,9 @@ export default function AIVideoScreen() {
     setProgress(0);
 
     try {
-      const result =
-        await generateVideo(cleanPrompt);
+      const result = await generateVideo(
+        cleanPrompt
+      );
 
       if (
         !result.success ||
@@ -137,8 +130,12 @@ export default function AIVideoScreen() {
       const id = result.videoId;
 
       setVideoId(id);
-      setStatus(result.status ?? "queued");
-      setProgress(result.progress ?? 0);
+      setStatus(
+        result.status ?? "queued"
+      );
+      setProgress(
+        result.progress ?? 0
+      );
 
       const finished =
         await checkVideoStatus(id);
@@ -159,7 +156,7 @@ export default function AIVideoScreen() {
         "Xatolik",
         error instanceof Error
           ? error.message
-          : "Video yaratish vaqtida kutilmagan xatolik yuz berdi."
+          : "Video yaratishda kutilmagan xatolik yuz berdi."
       );
     }
   };
@@ -224,9 +221,16 @@ export default function AIVideoScreen() {
 
           {status === "completed" && (
             <Text style={styles.completedText}>
-              Video тайёр. Video ID: {videoId}
+              ✅ Video tayyor.
             </Text>
           )}
+
+          <Text
+            style={styles.videoId}
+            numberOfLines={1}
+          >
+            ID: {videoId}
+          </Text>
         </View>
       )}
     </View>
@@ -321,8 +325,14 @@ const styles = StyleSheet.create({
 
   completedText: {
     color: "#4ADE80",
-    fontSize: 15,
-    fontWeight: "600",
-    marginTop: 12,
+    fontSize: 16,
+    fontWeight: "700",
+    marginTop: 14,
+  },
+
+  videoId: {
+    color: "#64748B",
+    fontSize: 12,
+    marginTop: 10,
   },
 });
