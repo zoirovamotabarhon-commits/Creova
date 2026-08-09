@@ -7,27 +7,71 @@ export interface GenerateTextResponse {
   error?: string;
 }
 
-export const generateText = async (
+export async function generateText(
   prompt: string
-): Promise<GenerateTextResponse> => {
+): Promise<GenerateTextResponse> {
+  const cleanPrompt = prompt.trim();
+
+  if (!cleanPrompt) {
+    return {
+      success: false,
+      error: "Prompt is required.",
+    };
+  }
+
   try {
-    const { data, error } = await supabase.functions.invoke(
+    const {
+      data,
+      error,
+    } = await supabase.functions.invoke(
       "openai-chat",
       {
         body: {
+          prompt: cleanPrompt,
           model: OPENAI_MODEL,
-          prompt,
         },
       }
     );
 
     if (error) {
-      throw error;
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+
+    if (!data) {
+      return {
+        success: false,
+        error:
+          "AI server returned an empty response.",
+      };
+    }
+
+    if (data.success !== true) {
+      return {
+        success: false,
+        error:
+          typeof data.error === "string"
+            ? data.error
+            : "AI request failed.",
+      };
+    }
+
+    if (
+      typeof data.text !== "string" ||
+      !data.text.trim()
+    ) {
+      return {
+        success: false,
+        error:
+          "AI server returned an empty answer.",
+      };
     }
 
     return {
       success: true,
-      text: data?.text ?? "",
+      text: data.text,
     };
   } catch (error) {
     return {
@@ -35,7 +79,7 @@ export const generateText = async (
       error:
         error instanceof Error
           ? error.message
-          : "Unknown error",
+          : "AI request failed.",
     };
   }
-};
+}
