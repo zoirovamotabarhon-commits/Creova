@@ -5,6 +5,7 @@ export interface VideoResponse {
   videoId?: string;
   status?: string;
   progress?: number;
+  videoUrl?: string;
   error?: string | null;
 }
 
@@ -26,6 +27,7 @@ export async function generateVideo(
         "video-generate",
         {
           body: {
+            action: "create",
             prompt: cleanPrompt,
           },
         }
@@ -58,6 +60,10 @@ export async function generateVideo(
         typeof data.progress === "number"
           ? data.progress
           : 0,
+      videoUrl:
+        typeof data.videoUrl === "string"
+          ? data.videoUrl
+          : undefined,
       error: null,
     };
   } catch (error) {
@@ -89,6 +95,7 @@ export async function getVideoStatus(
         "video-generate",
         {
           body: {
+            action: "status",
             videoId: cleanVideoId,
           },
         }
@@ -112,12 +119,17 @@ export async function getVideoStatus(
 
     return {
       success: true,
-      videoId: data.videoId ?? cleanVideoId,
+      videoId:
+        data.videoId ?? cleanVideoId,
       status: data.status ?? "unknown",
       progress:
         typeof data.progress === "number"
           ? data.progress
           : 0,
+      videoUrl:
+        typeof data.videoUrl === "string"
+          ? data.videoUrl
+          : undefined,
       error: data.error ?? null,
     };
   } catch (error) {
