@@ -1,84 +1,257 @@
+import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import OpenAI from "npm:openai@6.49.0";
+import {
+  createClient,
+} from "npm:@supabase/supabase-js@2.57.0";
 
-const openai = new OpenAI({
-  apiKey: Deno.env.get("OPENAI_API_KEY"),
-});
+const OPENAI_API_KEY =
+  Deno.env.get("OPENAI_API_KEY");
 
-Deno.serve(async (req) => {
-  try {
-    if (req.method !== "POST") {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: "Method not allowed",
-        }),
-        {
-          status: 405,
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
+const SUPABASE_URL =
+  Deno.env.get("SUPABASE_URL");
+
+const SUPABASE_SECRET_KEYS =
+  Deno.env.get(
+    "SUPABASE_SECRET_KEYS"
+  );
+
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods":
+    "POST, OPTIONS",
+  "Content-Type":
+    "application/json",
+};
+
+function jsonResponse(
+  body: Record<string, unknown>,
+  status = 200
+) {
+  return new Response(
+    JSON.stringify(body),
+    {
+      status,
+      headers: CORS_HEADERS,
     }
+  );
+}
 
-    const body = await req.json();
-    const prompt = body?.prompt;
-
-    if (typeof prompt !== "string" || !prompt.trim()) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: "Prompt is required",
-        }),
-        {
-          status: 400,
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
-    }
-
-    const response = await openai.images.generate({
-      model: "gpt-image-1",
-      prompt: prompt.trim(),
-      size: "1024x1024",
-    });
-
-    const imageData = response.data?.[0];
-
-    if (!imageData) {
-      throw new Error("Image generation returned no image.");
-    }
-
-    return new Response(
-      JSON.stringify({
-        success: true,
-        imageUrl: imageData.url ?? "",
-        imageBase64: imageData.b64_json ?? "",
-      }),
-      {
-        status: 200,
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }
-    );
-  } catch (error) {
-    return new Response(
-      JSON.stringify({
-        success: false,
-        error:
-          error instanceof Error
-            ? error.message
-            : "Unknown error",
-      }),
-      {
-        status: 500,
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }
+function getSecretKey(): string {
+  if (!SUPABASE_SECRET_KEYS) {
+    throw new Error(
+      "SUPABASE_SECRET_KEYS is not configured."
     );
   }
+
+  const keys =
+    JSON.parse(
+      SUPABASE_SECRET_KEYS
+    ) as Record<string, unknown>;
+
+  const key =
+    keys.default;
+
+  if (
+    typeof key !== "string" ||
+    !key.trim()
+  ) {
+    throw new Error(
+      "Default Supabase secret key is missing."
+    );
+  }
+
+  return key;
+}
+
+async function requireUser(
+  req: Request
+) {
+  const authorization =
+    req.headers.get(
+      "Authorization"
+    );
+
+  if (
+    !authorization ||
+    !authorization.startsWith(
+      "Bearer "
+    )
+  ) {
+    throw new Error(
+      "Authentication required."
+    );
+  }
+
+  const token =
+    authorization
+      .replace(
+        "Bearer ",
+        ""
+      )
+      .trim();
+
+  if (!SUPABASE_URL) {
+    throw new Error(
+      "SUPABASE_URL is not configured."
+    );
+  }
+
+  const supabase =
+    createClient(
+      SUPABASE_URL,
+      getSecretKey(),
+      {
+        auth: {
+          autoRefreshToken:
+            false,
+          persistSession:
+            false,
+        },
+      }
+    );
+
+  const {
+    data,
+    error,
+  } =
+    await supabase.auth.getUser(
+      token
+    );
+
+  if (
+    error ||
+    !data.user
+  ) {
+    throw new Error(
+      "Invalid or expired authentication token."
+    );
+  }
+
+  return data.user;
+}
+
+const openai = new OpenAI({
+  apiKey:
+    OPENAI_API_KEY,
 });
+
+Deno.serve(
+  async (req) => {
+    if (
+      req.method ===
+      "OPTIONS"
+    ) {
+      return new Response(
+        "ok",
+        {
+          headers:
+            CORS_HEADERS,
+        }
+      );
+    }
+
+    if (
+      req.method !==
+      "POST"
+    ) {
+      return jsonResponse(
+        {
+          success: false,
+          error:
+            "Method not allowed.",
+        },
+        405
+      );
+    }
+
+    try {
+      if (!OPENAI_API_KEY) {
+        return jsonResponse(
+          {
+            success: false,
+            error:
+              "OPENAI_API_KEY is not configured.",
+          },
+          500
+        );
+      }
+
+      await requireUser(req);
+
+      const body =
+        (await req.json()) as Record<
+          string,
+          unknown
+        >;
+
+      const prompt =
+        body.prompt;
+
+      if (
+        typeof prompt !==
+          "string" ||
+        !prompt.trim()
+      ) {
+        return jsonResponse(
+          {
+            success: false,
+            error:
+              "Prompt is required.",
+          },
+          400
+        );
+      }
+
+      const response =
+        await openai.images.generate(
+          {
+            model:
+              "gpt-image-1",
+            prompt:
+              prompt.trim(),
+            size:
+              "1024x1024",
+          }
+        );
+
+      const image =
+        response.data?.[0];
+
+      if (!image) {
+        throw new Error(
+          "Image generation returned no image."
+        );
+      }
+
+      const imageBase64 =
+        image.b64_json ??
+        "";
+
+      if (!imageBase64) {
+        throw new Error(
+          "Image data was not returned."
+        );
+      }
+
+      return jsonResponse({
+        success: true,
+        imageUrl:
+          `data:image/png;base64,${imageBase64}`,
+        imageBase64,
+      });
+    } catch (error) {
+      return jsonResponse(
+        {
+          success: false,
+          error:
+            error instanceof Error
+              ? error.message
+              : "Image generation failed.",
+        },
+        500
+      );
+    }
+  }
+);
