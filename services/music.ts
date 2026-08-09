@@ -6,20 +6,23 @@ export interface MusicResponse {
   error?: string;
 }
 
-export const generateMusic = async (
+export async function generateMusic(
   prompt: string
-): Promise<MusicResponse> => {
+): Promise<MusicResponse> {
+  const cleanPrompt = prompt.trim();
+
+  if (!cleanPrompt) {
+    return {
+      success: false,
+      error: "Prompt is required.",
+    };
+  }
+
   try {
-    const cleanPrompt = prompt.trim();
-
-    if (!cleanPrompt) {
-      return {
-        success: false,
-        error: "Prompt is required.",
-      };
-    }
-
-    const { data, error } = await supabase.functions.invoke(
+    const {
+      data,
+      error,
+    } = await supabase.functions.invoke(
       "music-generate",
       {
         body: {
@@ -35,12 +38,21 @@ export const generateMusic = async (
       };
     }
 
-    if (!data?.success) {
+    if (!data) {
       return {
         success: false,
         error:
-          data?.error ??
-          "Music generation failed.",
+          "Music server returned an empty response.",
+      };
+    }
+
+    if (data.success !== true) {
+      return {
+        success: false,
+        error:
+          typeof data.error === "string"
+            ? data.error
+            : "Music generation failed.",
       };
     }
 
@@ -50,7 +62,8 @@ export const generateMusic = async (
     ) {
       return {
         success: false,
-        error: "Music service did not return an audio URL.",
+        error:
+          "Music server did not return an audio URL.",
       };
     }
 
@@ -64,7 +77,7 @@ export const generateMusic = async (
       error:
         error instanceof Error
           ? error.message
-          : "Unknown error",
+          : "Music generation failed.",
     };
   }
-};
+}
