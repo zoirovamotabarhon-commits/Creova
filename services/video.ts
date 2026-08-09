@@ -6,8 +6,21 @@ export interface VideoResponse {
   status?: string;
   progress?: number;
   videoUrl?: string;
-  error?: string | null;
+  error?: string;
 }
+
+const normalizeProgress = (
+  value: unknown
+): number => {
+  if (typeof value !== "number") {
+    return 0;
+  }
+
+  return Math.max(
+    0,
+    Math.min(100, value)
+  );
+};
 
 export async function generateVideo(
   prompt: string
@@ -22,16 +35,18 @@ export async function generateVideo(
       };
     }
 
-    const { data, error } =
-      await supabase.functions.invoke(
-        "video-generate",
-        {
-          body: {
-            action: "create",
-            prompt: cleanPrompt,
-          },
-        }
-      );
+    const {
+      data,
+      error,
+    } = await supabase.functions.invoke(
+      "video-generate",
+      {
+        body: {
+          action: "create",
+          prompt: cleanPrompt,
+        },
+      }
+    );
 
     if (error) {
       return {
@@ -41,14 +56,18 @@ export async function generateVideo(
     }
 
     if (
-      !data?.success ||
-      typeof data.videoId !== "string"
+      !data ||
+      data.success !== true ||
+      typeof data.videoId !==
+        "string"
     ) {
       return {
         success: false,
         error:
-          data?.error ??
-          "Video generation could not be started.",
+          typeof data?.error ===
+          "string"
+            ? data.error
+            : "Video generation could not be started.",
       };
     }
 
@@ -56,18 +75,19 @@ export async function generateVideo(
       success: true,
       videoId: data.videoId,
       status:
-        typeof data.status === "string"
+        typeof data.status ===
+        "string"
           ? data.status
           : "queued",
       progress:
-        typeof data.progress === "number"
-          ? data.progress
-          : 0,
+        normalizeProgress(
+          data.progress
+        ),
       videoUrl:
-        typeof data.videoUrl === "string"
+        typeof data.videoUrl ===
+        "string"
           ? data.videoUrl
           : undefined,
-      error: null,
     };
   } catch (error) {
     return {
@@ -84,25 +104,29 @@ export async function getVideoStatus(
   videoId: string
 ): Promise<VideoResponse> {
   try {
-    const cleanVideoId = videoId.trim();
+    const cleanVideoId =
+      videoId.trim();
 
     if (!cleanVideoId) {
       return {
         success: false,
-        error: "Video ID is required.",
+        error:
+          "Video ID is required.",
       };
     }
 
-    const { data, error } =
-      await supabase.functions.invoke(
-        "video-generate",
-        {
-          body: {
-            action: "status",
-            videoId: cleanVideoId,
-          },
-        }
-      );
+    const {
+      data,
+      error,
+    } = await supabase.functions.invoke(
+      "video-generate",
+      {
+        body: {
+          action: "status",
+          videoId: cleanVideoId,
+        },
+      }
+    );
 
     if (error) {
       return {
@@ -111,46 +135,41 @@ export async function getVideoStatus(
       };
     }
 
-    if (!data?.success) {
+    if (!data) {
       return {
         success: false,
-        videoId:
-          typeof data?.videoId === "string"
-            ? data.videoId
-            : cleanVideoId,
-        status:
-          typeof data?.status === "string"
-            ? data.status
-            : "unknown",
-        progress:
-          typeof data?.progress === "number"
-            ? data.progress
-            : 0,
         error:
-          data?.error ??
-          "Unable to retrieve video status.",
+          "Video status response is empty.",
       };
     }
 
     return {
-      success: true,
+      success:
+        data.success === true,
       videoId:
-        typeof data.videoId === "string"
+        typeof data.videoId ===
+        "string"
           ? data.videoId
           : cleanVideoId,
       status:
-        typeof data.status === "string"
+        typeof data.status ===
+        "string"
           ? data.status
           : "unknown",
       progress:
-        typeof data.progress === "number"
-          ? data.progress
-          : 0,
+        normalizeProgress(
+          data.progress
+        ),
       videoUrl:
-        typeof data.videoUrl === "string"
+        typeof data.videoUrl ===
+        "string"
           ? data.videoUrl
           : undefined,
-      error: null,
+      error:
+        typeof data.error ===
+        "string"
+          ? data.error
+          : undefined,
     };
   } catch (error) {
     return {
