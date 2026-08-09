@@ -75,8 +75,7 @@ export async function generateVideo(
           : "Video generation failed.",
     };
   }
-}
-
+  }
 export async function getVideoStatus(
   videoId: string
 ): Promise<VideoResponse> {
@@ -111,6 +110,13 @@ export async function getVideoStatus(
     if (!data?.success) {
       return {
         success: false,
+        videoId:
+          data?.videoId ?? cleanVideoId,
+        status: data?.status,
+        progress:
+          typeof data?.progress === "number"
+            ? data.progress
+            : 0,
         error:
           data?.error ??
           "Unable to retrieve video status.",
@@ -130,7 +136,7 @@ export async function getVideoStatus(
         typeof data.videoUrl === "string"
           ? data.videoUrl
           : undefined,
-      error: data.error ?? null,
+      error: null,
     };
   } catch (error) {
     return {
