@@ -4,8 +4,8 @@ export interface VideoResponse {
   success: boolean;
   videoId?: string;
   status?: string;
-  videoUrl?: string;
-  error?: string;
+  progress?: number;
+  error?: string | null;
 }
 
 export async function generateVideo(
@@ -40,7 +40,9 @@ export async function generateVideo(
     if (!data?.success || !data?.videoId) {
       return {
         success: false,
-        error: data?.error ?? "Video generation failed.",
+        error:
+          data?.error ??
+          "Video generation could not be started.",
       };
     }
 
@@ -48,6 +50,11 @@ export async function generateVideo(
       success: true,
       videoId: data.videoId,
       status: data.status,
+      progress:
+        typeof data.progress === "number"
+          ? data.progress
+          : 0,
+      error: null,
     };
   } catch (error) {
     return {
@@ -55,7 +62,7 @@ export async function generateVideo(
       error:
         error instanceof Error
           ? error.message
-          : "Unknown error",
+          : "Video generation failed.",
     };
   }
 }
@@ -64,7 +71,9 @@ export async function getVideoStatus(
   videoId: string
 ): Promise<VideoResponse> {
   try {
-    if (!videoId.trim()) {
+    const cleanVideoId = videoId.trim();
+
+    if (!cleanVideoId) {
       return {
         success: false,
         error: "Video ID is required.",
@@ -72,10 +81,10 @@ export async function getVideoStatus(
     }
 
     const { data, error } = await supabase.functions.invoke(
-      "video-status",
+      "video-generate",
       {
         body: {
-          videoId: videoId.trim(),
+          videoId: cleanVideoId,
         },
       }
     );
@@ -90,7 +99,9 @@ export async function getVideoStatus(
     if (!data?.success) {
       return {
         success: false,
-        error: data?.error ?? "Could not get video status.",
+        error:
+          data?.error ??
+          "Unable to retrieve video status.",
       };
     }
 
@@ -98,7 +109,11 @@ export async function getVideoStatus(
       success: true,
       videoId: data.videoId,
       status: data.status,
-      videoUrl: data.videoUrl,
+      progress:
+        typeof data.progress === "number"
+          ? data.progress
+          : 0,
+      error: data.error ?? null,
     };
   } catch (error) {
     return {
@@ -106,7 +121,7 @@ export async function getVideoStatus(
       error:
         error instanceof Error
           ? error.message
-          : "Unknown error",
+          : "Unable to retrieve video status.",
     };
   }
 }
