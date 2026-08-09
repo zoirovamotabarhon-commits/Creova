@@ -11,10 +11,11 @@ export async function login(
   password: string
 ): Promise<AuthResponse> {
   try {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    const { data, error } =
+      await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
 
     if (error) {
       return {
@@ -28,10 +29,13 @@ export async function login(
       message: "Login successful.",
       data,
     };
-  } catch {
+  } catch (error) {
     return {
       success: false,
-      message: "Unexpected server error.",
+      message:
+        error instanceof Error
+          ? error.message
+          : "Login failed.",
     };
   }
 }
@@ -41,10 +45,11 @@ export async function register(
   password: string
 ): Promise<AuthResponse> {
   try {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-    });
+    const { data, error } =
+      await supabase.auth.signUp({
+        email: email.trim(),
+        password,
+      });
 
     if (error) {
       return {
@@ -55,20 +60,25 @@ export async function register(
 
     return {
       success: true,
-      message: "Registration successful.",
+      message:
+        "Ro'yxatdan o'tish muvaffaqiyatli yakunlandi.",
       data,
     };
-  } catch {
+  } catch (error) {
     return {
       success: false,
-      message: "Unexpected server error.",
+      message:
+        error instanceof Error
+          ? error.message
+          : "Registration failed.",
     };
   }
 }
 
 export async function logout(): Promise<AuthResponse> {
   try {
-    const { error } = await supabase.auth.signOut();
+    const { error } =
+      await supabase.auth.signOut();
 
     if (error) {
       return {
@@ -81,10 +91,13 @@ export async function logout(): Promise<AuthResponse> {
       success: true,
       message: "Logout successful.",
     };
-  } catch {
+  } catch (error) {
     return {
       success: false,
-      message: "Unexpected server error.",
+      message:
+        error instanceof Error
+          ? error.message
+          : "Logout failed.",
     };
   }
 }
@@ -93,7 +106,10 @@ export async function resetPassword(
   email: string
 ): Promise<AuthResponse> {
   try {
-    const { error } = await supabase.auth.resetPasswordForEmail(email);
+    const { error } =
+      await supabase.auth.resetPasswordForEmail(
+        email.trim()
+      );
 
     if (error) {
       return {
@@ -104,20 +120,38 @@ export async function resetPassword(
 
     return {
       success: true,
-      message: "Password reset email sent.",
+      message:
+        "Password reset email sent.",
     };
-  } catch {
+  } catch (error) {
     return {
       success: false,
-      message: "Unexpected server error.",
+      message:
+        error instanceof Error
+          ? error.message
+          : "Password reset failed.",
     };
   }
 }
 
 export async function getCurrentUser() {
-  return await supabase.auth.getUser();
+  const { data, error } =
+    await supabase.auth.getUser();
+
+  if (error) {
+    return null;
+  }
+
+  return data.user;
 }
 
 export async function getCurrentSession() {
-  return await supabase.auth.getSession();
+  const { data, error } =
+    await supabase.auth.getSession();
+
+  if (error) {
+    return null;
+  }
+
+  return data.session;
 }
