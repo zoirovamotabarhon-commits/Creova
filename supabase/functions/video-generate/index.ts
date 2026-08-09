@@ -22,7 +22,7 @@ Deno.serve(async (req) => {
       return jsonResponse(
         {
           success: false,
-          error: "Method not allowed",
+          error: "Method not allowed.",
         },
         405
       );
@@ -30,35 +30,27 @@ Deno.serve(async (req) => {
 
     const body = await req.json();
 
-    /*
-     * VIDEO STATUS
-     *
-     * Агар videoId келса, мавжуд video generation
-     * job ҳолатини текширамиз.
-     */
     if (
       typeof body?.videoId === "string" &&
       body.videoId.trim()
     ) {
       const videoId = body.videoId.trim();
 
-      const video = await openai.videos.retrieve(videoId);
+      const video =
+        await openai.videos.retrieve(videoId);
 
       return jsonResponse({
         success: true,
         videoId: video.id,
         status: video.status,
-        progress: video.progress ?? 0,
+        progress:
+          typeof video.progress === "number"
+            ? video.progress
+            : 0,
         error: video.error ?? null,
       });
     }
 
-    /*
-     * CREATE VIDEO
-     *
-     * Агар videoId берилмаган бўлса, prompt орқали
-     * янги video generation job яратамиз.
-     */
     const prompt = body?.prompt;
 
     if (
@@ -83,7 +75,10 @@ Deno.serve(async (req) => {
       success: true,
       videoId: video.id,
       status: video.status,
-      progress: video.progress ?? 0,
+      progress:
+        typeof video.progress === "number"
+          ? video.progress
+          : 0,
     });
   } catch (error) {
     return jsonResponse(
