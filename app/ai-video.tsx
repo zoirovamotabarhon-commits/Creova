@@ -1,4 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+
 import {
   ActivityIndicator,
   Alert,
@@ -20,15 +25,25 @@ import {
 } from "../services/video";
 
 export default function AIVideoScreen() {
-  const [prompt, setPrompt] = useState("");
+  const [prompt, setPrompt] =
+    useState("");
+
   const [videoId, setVideoId] =
-    useState<string | null>(null);
+    useState<string | null>(
+      null
+    );
+
   const [videoUrl, setVideoUrl] =
-    useState<string | null>(null);
+    useState<string | null>(
+      null
+    );
+
   const [status, setStatus] =
     useState("idle");
+
   const [progress, setProgress] =
     useState(0);
+
   const [loading, setLoading] =
     useState(false);
 
@@ -37,105 +52,128 @@ export default function AIVideoScreen() {
       typeof setInterval
     > | null>(null);
 
-  const player = useVideoPlayer(
-    videoUrl,
-    (videoPlayer) => {
-      videoPlayer.loop = false;
-    }
-  );
-
-  useEffect(() => {
-    return () => {
-      if (pollingRef.current) {
-        clearInterval(
-          pollingRef.current
-        );
+  const player =
+    useVideoPlayer(
+      videoUrl,
+      (videoPlayer) => {
+        videoPlayer.loop =
+          false;
       }
-    };
-  }, []);
+    );
 
   const stopPolling = () => {
-    if (pollingRef.current) {
+    if (
+      pollingRef.current
+    ) {
       clearInterval(
         pollingRef.current
       );
-      pollingRef.current = null;
+
+      pollingRef.current =
+        null;
     }
   };
 
-  const checkVideoStatus =
-    async (id: string) => {
-      const result =
-        await getVideoStatus(id);
+  useEffect(() => {
+    return () => {
+      stopPolling();
+    };
+  }, []);
 
-      if (!result.success) {
+  const checkVideoStatus =
+    async (
+      id: string
+    ): Promise<boolean> => {
+      try {
+        const result =
+          await getVideoStatus(
+            id
+          );
+
+        if (
+          !result.success &&
+          result.status !==
+            "completed"
+        ) {
+          stopPolling();
+          setLoading(false);
+
+          Alert.alert(
+            "Video xatosi",
+            result.error ??
+              "Video holatini olishda xatolik yuz berdi."
+          );
+
+          return true;
+        }
+
+        setStatus(
+          result.status ??
+            "unknown"
+        );
+
+        setProgress(
+          result.progress ??
+            0
+        );
+
+        if (
+          result.videoUrl
+        ) {
+          setVideoUrl(
+            result.videoUrl
+          );
+        }
+
+        if (
+          result.status ===
+          "completed"
+        ) {
+          stopPolling();
+          setLoading(false);
+
+          Alert.alert(
+            "CREOVA",
+            result.videoUrl
+              ? "Video tayyor bo'ldi."
+              : "Video tayyor, lekin MP4 URL olinmadi."
+          );
+
+          return true;
+        }
+
+        if (
+          result.status ===
+            "failed" ||
+          result.status ===
+            "cancelled"
+        ) {
+          stopPolling();
+          setLoading(false);
+
+          Alert.alert(
+            "Video yaratilmadi",
+            result.error ??
+              `Video holati: ${result.status}`
+          );
+
+          return true;
+        }
+
+        return false;
+      } catch (error) {
         stopPolling();
         setLoading(false);
 
         Alert.alert(
           "Video xatosi",
-          result.error ??
-            "Video holatini olishda xatolik yuz berdi."
+          error instanceof Error
+            ? error.message
+            : "Video holatini tekshirishda xatolik."
         );
 
         return true;
       }
-
-      setStatus(
-        result.status ??
-          "unknown"
-      );
-
-      setProgress(
-        result.progress ?? 0
-      );
-
-      if (result.videoUrl) {
-        setVideoUrl(
-          result.videoUrl
-        );
-      }
-
-      if (
-        result.status ===
-        "completed"
-      ) {
-        stopPolling();
-        setLoading(false);
-
-        if (result.videoUrl) {
-          Alert.alert(
-            "CREOVA",
-            "Video tayyor bo'ldi."
-          );
-        } else {
-          Alert.alert(
-            "CREOVA",
-            "Video tayyor, lekin MP4 manzili olinmadi."
-          );
-        }
-
-        return true;
-      }
-
-      if (
-        result.status === "failed" ||
-        result.status ===
-          "cancelled"
-      ) {
-        stopPolling();
-        setLoading(false);
-
-        Alert.alert(
-          "Video yaratilmadi",
-          result.error ??
-            `Video holati: ${result.status}`
-        );
-
-        return true;
-      }
-
-      return false;
     };
 
   const handleGenerate =
@@ -194,6 +232,14 @@ export default function AIVideoScreen() {
           result.progress ??
             0
         );
+
+        if (
+          result.videoUrl
+        ) {
+          setVideoUrl(
+            result.videoUrl
+          );
+        }
 
         const finished =
           await checkVideoStatus(
