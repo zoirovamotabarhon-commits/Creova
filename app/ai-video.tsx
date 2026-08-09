@@ -15,19 +15,23 @@ import {
 
 export default function AIVideoScreen() {
   const [prompt, setPrompt] = useState("");
-  const [videoId, setVideoId] = useState<string | null>(null);
-  const [status, setStatus] = useState<string>("");
+  const [videoId, setVideoId] = useState<string | null>(
+    null
+  );
+  const [status, setStatus] = useState("");
   const [progress, setProgress] = useState(0);
   const [loading, setLoading] = useState(false);
 
-  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(
-    null
-  );
+  const pollingRef =
+    useRef<ReturnType<typeof setInterval> | null>(
+      null
+    );
 
   useEffect(() => {
     return () => {
       if (pollingRef.current) {
         clearInterval(pollingRef.current);
+        pollingRef.current = null;
       }
     };
   }, []);
@@ -39,7 +43,9 @@ export default function AIVideoScreen() {
     }
   };
 
-  const checkVideoStatus = async (id: string) => {
+  const checkVideoStatus = async (
+    id: string
+  ): Promise<boolean> => {
     const result = await getVideoStatus(id);
 
     if (!result.success) {
@@ -48,16 +54,19 @@ export default function AIVideoScreen() {
 
       Alert.alert(
         "Video xatosi",
-        result.error ?? "Video holatini olishda xatolik yuz berdi."
+        result.error ??
+          "Video holatini olishda xatolik yuz berdi."
       );
 
-      return;
+      return true;
     }
 
-    setStatus(result.status ?? "");
+    const currentStatus = result.status ?? "";
+
+    setStatus(currentStatus);
     setProgress(result.progress ?? 0);
 
-    if (result.status === "completed") {
+    if (currentStatus === "completed") {
       stopPolling();
       setLoading(false);
 
@@ -65,20 +74,27 @@ export default function AIVideoScreen() {
         "CREOVA",
         "Video tayyor bo'ldi."
       );
+
+      return true;
     }
 
     if (
-      result.status === "failed" ||
-      result.status === "cancelled"
+      currentStatus === "failed" ||
+      currentStatus === "cancelled"
     ) {
       stopPolling();
       setLoading(false);
 
       Alert.alert(
         "Video yaratilmadi",
-        result.error ?? `Video holati: ${result.status}`
+        result.error ??
+          `Video holati: ${currentStatus}`
       );
+
+      return true;
     }
+
+    return false;
   };
 
   const handleGenerate = async () => {
@@ -100,14 +116,19 @@ export default function AIVideoScreen() {
     setProgress(0);
 
     try {
-      const result = await generateVideo(cleanPrompt);
+      const result =
+        await generateVideo(cleanPrompt);
 
-      if (!result.success || !result.videoId) {
+      if (
+        !result.success ||
+        !result.videoId
+      ) {
         setLoading(false);
 
         Alert.alert(
           "Video yaratilmadi",
-          result.error ?? "Video generation failed."
+          result.error ??
+            "Video generation failed."
         );
 
         return;
@@ -119,24 +140,35 @@ export default function AIVideoScreen() {
       setStatus(result.status ?? "queued");
       setProgress(result.progress ?? 0);
 
-      await checkVideoStatus(id);
+      const finished =
+        await checkVideoStatus(id);
 
-      pollingRef.current = setInterval(() => {
-        void checkVideoStatus(id);
-      }, 5000);
-    } catch {
+      if (finished) {
+        return;
+      }
+
+      pollingRef.current =
+        setInterval(() => {
+          void checkVideoStatus(id);
+        }, 5000);
+    } catch (error) {
+      stopPolling();
       setLoading(false);
 
       Alert.alert(
         "Xatolik",
-        "Video yaratish vaqtida kutilmagan xatolik yuz berdi."
+        error instanceof Error
+          ? error.message
+          : "Video yaratish vaqtida kutilmagan xatolik yuz berdi."
       );
     }
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>🎬 AI Video</Text>
+      <Text style={styles.title}>
+        🎬 AI Video
+      </Text>
 
       <Text style={styles.subtitle}>
         CREOVA AI orqali video yarating
@@ -192,7 +224,7 @@ export default function AIVideoScreen() {
 
           {status === "completed" && (
             <Text style={styles.completedText}>
-              Video tayyor.
+              Video тайёр. Video ID: {videoId}
             </Text>
           )}
         </View>
@@ -208,12 +240,14 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingTop: 60,
   },
+
   title: {
     color: "#FFFFFF",
     fontSize: 30,
     fontWeight: "800",
     textAlign: "center",
   },
+
   subtitle: {
     color: "#94A3B8",
     marginTop: 8,
@@ -221,6 +255,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlign: "center",
   },
+
   input: {
     minHeight: 120,
     borderWidth: 1,
@@ -232,6 +267,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlignVertical: "top",
   },
+
   button: {
     height: 52,
     marginTop: 14,
@@ -240,14 +276,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+
   buttonDisabled: {
     opacity: 0.6,
   },
+
   buttonText: {
     color: "#FFFFFF",
     fontSize: 16,
     fontWeight: "700",
   },
+
   statusCard: {
     marginTop: 24,
     padding: 18,
@@ -256,25 +295,30 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#334155",
   },
+
   statusTitle: {
     color: "#CBD5E1",
     fontSize: 14,
     fontWeight: "700",
   },
+
   statusText: {
     color: "#FFFFFF",
     fontSize: 20,
     fontWeight: "700",
     marginTop: 8,
   },
+
   progressText: {
     color: "#94A3B8",
     fontSize: 14,
     marginTop: 8,
   },
+
   loader: {
     marginTop: 14,
   },
+
   completedText: {
     color: "#4ADE80",
     fontSize: 15,
