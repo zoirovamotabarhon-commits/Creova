@@ -2,18 +2,22 @@ import { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from "react-native";
 import { router } from "expo-router";
-import { signUp } from "../services/auth";
+
+import { register } from "../services/auth";
 import {
   validateEmail,
   validatePassword,
-  validatePasswordMatch,
+  validateConfirmPassword,
 } from "../utils/validators";
 
 export default function RegisterScreen() {
@@ -26,36 +30,30 @@ export default function RegisterScreen() {
   const handleRegister = async () => {
     const cleanEmail = email.trim();
 
-    if (!cleanEmail) {
-      Alert.alert("CREOVA", "Email kiriting.");
+    const emailError = validateEmail(cleanEmail);
+
+    if (emailError) {
+      Alert.alert("CREOVA", emailError);
       return;
     }
 
-    if (!validateEmail(cleanEmail)) {
-      Alert.alert(
-        "CREOVA",
-        "Email manzil noto'g'ri."
-      );
+    const passwordError = validatePassword(password);
+
+    if (passwordError) {
+      Alert.alert("CREOVA", passwordError);
       return;
     }
 
-    if (!validatePassword(password)) {
-      Alert.alert(
-        "CREOVA",
-        "Parol kamida 8 ta belgidan iborat bo'lishi kerak."
-      );
-      return;
-    }
-
-    if (
-      !validatePasswordMatch(
+    const confirmPasswordError =
+      validateConfirmPassword(
         password,
         confirmPassword
-      )
-    ) {
+      );
+
+    if (confirmPasswordError) {
       Alert.alert(
         "CREOVA",
-        "Parollar bir xil emas."
+        confirmPasswordError
       );
       return;
     }
@@ -63,7 +61,7 @@ export default function RegisterScreen() {
     setLoading(true);
 
     try {
-      const result = await signUp(
+      const result = await register(
         cleanEmail,
         password
       );
@@ -71,19 +69,20 @@ export default function RegisterScreen() {
       if (!result.success) {
         Alert.alert(
           "Ro'yxatdan o'tish xatosi",
-          result.error ??
-            "Ro'yxatdan o'tishda xatolik yuz berdi."
+          result.message
         );
         return;
       }
 
       Alert.alert(
         "CREOVA",
-        "Ro'yxatdan o'tish muvaffaqiyatli yakunlandi.",
+        result.message ||
+          "Ro'yxatdan o'tish muvaffaqiyatli yakunlandi.",
         [
           {
             text: "Kirish",
-            onPress: () => router.replace("/login"),
+            onPress: () =>
+              router.replace("/login"),
           },
         ]
       );
@@ -92,7 +91,7 @@ export default function RegisterScreen() {
         "Xatolik",
         error instanceof Error
           ? error.message
-          : "Kutilmagan xatolik yuz berdi."
+          : "Ro'yxatdan o'tishda kutilmagan xatolik yuz berdi."
       );
     } finally {
       setLoading(false);
@@ -100,74 +99,115 @@ export default function RegisterScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>CREOVA</Text>
-
-      <Text style={styles.subtitle}>
-        Yangi hisob yarating
-      </Text>
-
-      <TextInput
-        style={styles.input}
-        placeholder="Email"
-        placeholderTextColor="#64748B"
-        value={email}
-        onChangeText={setEmail}
-        keyboardType="email-address"
-        autoCapitalize="none"
-        autoCorrect={false}
-        editable={!loading}
-      />
-
-      <TextInput
-        style={styles.input}
-        placeholder="Parol"
-        placeholderTextColor="#64748B"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-        autoCapitalize="none"
-        editable={!loading}
-      />
-
-      <TextInput
-        style={styles.input}
-        placeholder="Parolni qayta kiriting"
-        placeholderTextColor="#64748B"
-        value={confirmPassword}
-        onChangeText={setConfirmPassword}
-        secureTextEntry
-        autoCapitalize="none"
-        editable={!loading}
-      />
-
-      <Pressable
-        style={[
-          styles.button,
-          loading && styles.buttonDisabled,
-        ]}
-        onPress={handleRegister}
-        disabled={loading}
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={
+        Platform.OS === "ios"
+          ? "padding"
+          : undefined
+      }
+    >
+      <ScrollView
+        contentContainerStyle={
+          styles.scrollContent
+        }
+        keyboardShouldPersistTaps="handled"
       >
-        {loading ? (
-          <ActivityIndicator color="#FFFFFF" />
-        ) : (
-          <Text style={styles.buttonText}>
-            Ro'yxatdan o'tish
+        <View style={styles.content}>
+          <Text style={styles.title}>
+            CREOVA
           </Text>
-        )}
-      </Pressable>
 
-      <Pressable
-        onPress={() => router.replace("/login")}
-        disabled={loading}
-        style={styles.linkButton}
-      >
-        <Text style={styles.linkText}>
-          Hisobingiz bormi? Kirish
-        </Text>
-      </Pressable>
-    </View>
+          <Text style={styles.subtitle}>
+            Yangi hisob yarating
+          </Text>
+
+          <Text style={styles.label}>
+            Email
+          </Text>
+
+          <TextInput
+            style={styles.input}
+            placeholder="Email"
+            placeholderTextColor="#64748B"
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            autoCorrect={false}
+            editable={!loading}
+          />
+
+          <Text style={styles.label}>
+            Parol
+          </Text>
+
+          <TextInput
+            style={styles.input}
+            placeholder="Parol"
+            placeholderTextColor="#64748B"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+            autoCapitalize="none"
+            editable={!loading}
+          />
+
+          <Text style={styles.label}>
+            Parolni qayta kiriting
+          </Text>
+
+          <TextInput
+            style={styles.input}
+            placeholder="Parolni qayta kiriting"
+            placeholderTextColor="#64748B"
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+            secureTextEntry
+            autoCapitalize="none"
+            editable={!loading}
+          />
+
+          <Pressable
+            style={[
+              styles.button,
+              loading &&
+                styles.buttonDisabled,
+            ]}
+            onPress={handleRegister}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator
+                color="#FFFFFF"
+              />
+            ) : (
+              <Text
+                style={
+                  styles.buttonText
+                }
+              >
+                Ro'yxatdan o'tish
+              </Text>
+            )}
+          </Pressable>
+
+          <Pressable
+            style={styles.linkButton}
+            onPress={() =>
+              router.replace("/login")
+            }
+            disabled={loading}
+          >
+            <Text
+              style={styles.linkText}
+            >
+              Hisobingiz bormi? Kirish
+            </Text>
+          </Pressable>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -175,9 +215,16 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#0F172A",
-    padding: 20,
-    paddingTop: 80,
+  },
+
+  scrollContent: {
+    flexGrow: 1,
     justifyContent: "center",
+    padding: 20,
+  },
+
+  content: {
+    width: "100%",
   },
 
   title: {
@@ -195,6 +242,14 @@ const styles = StyleSheet.create({
     marginBottom: 28,
   },
 
+  label: {
+    color: "#CBD5E1",
+    fontSize: 14,
+    fontWeight: "600",
+    marginBottom: 7,
+    marginTop: 10,
+  },
+
   input: {
     height: 52,
     backgroundColor: "#1E293B",
@@ -204,7 +259,6 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     paddingHorizontal: 14,
     fontSize: 16,
-    marginBottom: 12,
   },
 
   button: {
@@ -213,7 +267,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#2563EB",
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 4,
+    marginTop: 24,
   },
 
   buttonDisabled: {
