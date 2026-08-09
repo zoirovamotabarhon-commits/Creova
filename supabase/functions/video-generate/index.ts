@@ -1,15 +1,23 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 
-import { createClient } from "npm:@supabase/supabase-js@2.57.0";
+import {
+  createClient,
+} from "npm:@supabase/supabase-js@2.57.0";
 
 const OPENAI_API_KEY =
-  Deno.env.get("OPENAI_API_KEY");
+  Deno.env.get(
+    "OPENAI_API_KEY"
+  );
 
 const SUPABASE_URL =
-  Deno.env.get("SUPABASE_URL");
+  Deno.env.get(
+    "SUPABASE_URL"
+  );
 
-const SUPABASE_SERVICE_ROLE_KEY =
-  Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+const SUPABASE_SECRET_KEYS =
+  Deno.env.get(
+    "SUPABASE_SECRET_KEYS"
+  );
 
 const OPENAI_BASE_URL =
   "https://api.openai.com/v1";
@@ -32,19 +40,51 @@ function jsonResponse(
   );
 }
 
-function getSupabaseAdmin() {
-  if (
-    !SUPABASE_URL ||
-    !SUPABASE_SERVICE_ROLE_KEY
-  ) {
+function getSecretKey() {
+  if (!SUPABASE_SECRET_KEYS) {
     throw new Error(
-      "Supabase server configuration is missing."
+      "SUPABASE_SECRET_KEYS is not configured."
+    );
+  }
+
+  try {
+    const parsed =
+      JSON.parse(
+        SUPABASE_SECRET_KEYS
+      );
+
+    const key =
+      parsed?.default;
+
+    if (
+      typeof key !== "string" ||
+      !key.trim()
+    ) {
+      throw new Error(
+        "Default Supabase secret key is missing."
+      );
+    }
+
+    return key;
+  } catch (error) {
+    throw new Error(
+      error instanceof Error
+        ? error.message
+        : "Invalid SUPABASE_SECRET_KEYS."
+    );
+  }
+}
+
+function getSupabaseAdmin() {
+  if (!SUPABASE_URL) {
+    throw new Error(
+      "SUPABASE_URL is not configured."
     );
   }
 
   return createClient(
     SUPABASE_URL,
-    SUPABASE_SERVICE_ROLE_KEY,
+    getSecretKey(),
     {
       auth: {
         autoRefreshToken: false,
@@ -58,6 +98,12 @@ async function openAIRequest(
   path: string,
   options: RequestInit = {}
 ) {
+  if (!OPENAI_API_KEY) {
+    throw new Error(
+      "OPENAI_API_KEY is not configured."
+    );
+  }
+
   return fetch(
     `${OPENAI_BASE_URL}${path}`,
     {
@@ -75,8 +121,12 @@ async function ensureVideoBucket() {
   const supabaseAdmin =
     getSupabaseAdmin();
 
-  const { data: buckets, error } =
-    await supabaseAdmin.storage.listBuckets();
+  const {
+    data,
+    error,
+  } =
+    await supabaseAdmin.storage
+      .listBuckets();
 
   if (error) {
     throw new Error(
@@ -84,46 +134,51 @@ async function ensureVideoBucket() {
     );
   }
 
-  const exists = buckets.some(
-    (bucket) =>
-      bucket.name === VIDEO_BUCKET
-  );
+  const exists =
+    data?.some(
+      (bucket) =>
+        bucket.name ===
+        VIDEO_BUCKET
+    ) ?? false;
 
   if (exists) {
     return;
   }
 
-  const { error: createError } =
-    await supabaseAdmin.storage.createBucket(
-      VIDEO_BUCKET,
-      {
-        public: false,
-        fileSizeLimit:
-          "500MB",
-        allowedMimeTypes: [
-          "video/mp4",
-        ],
-      }
-    );
+  const {
+    error: createError,
+  } =
+    await supabaseAdmin.storage
+      .createBucket(
+        VIDEO_BUCKET,
+        {
+          public: false,
+          allowedMimeTypes: [
+            "video/mp4",
+          ],
+        }
+      );
 
   if (
     createError &&
     !createError.message
       .toLowerCase()
-      .includes("already exists")
+      .includes(
+        "already exists"
+      )
   ) {
     throw new Error(
-      `Unable to create video bucket: ${createError.message}`
+      createError.message
     );
   }
 }
 
 async function downloadAndStoreVideo(
   videoId: string
-): Promise<string> {
+) {
   await ensureVideoBucket();
 
-  const contentResponse =
+  const response =
     await openAIRequest(
       `/videos/${encodeURIComponent(
         videoId
@@ -131,25 +186,26 @@ async function downloadAndStoreVideo(
       {
         method: "GET",
         headers: {
-          Accept: "video/mp4",
+          Accept:
+            "video/mp4",
         },
       }
     );
 
-  if (!contentResponse.ok) {
-    const errorText =
-      await contentResponse.text();
+  if (!response.ok) {
+    const text =
+      await response.text();
 
     throw new Error(
-      errorText ||
-        "Unable to download generated MP4."
+      text ||
+        `MP4 download failed with status ${response.status}.`
     );
   }
 
-  const videoBuffer =
-    await contentResponse.arrayBuffer();
+  const buffer =
+    await response.arrayBuffer();
 
-  if (!videoBuffer.byteLength) {
+  if (!buffer.byteLength) {
     throw new Error(
       "Generated MP4 is empty."
     );
@@ -158,15 +214,17 @@ async function downloadAndStoreVideo(
   const supabaseAdmin =
     getSupabaseAdmin();
 
-  const filePath =
+  const path =
     `${videoId}.mp4`;
 
-  const { error: uploadError } =
+  const {
+    error: uploadError,
+  } =
     await supabaseAdmin.storage
       .from(VIDEO_BUCKET)
       .upload(
-        filePath,
-        videoBuffer,
+        path,
+        buffer,
         {
           contentType:
             "video/mp4",
@@ -176,286 +234,296 @@ async function downloadAndStoreVideo(
 
   if (uploadError) {
     throw new Error(
-      `Unable to save MP4: ${uploadError.message}`
+      `MP4 upload failed: ${uploadError.message}`
     );
   }
 
-  const { data, error } =
+  const {
+    data,
+    error,
+  } =
     await supabaseAdmin.storage
       .from(VIDEO_BUCKET)
       .createSignedUrl(
-        filePath,
-        60 * 60
+        path,
+        3600
       );
 
-  if (error || !data?.signedUrl) {
+  if (
+    error ||
+    !data?.signedUrl
+  ) {
     throw new Error(
-      `Unable to create video URL: ${
-        error?.message ??
-        "Signed URL unavailable."
-      }`
+      error?.message ??
+        "Unable to create signed MP4 URL."
     );
   }
 
   return data.signedUrl;
 }
 
-Deno.serve(async (req) => {
-  try {
-    if (req.method !== "POST") {
-      return jsonResponse(
-        {
-          success: false,
-          error:
-            "Method not allowed.",
-        },
-        405
-      );
-    }
-
-    if (!OPENAI_API_KEY) {
-      return jsonResponse(
-        {
-          success: false,
-          error:
-            "OPENAI_API_KEY is not configured.",
-        },
-        500
-      );
-    }
-
-    if (
-      !SUPABASE_URL ||
-      !SUPABASE_SERVICE_ROLE_KEY
-    ) {
-      return jsonResponse(
-        {
-          success: false,
-          error:
-            "Supabase server configuration is missing.",
-        },
-        500
-      );
-    }
-
-    const body =
-      await req.json();
-
-    const action =
-      typeof body?.action === "string"
-        ? body.action
-        : "create";
-
-    /*
-     * CREATE
-     */
-    if (action === "create") {
-      const prompt = body?.prompt;
-
+Deno.serve(
+  async (req) => {
+    try {
       if (
-        typeof prompt !== "string" ||
-        !prompt.trim()
+        req.method !==
+        "POST"
       ) {
         return jsonResponse(
           {
             success: false,
             error:
-              "Prompt is required.",
+              "Method not allowed.",
           },
-          400
+          405
         );
       }
 
-      const response =
-        await openAIRequest(
-          "/videos",
+      if (
+        !OPENAI_API_KEY
+      ) {
+        return jsonResponse(
           {
-            method: "POST",
-            headers: {
-              "Content-Type":
-                "application/json",
+            success: false,
+            error:
+              "OPENAI_API_KEY is not configured.",
+          },
+          500
+        );
+      }
+
+      if (
+        !SUPABASE_URL ||
+        !SUPABASE_SECRET_KEYS
+      ) {
+        return jsonResponse(
+          {
+            success: false,
+            error:
+              "Supabase server configuration is missing.",
+          },
+          500
+        );
+      }
+
+      const body =
+        await req.json();
+
+      const action =
+        typeof body?.action ===
+        "string"
+          ? body.action
+          : "";
+
+      if (
+        action ===
+        "create"
+      ) {
+        const prompt =
+          body?.prompt;
+
+        if (
+          typeof prompt !==
+            "string" ||
+          !prompt.trim()
+        ) {
+          return jsonResponse(
+            {
+              success: false,
+              error:
+                "Prompt is required.",
             },
-            body: JSON.stringify({
-              model: "sora-2",
-              prompt:
-                prompt.trim(),
-            }),
-          }
+            400
+          );
+        }
+
+        const form =
+          new FormData();
+
+        form.append(
+          "model",
+          "sora-2"
         );
 
-      const data =
-        await response.json();
-
-      if (!response.ok) {
-        return jsonResponse(
-          {
-            success: false,
-            error:
-              data?.error?.message ??
-              "Video generation failed.",
-          },
-          response.status
-        );
-      }
-
-      return jsonResponse({
-        success: true,
-        videoId: data.id,
-        status:
-          data.status ?? "queued",
-        progress:
-          typeof data.progress ===
-          "number"
-            ? data.progress
-            : 0,
-      });
-    }
-
-    /*
-     * STATUS
-     */
-    if (action === "status") {
-      const videoId =
-        body?.videoId;
-
-      if (
-        typeof videoId !== "string" ||
-        !videoId.trim()
-      ) {
-        return jsonResponse(
-          {
-            success: false,
-            error:
-              "Video ID is required.",
-          },
-          400
-        );
-      }
-
-      const cleanVideoId =
-        videoId.trim();
-
-      const response =
-        await openAIRequest(
-          `/videos/${encodeURIComponent(
-            cleanVideoId
-          )}`,
-          {
-            method: "GET",
-          }
+        form.append(
+          "prompt",
+          prompt.trim()
         );
 
-      const data =
-        await response.json();
+        const response =
+          await openAIRequest(
+            "/videos",
+            {
+              method:
+                "POST",
+              body: form,
+            }
+          );
 
-      if (!response.ok) {
-        return jsonResponse(
-          {
-            success: false,
-            error:
-              data?.error?.message ??
-              "Unable to retrieve video status.",
-          },
-          response.status
-        );
-      }
+        const data =
+          await response.json();
 
-      const status =
-        data.status ?? "unknown";
+        if (
+          !response.ok
+        ) {
+          return jsonResponse(
+            {
+              success: false,
+              error:
+                data?.error
+                  ?.message ??
+                "Video generation failed.",
+            },
+            response.status
+          );
+        }
 
-      if (
-        status === "failed" ||
-        status === "cancelled"
-      ) {
         return jsonResponse({
-          success: false,
+          success: true,
           videoId:
-            data.id ??
-            cleanVideoId,
-          status,
+            data.id,
+          status:
+            data.status ??
+            "queued",
           progress:
             typeof data.progress ===
             "number"
               ? data.progress
               : 0,
-          error:
-            data?.error?.message ??
-            `Video status: ${status}`,
         });
       }
 
-      /*
-       * COMPLETED → MP4 → STORAGE
-       */
       if (
-        status === "completed"
+        action ===
+        "status"
       ) {
-        try {
+        const videoId =
+          body?.videoId;
+
+        if (
+          typeof videoId !==
+            "string" ||
+          !videoId.trim()
+        ) {
+          return jsonResponse(
+            {
+              success: false,
+              error:
+                "Video ID is required.",
+            },
+            400
+          );
+        }
+
+        const id =
+          videoId.trim();
+
+        const response =
+          await openAIRequest(
+            `/videos/${encodeURIComponent(
+              id
+            )}`,
+            {
+              method:
+                "GET",
+            }
+          );
+
+        const data =
+          await response.json();
+
+        if (
+          !response.ok
+        ) {
+          return jsonResponse(
+            {
+              success: false,
+              error:
+                data?.error
+                  ?.message ??
+                "Unable to retrieve video status.",
+            },
+            response.status
+          );
+        }
+
+        const status =
+          data.status ??
+          "unknown";
+
+        const progress =
+          typeof data.progress ===
+          "number"
+            ? data.progress
+            : 0;
+
+        if (
+          status ===
+            "failed" ||
+          status ===
+            "cancelled"
+        ) {
+          return jsonResponse({
+            success: false,
+            videoId:
+              data.id ?? id,
+            status,
+            progress,
+            error:
+              data?.error
+                ?.message ??
+              `Video status: ${status}`,
+          });
+        }
+
+        if (
+          status ===
+          "completed"
+        ) {
           const videoUrl =
             await downloadAndStoreVideo(
-              cleanVideoId
+              id
             );
 
           return jsonResponse({
             success: true,
             videoId:
-              cleanVideoId,
+              id,
             status:
               "completed",
             progress: 100,
             videoUrl,
           });
-        } catch (error) {
-          return jsonResponse(
-            {
-              success: false,
-              videoId:
-                cleanVideoId,
-              status:
-                "completed",
-              progress: 100,
-              error:
-                error instanceof Error
-                  ? error.message
-                  : "Video completed but MP4 storage failed.",
-            },
-            500
-          );
         }
+
+        return jsonResponse({
+          success: true,
+          videoId:
+            data.id ?? id,
+          status,
+          progress,
+        });
       }
 
-      return jsonResponse({
-        success: true,
-        videoId:
-          data.id ??
-          cleanVideoId,
-        status,
-        progress:
-          typeof data.progress ===
-          "number"
-            ? data.progress
-            : 0,
-      });
+      return jsonResponse(
+        {
+          success: false,
+          error:
+            "Unknown action.",
+        },
+        400
+      );
+    } catch (error) {
+      return jsonResponse(
+        {
+          success: false,
+          error:
+            error instanceof Error
+              ? error.message
+              : "Video operation failed.",
+        },
+        500
+      );
     }
-
-    return jsonResponse(
-      {
-        success: false,
-        error:
-          "Unknown action.",
-      },
-      400
-    );
-  } catch (error) {
-    return jsonResponse(
-      {
-        success: false,
-        error:
-          error instanceof Error
-            ? error.message
-            : "Video operation failed.",
-      },
-      500
-    );
   }
-});
+);
