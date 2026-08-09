@@ -10,22 +10,53 @@ export const generateMusic = async (
   prompt: string
 ): Promise<MusicResponse> => {
   try {
+    const cleanPrompt = prompt.trim();
+
+    if (!cleanPrompt) {
+      return {
+        success: false,
+        error: "Prompt is required.",
+      };
+    }
+
     const { data, error } = await supabase.functions.invoke(
       "music-generate",
       {
         body: {
-          prompt,
+          prompt: cleanPrompt,
         },
       }
     );
 
     if (error) {
-      throw error;
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+
+    if (!data?.success) {
+      return {
+        success: false,
+        error:
+          data?.error ??
+          "Music generation failed.",
+      };
+    }
+
+    if (
+      typeof data.audioUrl !== "string" ||
+      !data.audioUrl.trim()
+    ) {
+      return {
+        success: false,
+        error: "Music service did not return an audio URL.",
+      };
     }
 
     return {
       success: true,
-      audioUrl: data?.audioUrl ?? "",
+      audioUrl: data.audioUrl,
     };
   } catch (error) {
     return {
