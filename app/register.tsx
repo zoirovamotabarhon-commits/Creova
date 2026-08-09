@@ -17,7 +17,7 @@ import { register } from "../services/auth";
 import {
   validateEmail,
   validatePassword,
-  validateConfirmPassword,
+  validatePasswordMatch,
 } from "../utils/validators";
 
 export default function RegisterScreen() {
@@ -30,30 +30,36 @@ export default function RegisterScreen() {
   const handleRegister = async () => {
     const cleanEmail = email.trim();
 
-    const emailError = validateEmail(cleanEmail);
-
-    if (emailError) {
-      Alert.alert("CREOVA", emailError);
+    if (!cleanEmail) {
+      Alert.alert("CREOVA", "Email kiriting.");
       return;
     }
 
-    const passwordError = validatePassword(password);
-
-    if (passwordError) {
-      Alert.alert("CREOVA", passwordError);
-      return;
-    }
-
-    const confirmPasswordError =
-      validateConfirmPassword(
-        password,
-        confirmPassword
-      );
-
-    if (confirmPasswordError) {
+    if (!validateEmail(cleanEmail)) {
       Alert.alert(
         "CREOVA",
-        confirmPasswordError
+        "Email manzil noto'g'ri."
+      );
+      return;
+    }
+
+    if (!validatePassword(password)) {
+      Alert.alert(
+        "CREOVA",
+        "Parol kamida 8 ta belgidan iborat bo'lishi kerak."
+      );
+      return;
+    }
+
+    if (
+      !validatePasswordMatch(
+        password,
+        confirmPassword
+      )
+    ) {
+      Alert.alert(
+        "CREOVA",
+        "Parollar bir xil emas."
       );
       return;
     }
@@ -150,6 +156,7 @@ export default function RegisterScreen() {
             onChangeText={setPassword}
             secureTextEntry
             autoCapitalize="none"
+            autoCorrect={false}
             editable={!loading}
           />
 
@@ -165,6 +172,7 @@ export default function RegisterScreen() {
             onChangeText={setConfirmPassword}
             secureTextEntry
             autoCapitalize="none"
+            autoCorrect={false}
             editable={!loading}
           />
 
