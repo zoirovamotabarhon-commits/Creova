@@ -1,7 +1,24 @@
-export function isValidEmail(email: string) {
-  return /\S+@\S+\.\S+/.test(email);
-}
+export const isValidEmail = (email: string): boolean => {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
+    email.trim()
+  );
+};
 
-export function isValidPassword(password: string) {
-  return password.length >= 6;
-}
+export const isValidPassword = (
+  password: string
+): boolean => {
+  return password.length >= 8;
+};
+
+export const passwordsMatch = (
+  password: string,
+  confirmPassword: string
+): boolean => {
+  return password === confirmPassword;
+};
+
+export const isRequired = (
+  value: string
+): boolean => {
+  return value.trim().length > 0;
+};
