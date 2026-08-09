@@ -1,19 +1,44 @@
-import OpenAI from "npm:openai@6.49.0";
+import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 
-const openai = new OpenAI({
-  apiKey: Deno.env.get("OPENAI_API_KEY"),
-});
+const OPENAI_API_KEY =
+  Deno.env.get("OPENAI_API_KEY");
+
+const OPENAI_BASE_URL =
+  "https://api.openai.com/v1";
 
 function jsonResponse(
   body: Record<string, unknown>,
   status = 200
 ) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
+  return new Response(
+    JSON.stringify(body),
+    {
+      status,
+      headers: {
+        "Content-Type":
+          "application/json",
+      },
+    }
+  );
+}
+
+async function openAIRequest(
+  path: string,
+  options: RequestInit = {}
+) {
+  return fetch(
+    `${OPENAI_BASE_URL}${path}`,
+    {
+      ...options,
+      headers: {
+        Authorization:
+          `Bearer ${OPENAI_API_KEY}`,
+        "Content-Type":
+          "application/json",
+        ...(options.headers ?? {}),
+      },
+    }
+  );
 }
 
 Deno.serve(async (req) => {
@@ -28,58 +53,172 @@ Deno.serve(async (req) => {
       );
     }
 
-    const body = await req.json();
-
-    if (
-      typeof body?.videoId === "string" &&
-      body.videoId.trim()
-    ) {
-      const videoId = body.videoId.trim();
-
-      const video =
-        await openai.videos.retrieve(videoId);
-
-      return jsonResponse({
-        success: true,
-        videoId: video.id,
-        status: video.status,
-        progress:
-          typeof video.progress === "number"
-            ? video.progress
-            : 0,
-        error: video.error ?? null,
-      });
-    }
-
-    const prompt = body?.prompt;
-
-    if (
-      typeof prompt !== "string" ||
-      !prompt.trim()
-    ) {
+    if (!OPENAI_API_KEY) {
       return jsonResponse(
         {
           success: false,
-          error: "Prompt is required.",
+          error:
+            "OPENAI_API_KEY is not configured.",
         },
-        400
+        500
       );
     }
 
-    const video = await openai.videos.create({
-      model: "sora-2",
-      prompt: prompt.trim(),
-    });
+    const body =
+      await req.json();
 
-    return jsonResponse({
-      success: true,
-      videoId: video.id,
-      status: video.status,
-      progress:
-        typeof video.progress === "number"
-          ? video.progress
-          : 0,
-    });
+    const action =
+      typeof body?.action === "string"
+        ? body.action
+        : "create";
+
+    // CREATE VIDEO
+    if (action === "create") {
+      const prompt = body?.prompt;
+
+      if (
+        typeof prompt !== "string" ||
+        !prompt.trim()
+      ) {
+        return jsonResponse(
+          {
+            success: false,
+            error:
+              "Prompt is required.",
+          },
+          400
+        );
+      }
+
+      const response =
+        await openAIRequest(
+          "/videos",
+          {
+            method: "POST",
+            body: JSON.stringify({
+              model: "sora-2",
+              prompt:
+                prompt.trim(),
+            }),
+          }
+        );
+
+      const data =
+        await response.json();
+
+      if (!response.ok) {
+        return jsonResponse(
+          {
+            success: false,
+            error:
+              data?.error?.message ??
+              "Video generation failed.",
+          },
+          response.status
+        );
+      }
+
+      return jsonResponse({
+        success: true,
+        videoId: data.id,
+        status:
+          data.status ?? "queued",
+        progress:
+          typeof data.progress ===
+          "number"
+            ? data.progress
+            : 0,
+      });
+    }
+
+    // CHECK STATUS
+    if (action === "status") {
+      const videoId =
+        body?.videoId;
+
+      if (
+        typeof videoId !== "string" ||
+        !videoId.trim()
+      ) {
+        return jsonResponse(
+          {
+            success: false,
+            error:
+              "Video ID is required.",
+          },
+          400
+        );
+      }
+
+      const response =
+        await openAIRequest(
+          `/videos/${encodeURIComponent(
+            videoId.trim()
+          )}`,
+          {
+            method: "GET",
+          }
+        );
+
+      const data =
+        await response.json();
+
+      if (!response.ok) {
+        return jsonResponse(
+          {
+            success: false,
+            error:
+              data?.error?.message ??
+              "Unable to retrieve video status.",
+          },
+          response.status
+        );
+      }
+
+      const status =
+        data.status ?? "unknown";
+
+      if (
+        status === "failed" ||
+        status === "cancelled"
+      ) {
+        return jsonResponse({
+          success: false,
+          videoId: data.id,
+          status,
+          progress:
+            typeof data.progress ===
+            "number"
+              ? data.progress
+              : 0,
+          error:
+            data?.error?.message ??
+            `Video status: ${status}`,
+        });
+      }
+
+      return jsonResponse({
+        success: true,
+        videoId: data.id,
+        status,
+        progress:
+          typeof data.progress ===
+          "number"
+            ? data.progress
+            : status === "completed"
+              ? 100
+              : 0,
+      });
+    }
+
+    return jsonResponse(
+      {
+        success: false,
+        error:
+          "Unknown action.",
+      },
+      400
+    );
   } catch (error) {
     return jsonResponse(
       {
