@@ -1,16 +1,9 @@
 import { Redirect } from "expo-router";
-import {
-  ActivityIndicator,
-  StyleSheet,
-  View,
-} from "react-native";
+import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { useAuthContext } from "../providers/AuthProvider";
 
 export default function Index() {
-  const {
-    user,
-    loading,
-  } = useAuthContext();
+  const { isAuthenticated, loading } = useAuthContext();
 
   if (loading) {
     return (
@@ -23,15 +16,11 @@ export default function Index() {
     );
   }
 
-  if (user) {
-    return (
-      <Redirect href="/dashboard" />
-    );
+  if (isAuthenticated) {
+    return <Redirect href="/dashboard" />;
   }
 
-  return (
-    <Redirect href="/login" />
-  );
+  return <Redirect href="/login" />;
 }
 
 const styles = StyleSheet.create({
