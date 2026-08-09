@@ -55,7 +55,10 @@ export async function generateVideo(
     return {
       success: true,
       videoId: data.videoId,
-      status: data.status ?? "queued",
+      status:
+        typeof data.status === "string"
+          ? data.status
+          : "queued",
       progress:
         typeof data.progress === "number"
           ? data.progress
@@ -75,7 +78,8 @@ export async function generateVideo(
           : "Video generation failed.",
     };
   }
-  }
+}
+
 export async function getVideoStatus(
   videoId: string
 ): Promise<VideoResponse> {
@@ -111,8 +115,13 @@ export async function getVideoStatus(
       return {
         success: false,
         videoId:
-          data?.videoId ?? cleanVideoId,
-        status: data?.status,
+          typeof data?.videoId === "string"
+            ? data.videoId
+            : cleanVideoId,
+        status:
+          typeof data?.status === "string"
+            ? data.status
+            : "unknown",
         progress:
           typeof data?.progress === "number"
             ? data.progress
@@ -126,8 +135,13 @@ export async function getVideoStatus(
     return {
       success: true,
       videoId:
-        data.videoId ?? cleanVideoId,
-      status: data.status ?? "unknown",
+        typeof data.videoId === "string"
+          ? data.videoId
+          : cleanVideoId,
+      status:
+        typeof data.status === "string"
+          ? data.status
+          : "unknown",
       progress:
         typeof data.progress === "number"
           ? data.progress
