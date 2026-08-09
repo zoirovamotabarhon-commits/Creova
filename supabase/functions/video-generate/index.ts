@@ -4,28 +4,29 @@ import {
   createClient,
 } from "npm:@supabase/supabase-js@2.57.0";
 
+import {
+  corsHeaders,
+} from "npm:@supabase/supabase-js@2/cors";
+
 const OPENAI_API_KEY =
-  Deno.env.get(
-    "OPENAI_API_KEY"
-  );
+  Deno.env.get("OPENAI_API_KEY");
 
 const SUPABASE_URL =
-  Deno.env.get(
-    "SUPABASE_URL"
-  );
+  Deno.env.get("SUPABASE_URL");
 
 const SUPABASE_SECRET_KEYS =
-  Deno.env.get(
-    "SUPABASE_SECRET_KEYS"
-  );
+  Deno.env.get("SUPABASE_SECRET_KEYS");
 
 const OPENAI_BASE_URL =
   "https://api.openai.com/v1";
 
 const VIDEO_BUCKET = "videos";
 
+type JsonObject =
+  Record<string, unknown>;
+
 function jsonResponse(
-  body: Record<string, unknown>,
+  body: JsonObject,
   status = 200
 ) {
   return new Response(
@@ -33,6 +34,7 @@ function jsonResponse(
     {
       status,
       headers: {
+        ...corsHeaders,
         "Content-Type":
           "application/json",
       },
@@ -40,7 +42,7 @@ function jsonResponse(
   );
 }
 
-function getSecretKey() {
+function getDefaultSecretKey(): string {
   if (!SUPABASE_SECRET_KEYS) {
     throw new Error(
       "SUPABASE_SECRET_KEYS is not configured."
@@ -48,24 +50,24 @@ function getSecretKey() {
   }
 
   try {
-    const parsed =
-      JSON.parse(
-        SUPABASE_SECRET_KEYS
-      );
+    const keys = JSON.parse(
+      SUPABASE_SECRET_KEYS
+    ) as Record<string, unknown>;
 
-    const key =
-      parsed?.default;
+    const defaultKey =
+      keys.default;
 
     if (
-      typeof key !== "string" ||
-      !key.trim()
+      typeof defaultKey !==
+        "string" ||
+      !defaultKey.trim()
     ) {
       throw new Error(
         "Default Supabase secret key is missing."
       );
     }
 
-    return key;
+    return defaultKey;
   } catch (error) {
     throw new Error(
       error instanceof Error
@@ -75,7 +77,7 @@ function getSecretKey() {
   }
 }
 
-function getSupabaseAdmin() {
+function getAdminClient() {
   if (!SUPABASE_URL) {
     throw new Error(
       "SUPABASE_URL is not configured."
@@ -84,7 +86,7 @@ function getSupabaseAdmin() {
 
   return createClient(
     SUPABASE_URL,
-    getSecretKey(),
+    getDefaultSecretKey(),
     {
       auth: {
         autoRefreshToken: false,
@@ -92,6 +94,61 @@ function getSupabaseAdmin() {
       },
     }
   );
+}
+
+async function requireUser(
+  req: Request
+) {
+  const authorization =
+    req.headers.get(
+      "Authorization"
+    );
+
+  if (
+    !authorization ||
+    !authorization
+      .startsWith("Bearer ")
+  ) {
+    throw new Error(
+      "Authentication required."
+    );
+  }
+
+  const token =
+    authorization
+      .replace(
+        "Bearer ",
+        ""
+      )
+      .trim();
+
+  if (!token) {
+    throw new Error(
+      "Authentication token is missing."
+    );
+  }
+
+  const supabase =
+    getAdminClient();
+
+  const {
+    data,
+    error,
+  } =
+    await supabase.auth.getUser(
+      token
+    );
+
+  if (
+    error ||
+    !data.user
+  ) {
+    throw new Error(
+      "Invalid or expired authentication token."
+    );
+  }
+
+  return data.user;
 }
 
 async function openAIRequest(
@@ -104,28 +161,55 @@ async function openAIRequest(
     );
   }
 
+  const headers =
+    new Headers(
+      options.headers
+    );
+
+  headers.set(
+    "Authorization",
+    `Bearer ${OPENAI_API_KEY}`
+  );
+
   return fetch(
     `${OPENAI_BASE_URL}${path}`,
     {
       ...options,
-      headers: {
-        Authorization:
-          `Bearer ${OPENAI_API_KEY}`,
-        ...(options.headers ?? {}),
-      },
+      headers,
     }
   );
 }
 
+async function readOpenAIJson(
+  response: Response
+) {
+  const text =
+    await response.text();
+
+  if (!text) {
+    return {};
+  }
+
+  try {
+    return JSON.parse(
+      text
+    ) as JsonObject;
+  } catch {
+    return {
+      raw: text,
+    };
+  }
+}
+
 async function ensureVideoBucket() {
-  const supabaseAdmin =
-    getSupabaseAdmin();
+  const supabase =
+    getAdminClient();
 
   const {
     data,
     error,
   } =
-    await supabaseAdmin.storage
+    await supabase.storage
       .listBuckets();
 
   if (error) {
@@ -148,7 +232,7 @@ async function ensureVideoBucket() {
   const {
     error: createError,
   } =
-    await supabaseAdmin.storage
+    await supabase.storage
       .createBucket(
         VIDEO_BUCKET,
         {
@@ -168,7 +252,7 @@ async function ensureVideoBucket() {
       )
   ) {
     throw new Error(
-      createError.message
+      `Unable to create video bucket: ${createError.message}`
     );
   }
 }
@@ -193,38 +277,61 @@ async function downloadAndStoreVideo(
     );
 
   if (!response.ok) {
-    const text =
-      await response.text();
+    const errorData =
+      await readOpenAIJson(
+        response
+      );
+
+    const message =
+      typeof errorData?.error ===
+        "object" &&
+      errorData.error !== null &&
+      "message" in
+        errorData.error
+        ? String(
+            (
+              errorData.error as {
+                message?: unknown;
+              }
+            ).message ??
+              "Unable to download video."
+          )
+        : typeof errorData.raw ===
+          "string"
+        ? errorData.raw
+        : `MP4 download failed with status ${response.status}.`;
 
     throw new Error(
-      text ||
-        `MP4 download failed with status ${response.status}.`
+      message
     );
   }
 
-  const buffer =
+  const videoBuffer =
     await response.arrayBuffer();
 
-  if (!buffer.byteLength) {
+  if (
+    videoBuffer.byteLength ===
+    0
+  ) {
     throw new Error(
       "Generated MP4 is empty."
     );
   }
 
-  const supabaseAdmin =
-    getSupabaseAdmin();
+  const supabase =
+    getAdminClient();
 
-  const path =
+  const storagePath =
     `${videoId}.mp4`;
 
   const {
     error: uploadError,
   } =
-    await supabaseAdmin.storage
+    await supabase.storage
       .from(VIDEO_BUCKET)
       .upload(
-        path,
-        buffer,
+        storagePath,
+        videoBuffer,
         {
           contentType:
             "video/mp4",
@@ -240,21 +347,22 @@ async function downloadAndStoreVideo(
 
   const {
     data,
-    error,
+    error:
+      signedUrlError,
   } =
-    await supabaseAdmin.storage
+    await supabase.storage
       .from(VIDEO_BUCKET)
       .createSignedUrl(
-        path,
+        storagePath,
         3600
       );
 
   if (
-    error ||
+    signedUrlError ||
     !data?.signedUrl
   ) {
     throw new Error(
-      error?.message ??
+      signedUrlError?.message ??
         "Unable to create signed MP4 URL."
     );
   }
@@ -264,24 +372,35 @@ async function downloadAndStoreVideo(
 
 Deno.serve(
   async (req) => {
-    try {
-      if (
-        req.method !==
-        "POST"
-      ) {
-        return jsonResponse(
-          {
-            success: false,
-            error:
-              "Method not allowed.",
-          },
-          405
-        );
-      }
+    if (
+      req.method ===
+      "OPTIONS"
+    ) {
+      return new Response(
+        "ok",
+        {
+          headers:
+            corsHeaders,
+        }
+      );
+    }
 
-      if (
-        !OPENAI_API_KEY
-      ) {
+    if (
+      req.method !==
+      "POST"
+    ) {
+      return jsonResponse(
+        {
+          success: false,
+          error:
+            "Method not allowed.",
+        },
+        405
+      );
+    }
+
+    try {
+      if (!OPENAI_API_KEY) {
         return jsonResponse(
           {
             success: false,
@@ -306,21 +425,41 @@ Deno.serve(
         );
       }
 
-      const body =
-        await req.json();
+      await requireUser(
+        req
+      );
+
+      let body: JsonObject;
+
+      try {
+        body =
+          (await req.json()) as JsonObject;
+      } catch {
+        return jsonResponse(
+          {
+            success: false,
+            error:
+              "Invalid JSON request body.",
+          },
+          400
+        );
+      }
 
       const action =
-        typeof body?.action ===
+        typeof body.action ===
         "string"
           ? body.action
           : "";
 
+      /*
+       * CREATE VIDEO
+       */
       if (
         action ===
         "create"
       ) {
         const prompt =
-          body?.prompt;
+          body.prompt;
 
         if (
           typeof prompt !==
@@ -361,20 +500,56 @@ Deno.serve(
           );
 
         const data =
-          await response.json();
+          await readOpenAIJson(
+            response
+          );
 
         if (
           !response.ok
+        ) {
+          const errorObject =
+            data.error;
+
+          const message =
+            typeof errorObject ===
+              "object" &&
+            errorObject !==
+              null &&
+            "message" in
+              errorObject
+              ? String(
+                  (
+                    errorObject as {
+                      message?: unknown;
+                    }
+                  ).message ??
+                    "Video generation failed."
+                )
+              : typeof data.raw ===
+                "string"
+              ? data.raw
+              : "Video generation failed.";
+
+          return jsonResponse(
+            {
+              success: false,
+              error: message,
+            },
+            response.status
+          );
+        }
+
+        if (
+          typeof data.id !==
+          "string"
         ) {
           return jsonResponse(
             {
               success: false,
               error:
-                data?.error
-                  ?.message ??
-                "Video generation failed.",
+                "OpenAI did not return a video ID.",
             },
-            response.status
+            502
           );
         }
 
@@ -383,8 +558,10 @@ Deno.serve(
           videoId:
             data.id,
           status:
-            data.status ??
-            "queued",
+            typeof data.status ===
+            "string"
+              ? data.status
+              : "queued",
           progress:
             typeof data.progress ===
             "number"
@@ -393,12 +570,15 @@ Deno.serve(
         });
       }
 
+      /*
+       * CHECK VIDEO STATUS
+       */
       if (
         action ===
         "status"
       ) {
         const videoId =
-          body?.videoId;
+          body.videoId;
 
         if (
           typeof videoId !==
@@ -430,31 +610,65 @@ Deno.serve(
           );
 
         const data =
-          await response.json();
+          await readOpenAIJson(
+            response
+          );
 
         if (
           !response.ok
         ) {
+          const errorObject =
+            data.error;
+
+          const message =
+            typeof errorObject ===
+              "object" &&
+            errorObject !==
+              null &&
+            "message" in
+              errorObject
+              ? String(
+                  (
+                    errorObject as {
+                      message?: unknown;
+                    }
+                  ).message ??
+                    "Unable to retrieve video status."
+                )
+              : typeof data.raw ===
+                "string"
+              ? data.raw
+              : "Unable to retrieve video status.";
+
           return jsonResponse(
             {
               success: false,
-              error:
-                data?.error
-                  ?.message ??
-                "Unable to retrieve video status.",
+              videoId: id,
+              error: message,
             },
             response.status
           );
         }
 
         const status =
-          data.status ??
-          "unknown";
+          typeof data.status ===
+          "string"
+            ? data.status
+            : "unknown";
 
         const progress =
           typeof data.progress ===
           "number"
-            ? data.progress
+            ? Math.max(
+                0,
+                Math.min(
+                  100,
+                  data.progress
+                )
+              )
+            : status ===
+              "completed"
+            ? 100
             : 0;
 
         if (
@@ -463,6 +677,26 @@ Deno.serve(
           status ===
             "cancelled"
         ) {
+          const errorObject =
+            data.error;
+
+          const errorMessage =
+            typeof errorObject ===
+              "object" &&
+            errorObject !==
+              null &&
+            "message" in
+              errorObject
+              ? String(
+                  (
+                    errorObject as {
+                      message?: unknown;
+                    }
+                  ).message ??
+                    `Video status: ${status}`
+                )
+              : `Video status: ${status}`;
+
           return jsonResponse({
             success: false,
             videoId:
@@ -470,9 +704,7 @@ Deno.serve(
             status,
             progress,
             error:
-              data?.error
-                ?.message ??
-              `Video status: ${status}`,
+              errorMessage,
           });
         }
 
@@ -488,7 +720,7 @@ Deno.serve(
           return jsonResponse({
             success: true,
             videoId:
-              id,
+              data.id ?? id,
             status:
               "completed",
             progress: 100,
@@ -509,7 +741,7 @@ Deno.serve(
         {
           success: false,
           error:
-            "Unknown action.",
+            "Unknown action. Use 'create' or 'status'.",
         },
         400
       );
