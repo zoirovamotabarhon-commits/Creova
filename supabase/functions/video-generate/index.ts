@@ -4,10 +4,6 @@ import {
   createClient,
 } from "npm:@supabase/supabase-js@2.57.0";
 
-import {
-  corsHeaders,
-} from "npm:@supabase/supabase-js@2/cors";
-
 const OPENAI_API_KEY =
   Deno.env.get("OPENAI_API_KEY");
 
@@ -20,7 +16,18 @@ const SUPABASE_SECRET_KEYS =
 const OPENAI_BASE_URL =
   "https://api.openai.com/v1";
 
-const VIDEO_BUCKET = "videos";
+const VIDEO_BUCKET =
+  "videos";
+
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods":
+    "POST, OPTIONS",
+  "Content-Type":
+    "application/json",
+};
 
 type JsonObject =
   Record<string, unknown>;
@@ -28,16 +35,13 @@ type JsonObject =
 function jsonResponse(
   body: JsonObject,
   status = 200
-) {
+): Response {
   return new Response(
     JSON.stringify(body),
     {
       status,
-      headers: {
-        ...corsHeaders,
-        "Content-Type":
-          "application/json",
-      },
+      headers:
+        CORS_HEADERS,
     }
   );
 }
@@ -50,9 +54,10 @@ function getDefaultSecretKey(): string {
   }
 
   try {
-    const keys = JSON.parse(
-      SUPABASE_SECRET_KEYS
-    ) as Record<string, unknown>;
+    const keys =
+      JSON.parse(
+        SUPABASE_SECRET_KEYS
+      ) as Record<string, unknown>;
 
     const defaultKey =
       keys.default;
@@ -67,7 +72,7 @@ function getDefaultSecretKey(): string {
       );
     }
 
-    return defaultKey;
+    return defaultKey.trim();
   } catch (error) {
     throw new Error(
       error instanceof Error
@@ -106,8 +111,9 @@ async function requireUser(
 
   if (
     !authorization ||
-    !authorization
-      .startsWith("Bearer ")
+    !authorization.startsWith(
+      "Bearer "
+    )
   ) {
     throw new Error(
       "Authentication required."
@@ -116,10 +122,7 @@ async function requireUser(
 
   const token =
     authorization
-      .replace(
-        "Bearer ",
-        ""
-      )
+      .slice("Bearer ".length)
       .trim();
 
   if (!token) {
@@ -154,7 +157,7 @@ async function requireUser(
 async function openAIRequest(
   path: string,
   options: RequestInit = {}
-) {
+): Promise<Response> {
   if (!OPENAI_API_KEY) {
     throw new Error(
       "OPENAI_API_KEY is not configured."
@@ -182,7 +185,7 @@ async function openAIRequest(
 
 async function readOpenAIJson(
   response: Response
-) {
+): Promise<JsonObject> {
   const text =
     await response.text();
 
@@ -199,6 +202,45 @@ async function readOpenAIJson(
       raw: text,
     };
   }
+}
+
+function getErrorMessage(
+  data: JsonObject,
+  fallback: string
+): string {
+  const errorObject =
+    data.error;
+
+  if (
+    typeof errorObject ===
+      "object" &&
+    errorObject !== null &&
+    "message" in
+      errorObject
+  ) {
+    const message =
+      (
+        errorObject as {
+          message?: unknown;
+        }
+      ).message;
+
+    if (
+      typeof message ===
+      "string"
+    ) {
+      return message;
+    }
+  }
+
+  if (
+    typeof data.raw ===
+    "string"
+  ) {
+    return data.raw;
+  }
+
+  return fallback;
 }
 
 async function ensureVideoBucket() {
@@ -230,7 +272,8 @@ async function ensureVideoBucket() {
   }
 
   const {
-    error: createError,
+    error:
+      createError,
   } =
     await supabase.storage
       .createBucket(
@@ -259,7 +302,7 @@ async function ensureVideoBucket() {
 
 async function downloadAndStoreVideo(
   videoId: string
-) {
+): Promise<string> {
   await ensureVideoBucket();
 
   const response =
@@ -282,27 +325,11 @@ async function downloadAndStoreVideo(
         response
       );
 
-    const message =
-      typeof errorData?.error ===
-        "object" &&
-      errorData.error !== null &&
-      "message" in
-        errorData.error
-        ? String(
-            (
-              errorData.error as {
-                message?: unknown;
-              }
-            ).message ??
-              "Unable to download video."
-          )
-        : typeof errorData.raw ===
-          "string"
-        ? errorData.raw
-        : `MP4 download failed with status ${response.status}.`;
-
     throw new Error(
-      message
+      getErrorMessage(
+        errorData,
+        `MP4 download failed with status ${response.status}.`
+      )
     );
   }
 
@@ -325,10 +352,13 @@ async function downloadAndStoreVideo(
     `${videoId}.mp4`;
 
   const {
-    error: uploadError,
+    error:
+      uploadError,
   } =
     await supabase.storage
-      .from(VIDEO_BUCKET)
+      .from(
+        VIDEO_BUCKET
+      )
       .upload(
         storagePath,
         videoBuffer,
@@ -351,7 +381,9 @@ async function downloadAndStoreVideo(
       signedUrlError,
   } =
     await supabase.storage
-      .from(VIDEO_BUCKET)
+      .from(
+        VIDEO_BUCKET
+      )
       .createSignedUrl(
         storagePath,
         3600
@@ -379,8 +411,9 @@ Deno.serve(
       return new Response(
         "ok",
         {
+          status: 200,
           headers:
-            corsHeaders,
+            CORS_HEADERS,
         }
       );
     }
@@ -451,9 +484,6 @@ Deno.serve(
           ? body.action
           : "";
 
-      /*
-       * CREATE VIDEO
-       */
       if (
         action ===
         "create"
@@ -495,7 +525,8 @@ Deno.serve(
             {
               method:
                 "POST",
-              body: form,
+              body:
+                form,
             }
           );
 
@@ -507,33 +538,14 @@ Deno.serve(
         if (
           !response.ok
         ) {
-          const errorObject =
-            data.error;
-
-          const message =
-            typeof errorObject ===
-              "object" &&
-            errorObject !==
-              null &&
-            "message" in
-              errorObject
-              ? String(
-                  (
-                    errorObject as {
-                      message?: unknown;
-                    }
-                  ).message ??
-                    "Video generation failed."
-                )
-              : typeof data.raw ===
-                "string"
-              ? data.raw
-              : "Video generation failed.";
-
           return jsonResponse(
             {
               success: false,
-              error: message,
+              error:
+                getErrorMessage(
+                  data,
+                  "Video generation failed."
+                ),
             },
             response.status
           );
@@ -570,9 +582,6 @@ Deno.serve(
         });
       }
 
-      /*
-       * CHECK VIDEO STATUS
-       */
       if (
         action ===
         "status"
@@ -617,34 +626,16 @@ Deno.serve(
         if (
           !response.ok
         ) {
-          const errorObject =
-            data.error;
-
-          const message =
-            typeof errorObject ===
-              "object" &&
-            errorObject !==
-              null &&
-            "message" in
-              errorObject
-              ? String(
-                  (
-                    errorObject as {
-                      message?: unknown;
-                    }
-                  ).message ??
-                    "Unable to retrieve video status."
-                )
-              : typeof data.raw ===
-                "string"
-              ? data.raw
-              : "Unable to retrieve video status.";
-
           return jsonResponse(
             {
               success: false,
-              videoId: id,
-              error: message,
+              videoId:
+                id,
+              error:
+                getErrorMessage(
+                  data,
+                  "Unable to retrieve video status."
+                ),
             },
             response.status
           );
@@ -677,26 +668,6 @@ Deno.serve(
           status ===
             "cancelled"
         ) {
-          const errorObject =
-            data.error;
-
-          const errorMessage =
-            typeof errorObject ===
-              "object" &&
-            errorObject !==
-              null &&
-            "message" in
-              errorObject
-              ? String(
-                  (
-                    errorObject as {
-                      message?: unknown;
-                    }
-                  ).message ??
-                    `Video status: ${status}`
-                )
-              : `Video status: ${status}`;
-
           return jsonResponse({
             success: false,
             videoId:
@@ -704,7 +675,10 @@ Deno.serve(
             status,
             progress,
             error:
-              errorMessage,
+              getErrorMessage(
+                data,
+                `Video status: ${status}`
+              ),
           });
         }
 
@@ -723,7 +697,8 @@ Deno.serve(
               data.id ?? id,
             status:
               "completed",
-            progress: 100,
+            progress:
+              100,
             videoUrl,
           });
         }
@@ -746,6 +721,11 @@ Deno.serve(
         400
       );
     } catch (error) {
+      console.error(
+        "video-generate error:",
+        error
+      );
+
       return jsonResponse(
         {
           success: false,
