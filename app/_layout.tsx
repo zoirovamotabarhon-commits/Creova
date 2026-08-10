@@ -1,9 +1,30 @@
-import { usePathname, Redirect, Stack } from "expo-router";
-import { ActivityIndicator, StyleSheet, View } from "react-native";
-import { AuthProvider, useAuthContext } from "../providers/AuthProvider";
-import { ThemeProvider, useTheme } from "../hooks/useTheme";
+import {
+  Redirect,
+  Stack,
+  usePathname,
+} from "expo-router";
+import {
+  ActivityIndicator,
+  StyleSheet,
+  View,
+} from "react-native";
 
-const PUBLIC_ROUTES = ["/login", "/register", "/forgot-password"];
+import {
+  AuthProvider,
+  useAuthContext,
+} from "../providers/AuthProvider";
+
+import {
+  ThemeProvider,
+  useTheme,
+} from "../hooks/useTheme";
+
+const PUBLIC_ROUTES = [
+  "/login",
+  "/register",
+  "/forgot-password",
+];
+
 const PROTECTED_ROUTES = [
   "/dashboard",
   "/ai-chat",
@@ -16,45 +37,87 @@ const PROTECTED_ROUTES = [
   "/settings",
 ];
 
-function matchesPath(pathname: string, route: string) {
-  return pathname === route || pathname.startsWith(`${route}/`);
+function matchesPath(
+  pathname: string,
+  route: string
+) {
+  return (
+    pathname === route ||
+    pathname.startsWith(`${route}/`)
+  );
 }
 
 function AppShell() {
   const pathname = usePathname();
-  const { isAuthenticated, loading: authLoading } = useAuthContext();
-  const { colors, loading: themeLoading } = useTheme();
 
-  if (authLoading || themeLoading) {
+  const {
+    isAuthenticated,
+    loading: authLoading,
+  } = useAuthContext();
+
+  const {
+    colors,
+    loading: themeLoading,
+  } = useTheme();
+
+  if (
+    authLoading ||
+    themeLoading
+  ) {
     return (
       <View
         style={[
           styles.loadingContainer,
-          { backgroundColor: colors.background },
+          {
+            backgroundColor:
+              colors.background,
+          },
         ]}
       >
-        <ActivityIndicator size="large" color={colors.primary} />
+        <ActivityIndicator
+          size="large"
+          color={colors.primary}
+        />
       </View>
     );
   }
 
   if (pathname === "/") {
-    return <Redirect href={isAuthenticated ? "/dashboard" : "/login"} />;
+    return (
+      <Redirect
+        href={
+          isAuthenticated
+            ? "/dashboard"
+            : "/login"
+        }
+      />
+    );
   }
 
-  const onPublicRoute = PUBLIC_ROUTES.some((route) =>
-    matchesPath(pathname, route)
-  );
-  const onProtectedRoute = PROTECTED_ROUTES.some((route) =>
-    matchesPath(pathname, route)
-  );
+  const onPublicRoute =
+    PUBLIC_ROUTES.some((route) =>
+      matchesPath(pathname, route)
+    );
 
-  if (!isAuthenticated && onProtectedRoute) {
+  const onProtectedRoute =
+    PROTECTED_ROUTES.some((route) =>
+      matchesPath(pathname, route)
+    );
+
+  if (
+    !isAuthenticated &&
+    onProtectedRoute
+  ) {
     return <Redirect href="/login" />;
   }
 
-  if (isAuthenticated && onPublicRoute) {
-    return <Redirect href="/dashboard" />;
+  if (
+    isAuthenticated &&
+    onPublicRoute
+  ) {
+    return (
+      <Redirect href="/dashboard" />
+    );
   }
 
   return (
@@ -62,7 +125,8 @@ function AppShell() {
       screenOptions={{
         headerShown: false,
         contentStyle: {
-          backgroundColor: colors.background,
+          backgroundColor:
+            colors.background,
         },
       }}
     />
