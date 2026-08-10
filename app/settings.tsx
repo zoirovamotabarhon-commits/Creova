@@ -1,4 +1,7 @@
-import { useEffect, useState } from "react";
+import {
+  useEffect,
+  useState,
+} from "react";
 import {
   Alert,
   StyleSheet,
@@ -7,6 +10,7 @@ import {
   View,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+
 import { STORAGE_KEYS } from "../utils/storageKeys";
 import { useTheme } from "../hooks/useTheme";
 
@@ -20,63 +24,91 @@ export default function SettingsScreen() {
     setThemeMode,
   } = useTheme();
 
-  const [notifications, setNotifications] =
-    useState(DEFAULT_NOTIFICATIONS);
-  const [notificationsLoading, setNotificationsLoading] =
-    useState(true);
+  const [
+    notifications,
+    setNotifications,
+  ] = useState(
+    DEFAULT_NOTIFICATIONS
+  );
+
+  const [
+    notificationsLoading,
+    setNotificationsLoading,
+  ] = useState(true);
 
   useEffect(() => {
+    const loadNotifications =
+      async () => {
+        try {
+          const saved =
+            await AsyncStorage.getItem(
+              STORAGE_KEYS.NOTIFICATIONS
+            );
+
+          if (saved !== null) {
+            setNotifications(
+              saved === "true"
+            );
+          }
+        } catch {
+          Alert.alert(
+            "CREOVA",
+            "Созламаларни юклашда хато юз берди."
+          );
+        } finally {
+          setNotificationsLoading(
+            false
+          );
+        }
+      };
+
     void loadNotifications();
   }, []);
 
-  const loadNotifications = async () => {
-    try {
-      const savedNotifications = await AsyncStorage.getItem(
-        STORAGE_KEYS.NOTIFICATIONS
-      );
+  const handleThemeChange = (
+    value: boolean
+  ) => {
+    void setThemeMode(
+      value ? "dark" : "light"
+    );
+  };
 
-      if (savedNotifications !== null) {
-        setNotifications(savedNotifications === "true");
+  const handleNotificationsChange =
+    async (value: boolean) => {
+      setNotifications(value);
+
+      try {
+        await AsyncStorage.setItem(
+          STORAGE_KEYS.NOTIFICATIONS,
+          String(value)
+        );
+      } catch {
+        Alert.alert(
+          "CREOVA",
+          "Notification созламасини сақлашда хато юз берди."
+        );
       }
-    } catch {
-      Alert.alert(
-        "CREOVA",
-        "Созламаларни юклашда хато юз берди."
-      );
-    } finally {
-      setNotificationsLoading(false);
-    }
-  };
+    };
 
-  const handleThemeChange = (value: boolean) => {
-    void setThemeMode(value ? "dark" : "light");
-  };
-
-  const handleNotificationsChange = async (value: boolean) => {
-    setNotifications(value);
-
-    try {
-      await AsyncStorage.setItem(
-        STORAGE_KEYS.NOTIFICATIONS,
-        String(value)
-      );
-    } catch {
-      Alert.alert(
-        "CREOVA",
-        "Notification созламасини сақлашда хато юз берди."
-      );
-    }
-  };
-
-  if (themeLoading || notificationsLoading) {
+  if (
+    themeLoading ||
+    notificationsLoading
+  ) {
     return (
       <View
         style={[
           styles.loading,
-          { backgroundColor: colors.background },
+          {
+            backgroundColor:
+              colors.background,
+          },
         ]}
       >
-        <Text style={{ color: colors.text }}>
+        <Text
+          style={{
+            color: colors.text,
+          }}
+        >
           Юкланмоқда...
         </Text>
       </View>
@@ -87,10 +119,20 @@ export default function SettingsScreen() {
     <View
       style={[
         styles.container,
-        { backgroundColor: colors.background },
+        {
+          backgroundColor:
+            colors.background,
+        },
       ]}
     >
-      <Text style={[styles.title, { color: colors.text }]}>
+      <Text
+        style={[
+          styles.title,
+          {
+            color: colors.text,
+          },
+        ]}
+      >
         Созламалар
       </Text>
 
@@ -98,20 +140,36 @@ export default function SettingsScreen() {
         style={[
           styles.card,
           {
-            backgroundColor: colors.card,
-            borderColor: colors.border,
+            backgroundColor:
+              colors.card,
+            borderColor:
+              colors.border,
           },
         ]}
       >
         <View style={styles.row}>
-          <View style={styles.textBlock}>
-            <Text style={[styles.label, { color: colors.text }]}>
+          <View
+            style={styles.textBlock}
+          >
+            <Text
+              style={[
+                styles.label,
+                {
+                  color:
+                    colors.text,
+                },
+              ]}
+            >
               Dark Mode
             </Text>
+
             <Text
               style={[
                 styles.description,
-                { color: colors.mutedText },
+                {
+                  color:
+                    colors.mutedText,
+                },
               ]}
             >
               Қоронғи интерфейсни ишлатиш
@@ -120,7 +178,9 @@ export default function SettingsScreen() {
 
           <Switch
             value={darkMode}
-            onValueChange={handleThemeChange}
+            onValueChange={
+              handleThemeChange
+            }
             trackColor={{
               false: colors.border,
               true: colors.primary,
@@ -129,17 +189,39 @@ export default function SettingsScreen() {
           />
         </View>
 
-        <View style={[styles.divider, { backgroundColor: colors.border }]} />
+        <View
+          style={[
+            styles.divider,
+            {
+              backgroundColor:
+                colors.border,
+            },
+          ]}
+        />
 
         <View style={styles.row}>
-          <View style={styles.textBlock}>
-            <Text style={[styles.label, { color: colors.text }]}>
+          <View
+            style={styles.textBlock}
+          >
+            <Text
+              style={[
+                styles.label,
+                {
+                  color:
+                    colors.text,
+                },
+              ]}
+            >
               Notifications
             </Text>
+
             <Text
               style={[
                 styles.description,
-                { color: colors.mutedText },
+                {
+                  color:
+                    colors.mutedText,
+                },
               ]}
             >
               Билдиришномаларни қабул қилиш
@@ -148,7 +230,9 @@ export default function SettingsScreen() {
 
           <Switch
             value={notifications}
-            onValueChange={handleNotificationsChange}
+            onValueChange={
+              handleNotificationsChange
+            }
             trackColor={{
               false: colors.border,
               true: colors.primary,
