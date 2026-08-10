@@ -26,11 +26,11 @@ Generate production-quality code based on the user's request.
 Rules:
 - Return only the code.
 - Do not add explanations before or after the code.
-- Use TypeScript/TSX when the request is for React Native or Expo.
+- Use TypeScript/TSX for React Native or Expo requests.
 - Keep the code complete and runnable.
 - Do not use fake API keys or secrets.
 - Do not invent unavailable project files.
-- If the request depends on an existing service, clearly use the existing service contract.
+- Respect existing project service contracts.
 `.trim();
 
   try {
@@ -70,10 +70,12 @@ Rules:
       };
     }
 
-    if (
-      typeof data.text !== "string" ||
-      !data.text.trim()
-    ) {
+    const code =
+      typeof data.message === "string"
+        ? data.message.trim()
+        : "";
+
+    if (!code) {
       return {
         success: false,
         error:
@@ -83,7 +85,7 @@ Rules:
 
     return {
       success: true,
-      code: data.text.trim(),
+      code,
     };
   } catch (error) {
     return {
