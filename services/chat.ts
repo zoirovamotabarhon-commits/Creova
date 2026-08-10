@@ -6,24 +6,37 @@ export interface ChatResponse {
   error?: string;
 }
 
-export const sendMessage = async (
+export async function sendMessage(
   message: string
-): Promise<ChatResponse> => {
+): Promise<ChatResponse> {
+  const cleanMessage = message.trim();
+
+  if (!cleanMessage) {
+    return {
+      success: false,
+      error: "Message is required.",
+    };
+  }
+
   try {
-    const response = await generateAIText({
-      prompt: message,
-    });
+    const response =
+      await generateAIText({
+        prompt: cleanMessage,
+      });
 
     if (!response.success) {
       return {
         success: false,
-        error: response.error ?? "Unknown error",
+        error:
+          response.error ??
+          "AI request failed.",
       };
     }
 
     return {
       success: true,
-      message: response.text ?? "",
+      message:
+        response.message ?? "",
     };
   } catch (error) {
     return {
@@ -31,7 +44,7 @@ export const sendMessage = async (
       error:
         error instanceof Error
           ? error.message
-          : "Unknown error",
+          : "Unexpected chat error.",
     };
   }
-};
+}
