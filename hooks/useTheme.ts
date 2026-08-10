@@ -1,106 +1,76 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Theme } from "../constants/theme";
-import { STORAGE_KEYS } from "../utils/storageKeys";
+import {
+  useContext,
+  createContext,
+  type ReactNode,
+} from "react";
 
-export type ThemeMode = keyof typeof Theme;
+export type ThemeMode =
+  | "light"
+  | "dark"
+  | "system";
 
-type ThemeContextValue = {
-  themeMode: ThemeMode;
-  darkMode: boolean;
-  colors: (typeof Theme)[ThemeMode];
-  loading: boolean;
-  setThemeMode: (mode: ThemeMode) => Promise<void>;
-  toggleTheme: () => Promise<void>;
-};
+export interface ThemeContextValue {
+  mode: ThemeMode;
+  isDark: boolean;
+  setMode: (mode: ThemeMode) => void;
+  toggleTheme: () => void;
+}
 
-const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
+const ThemeContext =
+  createContext<ThemeContextValue | undefined>(
+    undefined
+  );
 
 export function ThemeProvider({
   children,
+  mode = "system",
 }: {
-  children: React.ReactNode;
+  children: ReactNode;
+  mode?: ThemeMode;
 }) {
-  const [themeMode, setThemeModeState] =
-    useState<ThemeMode>("dark");
-  const [loading, setLoading] = useState(true);
+  const isDark =
+    mode === "dark";
 
-  useEffect(() => {
-    let mounted = true;
+  const setMode = (
+    nextMode: ThemeMode
+  ) => {
+    console.log(
+      "Theme mode:",
+      nextMode
+    );
+  };
 
-    const loadTheme = async () => {
-      try {
-        const savedTheme = await AsyncStorage.getItem(
-          STORAGE_KEYS.THEME
-        );
-
-        if (
-          mounted &&
-          (savedTheme === "light" || savedTheme === "dark")
-        ) {
-          setThemeModeState(savedTheme);
-        }
-      } catch (error) {
-        console.warn("Failed to load theme:", error);
-      } finally {
-        if (mounted) {
-          setLoading(false);
-        }
-      }
-    };
-
-    void loadTheme();
-
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
-  const setThemeMode = useCallback(
-    async (mode: ThemeMode) => {
-      setThemeModeState(mode);
-
-      try {
-        await AsyncStorage.setItem(STORAGE_KEYS.THEME, mode);
-      } catch (error) {
-        console.warn("Failed to save theme:", error);
-      }
-    },
-    []
-  );
-
-  const toggleTheme = useCallback(async () => {
-    const nextMode: ThemeMode =
-      themeMode === "dark" ? "light" : "dark";
-
-    await setThemeMode(nextMode);
-  }, [setThemeMode, themeMode]);
-
-  const value = useMemo(
-    () => ({
-      themeMode,
-      darkMode: themeMode === "dark",
-      colors: Theme[themeMode],
-      loading,
-      setThemeMode,
-      toggleTheme,
-    }),
-    [themeMode, loading, setThemeMode, toggleTheme]
-  );
+  const toggleTheme = () => {
+    setMode(
+      isDark
+        ? "light"
+        : "dark"
+    );
+  };
 
   return (
-    <ThemeContext.Provider value={value}>
+    <ThemeContext.Provider
+      value={{
+        mode,
+        isDark,
+        setMode,
+        toggleTheme,
+      }}
+    >
       {children}
     </ThemeContext.Provider>
   );
 }
 
-export function useTheme() {
-  const context = useContext(ThemeContext);
+export function useTheme(): ThemeContextValue {
+  const context =
+    useContext(ThemeContext);
 
   if (!context) {
-    throw new Error("useTheme must be used inside ThemeProvider.");
+    throw new Error(
+      "useTheme must be used inside ThemeProvider."
+    );
   }
 
   return context;
-    }
+}
