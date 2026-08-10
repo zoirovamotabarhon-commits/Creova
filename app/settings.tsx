@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import {
   Alert,
-  Pressable,
   StyleSheet,
   Switch,
   Text,
@@ -9,50 +8,35 @@ import {
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { STORAGE_KEYS } from "../utils/storageKeys";
+import { useTheme } from "../hooks/useTheme";
 
-type ThemeMode = "light" | "dark";
-
-const DEFAULT_THEME: ThemeMode = "dark";
 const DEFAULT_NOTIFICATIONS = true;
 
 export default function SettingsScreen() {
-  const [theme, setTheme] =
-    useState<ThemeMode>(DEFAULT_THEME);
+  const {
+    darkMode,
+    colors,
+    loading: themeLoading,
+    setThemeMode,
+  } = useTheme();
 
   const [notifications, setNotifications] =
     useState(DEFAULT_NOTIFICATIONS);
-
-  const [loading, setLoading] = useState(true);
+  const [notificationsLoading, setNotificationsLoading] =
+    useState(true);
 
   useEffect(() => {
-    void loadSettings();
+    void loadNotifications();
   }, []);
 
-  const loadSettings = async () => {
+  const loadNotifications = async () => {
     try {
-      const [
-        savedTheme,
-        savedNotifications,
-      ] = await Promise.all([
-        AsyncStorage.getItem(
-          STORAGE_KEYS.THEME
-        ),
-        AsyncStorage.getItem(
-          STORAGE_KEYS.NOTIFICATIONS
-        ),
-      ]);
-
-      if (
-        savedTheme === "light" ||
-        savedTheme === "dark"
-      ) {
-        setTheme(savedTheme);
-      }
+      const savedNotifications = await AsyncStorage.getItem(
+        STORAGE_KEYS.NOTIFICATIONS
+      );
 
       if (savedNotifications !== null) {
-        setNotifications(
-          savedNotifications === "true"
-        );
+        setNotifications(savedNotifications === "true");
       }
     } catch {
       Alert.alert(
@@ -60,53 +44,39 @@ export default function SettingsScreen() {
         "Созламаларни юклашда хато юз берди."
       );
     } finally {
-      setLoading(false);
+      setNotificationsLoading(false);
     }
   };
 
-  const handleThemeChange = async (
-    value: boolean
-  ) => {
-    const nextTheme: ThemeMode = value
-      ? "dark"
-      : "light";
+  const handleThemeChange = (value: boolean) => {
+    void setThemeMode(value ? "dark" : "light");
+  };
 
-    setTheme(nextTheme);
+  const handleNotificationsChange = async (value: boolean) => {
+    setNotifications(value);
 
     try {
       await AsyncStorage.setItem(
-        STORAGE_KEYS.THEME,
-        nextTheme
+        STORAGE_KEYS.NOTIFICATIONS,
+        String(value)
       );
     } catch {
       Alert.alert(
         "CREOVA",
-        "Theme созламасини сақлашда хато юз берди."
+        "Notification созламасини сақлашда хато юз берди."
       );
     }
   };
 
-  const handleNotificationsChange =
-    async (value: boolean) => {
-      setNotifications(value);
-
-      try {
-        await AsyncStorage.setItem(
-          STORAGE_KEYS.NOTIFICATIONS,
-          String(value)
-        );
-      } catch {
-        Alert.alert(
-          "CREOVA",
-          "Notification созламасини сақлашда хато юз берди."
-        );
-      }
-    };
-
-  if (loading) {
+  if (themeLoading || notificationsLoading) {
     return (
-      <View style={styles.loading}>
-        <Text style={styles.loadingText}>
+      <View
+        style={[
+          styles.loading,
+          { backgroundColor: colors.background },
+        ]}
+      >
+        <Text style={{ color: colors.text }}>
           Юкланмоқда...
         </Text>
       </View>
@@ -114,49 +84,76 @@ export default function SettingsScreen() {
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>
+    <View
+      style={[
+        styles.container,
+        { backgroundColor: colors.background },
+      ]}
+    >
+      <Text style={[styles.title, { color: colors.text }]}>
         Созламалар
       </Text>
 
-      <View style={styles.card}>
+      <View
+        style={[
+          styles.card,
+          {
+            backgroundColor: colors.card,
+            borderColor: colors.border,
+          },
+        ]}
+      >
         <View style={styles.row}>
           <View style={styles.textBlock}>
-            <Text style={styles.label}>
+            <Text style={[styles.label, { color: colors.text }]}>
               Dark Mode
             </Text>
-
-            <Text style={styles.description}>
+            <Text
+              style={[
+                styles.description,
+                { color: colors.mutedText },
+              ]}
+            >
               Қоронғи интерфейсни ишлатиш
             </Text>
           </View>
 
           <Switch
-            value={theme === "dark"}
-            onValueChange={
-              handleThemeChange
-            }
+            value={darkMode}
+            onValueChange={handleThemeChange}
+            trackColor={{
+              false: colors.border,
+              true: colors.primary,
+            }}
+            thumbColor="#FFFFFF"
           />
         </View>
 
-        <View style={styles.divider} />
+        <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
         <View style={styles.row}>
           <View style={styles.textBlock}>
-            <Text style={styles.label}>
+            <Text style={[styles.label, { color: colors.text }]}>
               Notifications
             </Text>
-
-            <Text style={styles.description}>
+            <Text
+              style={[
+                styles.description,
+                { color: colors.mutedText },
+              ]}
+            >
               Билдиришномаларни қабул қилиш
             </Text>
           </View>
 
           <Switch
             value={notifications}
-            onValueChange={
-              handleNotificationsChange
-            }
+            onValueChange={handleNotificationsChange}
+            trackColor={{
+              false: colors.border,
+              true: colors.primary,
+            }}
+            thumbColor="#FFFFFF"
           />
         </View>
       </View>
@@ -167,35 +164,25 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#0F172A",
     padding: 20,
     paddingTop: 60,
   },
 
   loading: {
     flex: 1,
-    backgroundColor: "#0F172A",
     alignItems: "center",
     justifyContent: "center",
   },
 
-  loadingText: {
-    color: "#FFFFFF",
-    fontSize: 16,
-  },
-
   title: {
-    color: "#FFFFFF",
     fontSize: 30,
     fontWeight: "800",
     marginBottom: 24,
   },
 
   card: {
-    backgroundColor: "#1E293B",
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#334155",
     paddingHorizontal: 18,
   },
 
@@ -212,19 +199,16 @@ const styles = StyleSheet.create({
   },
 
   label: {
-    color: "#FFFFFF",
     fontSize: 17,
     fontWeight: "700",
   },
 
   description: {
-    color: "#94A3B8",
     fontSize: 13,
     marginTop: 5,
   },
 
   divider: {
     height: 1,
-    backgroundColor: "#334155",
   },
 });
