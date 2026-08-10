@@ -1,19 +1,16 @@
 import { supabase } from "./supabase";
-import { defaultPrompt } from "./prompt";
 import { OPENAI_MODEL } from "./config";
 
-export interface GenerateTextResponse {
+export interface GenerateTextResult {
   success: boolean;
-  text?: string;
+  message?: string;
   error?: string;
 }
 
 export async function generateText(
   prompt: string
-): Promise<GenerateTextResponse> {
-  const cleanPrompt = prompt.trim();
-
-  if (!cleanPrompt) {
+): Promise<GenerateTextResult> {
+  if (!prompt || !prompt.trim()) {
     return {
       success: false,
       error: "Prompt is required.",
@@ -26,60 +23,62 @@ export async function generateText(
         "openai-chat",
         {
           body: {
-            prompt: cleanPrompt,
-            systemPrompt: defaultPrompt,
+            prompt: prompt.trim(),
             model: OPENAI_MODEL,
           },
         }
       );
 
     if (error) {
+      console.error(
+        "openai-chat error:",
+        error
+      );
+
       return {
         success: false,
-        error: error.message,
+        error:
+          error.message ||
+          "AI request failed.",
       };
     }
 
     if (!data) {
       return {
         success: false,
-        error:
-          "AI server returned an empty response.",
+        error: "Empty response from AI service.",
       };
     }
 
-    if (data.success !== true) {
+    if (data.success === false) {
       return {
         success: false,
         error:
-          typeof data.error === "string"
-            ? data.error
-            : "AI request failed.",
-      };
-    }
-
-    if (
-      typeof data.text !== "string" ||
-      !data.text.trim()
-    ) {
-      return {
-        success: false,
-        error:
-          "AI server returned an empty answer.",
+          data.error ||
+          "AI service returned an error.",
       };
     }
 
     return {
       success: true,
-      text: data.text,
+      message:
+        data.message ||
+        data.text ||
+        data.content ||
+        "",
     };
   } catch (error) {
+    console.error(
+      "generateText error:",
+      error
+    );
+
     return {
       success: false,
       error:
         error instanceof Error
           ? error.message
-          : "AI request failed.",
+          : "Unexpected AI error.",
     };
   }
 }
