@@ -18,7 +18,7 @@ export async function generateCode(
     };
   }
 
-  const codePrompt = `
+  const codeSystemPrompt = `
 You are CREOVA AI Code.
 
 Generate production-quality code based on the user's request.
@@ -31,23 +31,19 @@ Rules:
 - Do not use fake API keys or secrets.
 - Do not invent unavailable project files.
 - If the request depends on an existing service, clearly use the existing service contract.
-
-User request:
-${cleanPrompt}
 `.trim();
 
   try {
-    const {
-      data,
-      error,
-    } = await supabase.functions.invoke(
-      "openai-chat",
-      {
-        body: {
-          prompt: codePrompt,
-        },
-      }
-    );
+    const { data, error } =
+      await supabase.functions.invoke(
+        "openai-chat",
+        {
+          body: {
+            prompt: cleanPrompt,
+            systemPrompt: codeSystemPrompt,
+          },
+        }
+      );
 
     if (error) {
       return {
@@ -98,4 +94,4 @@ ${cleanPrompt}
           : "Code generation failed.",
     };
   }
-      }
+}
