@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -8,12 +8,54 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { Audio, AVPlaybackStatus } from "expo-av";
 import { generateMusic } from "../services/music";
 
 export default function AIMusicScreen() {
   const [prompt, setPrompt] = useState("");
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [playing, setPlaying] = useState(false);
+
+  const soundRef = useRef<Audio.Sound | null>(null);
+
+  useEffect(() => {
+    return () => {
+      void unloadSound();
+    };
+  }, []);
+
+  const unloadSound = async () => {
+    const sound = soundRef.current;
+
+    if (!sound) {
+      return;
+    }
+
+    try {
+      await sound.unloadAsync();
+    } catch {
+      // Sound already unloaded.
+    } finally {
+      soundRef.current = null;
+      setPlaying(false);
+    }
+  };
+
+  const handlePlaybackStatus = (
+    status: AVPlaybackStatus
+  ) => {
+    if (!status.isLoaded) {
+      setPlaying(false);
+      return;
+    }
+
+    setPlaying(status.isPlaying);
+
+    if (status.didJustFinish) {
+      setPlaying(false);
+    }
+  };
 
   const handleGenerate = async () => {
     const cleanPrompt = prompt.trim();
@@ -27,15 +69,19 @@ export default function AIMusicScreen() {
     }
 
     setLoading(true);
-    setAudioUrl(null);
 
     try {
-      const result = await generateMusic(cleanPrompt);
+      await unloadSound();
+      setAudioUrl(null);
+
+      const result =
+        await generateMusic(cleanPrompt);
 
       if (!result.success) {
         Alert.alert(
-          "Music generation failed",
-          result.error ?? "Мусиқа яратишда хато юз берди."
+          "AI Music",
+          result.error ??
+            "Мусиқа яратишда хато юз берди."
         );
         return;
       }
@@ -43,7 +89,7 @@ export default function AIMusicScreen() {
       if (!result.audioUrl) {
         Alert.alert(
           "CREOVA",
-          "Мусиқа файли олинмади."
+          "Мусиқа аудио файли олинмади."
         );
         return;
       }
@@ -66,9 +112,57 @@ export default function AIMusicScreen() {
     }
   };
 
+  const handlePlayPause = async () => {
+    if (!audioUrl) {
+      return;
+    }
+
+    try {
+      if (!soundRef.current) {
+        const { sound } =
+          await Audio.Sound.createAsync(
+            { uri: audioUrl },
+            {
+              shouldPlay: true,
+              progressUpdateIntervalMillis: 250,
+            },
+            handlePlaybackStatus
+          );
+
+        soundRef.current = sound;
+        return;
+      }
+
+      const status =
+        await soundRef.current.getStatusAsync();
+
+      if (!status.isLoaded) {
+        await unloadSound();
+        return;
+      }
+
+      if (status.isPlaying) {
+        await soundRef.current.pauseAsync();
+      } else {
+        await soundRef.current.playAsync();
+      }
+    } catch (error) {
+      setPlaying(false);
+
+      Alert.alert(
+        "Audio xatosi",
+        error instanceof Error
+          ? error.message
+          : "Аудиони ишга туширишда хато юз берди."
+      );
+    }
+  };
+
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>🎵 AI Music</Text>
+      <Text style={styles.title}>
+        🎵 AI Music
+      </Text>
 
       <Text style={styles.subtitle}>
         CREOVA AI орқали мусиқа яратинг
@@ -76,18 +170,19 @@ export default function AIMusicScreen() {
 
       <TextInput
         style={styles.input}
-        placeholder="Масалан: Cinematic piano music with emotional strings"
+        placeholder="Масалан: cinematic piano music"
         placeholderTextColor="#64748B"
         value={prompt}
         onChangeText={setPrompt}
         multiline
+        textAlignVertical="top"
         editable={!loading}
       />
 
       <Pressable
         style={[
-          styles.button,
-          loading && styles.buttonDisabled,
+          styles.generateButton,
+          loading && styles.disabled,
         ]}
         onPress={handleGenerate}
         disabled={loading}
@@ -108,15 +203,19 @@ export default function AIMusicScreen() {
           </Text>
 
           <Text style={styles.resultText}>
-            Аудио файли муваффақиятли олинди.
+            Яратилган мусиқани эшитишингиз мумкин.
           </Text>
 
-          <Text
-            style={styles.urlText}
-            numberOfLines={3}
+          <Pressable
+            style={styles.playButton}
+            onPress={handlePlayPause}
           >
-            {audioUrl}
-          </Text>
+            <Text style={styles.playButtonText}>
+              {playing
+                ? "⏸ Тўхтатиш"
+                : "▶️ Эшитиш"}
+            </Text>
+          </Pressable>
         </View>
       )}
     </View>
@@ -147,18 +246,17 @@ const styles = StyleSheet.create({
   },
 
   input: {
-    minHeight: 120,
+    minHeight: 150,
     backgroundColor: "#1E293B",
     borderWidth: 1,
     borderColor: "#334155",
     borderRadius: 14,
     color: "#FFFFFF",
-    padding: 14,
+    padding: 15,
     fontSize: 16,
-    textAlignVertical: "top",
   },
 
-  button: {
+  generateButton: {
     height: 52,
     marginTop: 14,
     borderRadius: 12,
@@ -167,7 +265,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
 
-  buttonDisabled: {
+  disabled: {
     opacity: 0.6,
   },
 
@@ -198,9 +296,18 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
 
-  urlText: {
-    color: "#60A5FA",
-    fontSize: 12,
-    marginTop: 12,
+  playButton: {
+    height: 50,
+    marginTop: 18,
+    borderRadius: 12,
+    backgroundColor: "#16A34A",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  playButtonText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "700",
   },
 });
