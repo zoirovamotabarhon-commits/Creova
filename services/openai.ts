@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import { defaultPrompt } from "./prompt";
 import { OPENAI_MODEL } from "./config";
 
 export interface GenerateTextResponse {
@@ -20,18 +21,17 @@ export async function generateText(
   }
 
   try {
-    const {
-      data,
-      error,
-    } = await supabase.functions.invoke(
-      "openai-chat",
-      {
-        body: {
-          prompt: cleanPrompt,
-          model: OPENAI_MODEL,
-        },
-      }
-    );
+    const { data, error } =
+      await supabase.functions.invoke(
+        "openai-chat",
+        {
+          body: {
+            prompt: cleanPrompt,
+            systemPrompt: defaultPrompt,
+            model: OPENAI_MODEL,
+          },
+        }
+      );
 
     if (error) {
       return {
