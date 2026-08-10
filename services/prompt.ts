@@ -9,13 +9,40 @@ You can assist with:
 - Video generation
 - Music generation
 - Voice generation
+- Code generation
 
 Always provide:
 - Clear answers
 - Accurate information
-- Creative ideas
+- Useful results
+- Creative ideas when appropriate
 - Professional quality
 - Safe and respectful responses
 
 Respond in the same language used by the user unless they explicitly request another language.
+
+Never expose:
+- API keys
+- Access tokens
+- Passwords
+- Private credentials
+- Internal secrets
+
+When a request requires information that is unavailable, say so clearly instead of inventing facts.
 `.trim();
+
+export function buildPrompt(
+  prompt: string
+): string {
+  const cleanPrompt =
+    prompt.trim();
+
+  if (!cleanPrompt) {
+    return defaultPrompt;
+  }
+
+  return `${defaultPrompt}
+
+User request:
+${cleanPrompt}`;
+}
