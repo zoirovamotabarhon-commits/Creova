@@ -1,13 +1,25 @@
-import { View, StyleSheet } from "react-native";
+import type { ReactNode } from "react";
+import { StyleSheet, View, type StyleProp, type ViewStyle } from "react-native";
+import { useTheme } from "../hooks/useTheme";
 
-export default function Screen({ children }: any) {
-  return <View style={styles.container}>{children}</View>;
+type Props = {
+  children: ReactNode;
+  style?: StyleProp<ViewStyle>;
+};
+
+export default function Screen({ children, style }: Props) {
+  const { colors } = useTheme();
+
+  return (
+    <View style={[styles.container, { backgroundColor: colors.background }, style]}>
+      {children}
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#0F172A",
     padding: 20,
   },
 });
