@@ -1,5 +1,4 @@
-export const StorageKeys = {
-  USER: "creova_user",
-  TOKEN: "creova_token",
-  THEME: "creova_theme",
-};
+export const STORAGE_KEYS = {
+  THEME: "creova.theme",
+  NOTIFICATIONS: "creova.notifications",
+} as const;
