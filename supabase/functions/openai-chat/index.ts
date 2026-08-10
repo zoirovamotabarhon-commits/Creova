@@ -8,8 +8,25 @@ const corsHeaders = {
     "POST, OPTIONS",
 };
 
-const CREOVA_SYSTEM_PROMPT =
+const DEFAULT_SYSTEM_PROMPT =
   "You are CREOVA, a helpful AI assistant. Give clear, accurate and useful answers.";
+
+function jsonResponse(
+  body: Record<string, unknown>,
+  status = 200
+) {
+  return new Response(
+    JSON.stringify(body),
+    {
+      status,
+      headers: {
+        ...corsHeaders,
+        "Content-Type":
+          "application/json",
+      },
+    }
+  );
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -19,19 +36,12 @@ Deno.serve(async (req) => {
   }
 
   if (req.method !== "POST") {
-    return new Response(
-      JSON.stringify({
+    return jsonResponse(
+      {
         success: false,
         error: "Method not allowed.",
-      }),
-      {
-        status: 405,
-        headers: {
-          ...corsHeaders,
-          "Content-Type":
-            "application/json",
-        },
-      }
+      },
+      405
     );
   }
 
@@ -40,8 +50,13 @@ Deno.serve(async (req) => {
       Deno.env.get("OPENAI_API_KEY");
 
     if (!apiKey) {
-      throw new Error(
-        "OPENAI_API_KEY is not configured."
+      return jsonResponse(
+        {
+          success: false,
+          error:
+            "OPENAI_API_KEY is not configured.",
+        },
+        500
       );
     }
 
@@ -52,25 +67,24 @@ Deno.serve(async (req) => {
         ? body.prompt.trim()
         : "";
 
+    const systemPrompt =
+      typeof body?.systemPrompt === "string" &&
+      body.systemPrompt.trim()
+        ? body.systemPrompt.trim()
+        : DEFAULT_SYSTEM_PROMPT;
+
     const requestedModel =
       typeof body?.model === "string"
         ? body.model.trim()
         : "";
 
     if (!prompt) {
-      return new Response(
-        JSON.stringify({
+      return jsonResponse(
+        {
           success: false,
           error: "Prompt is required.",
-        }),
-        {
-          status: 400,
-          headers: {
-            ...corsHeaders,
-            "Content-Type":
-              "application/json",
-          },
-        }
+        },
+        400
       );
     }
 
@@ -93,7 +107,7 @@ Deno.serve(async (req) => {
           messages: [
             {
               role: "system",
-              content: CREOVA_SYSTEM_PROMPT,
+              content: systemPrompt,
             },
             {
               role: "user",
@@ -113,21 +127,14 @@ Deno.serve(async (req) => {
         result
       );
 
-      return new Response(
-        JSON.stringify({
+      return jsonResponse(
+        {
           success: false,
           error:
             result?.error?.message ||
             "OpenAI API request failed.",
-        }),
-        {
-          status: response.status,
-          headers: {
-            ...corsHeaders,
-            "Content-Type":
-              "application/json",
-          },
-        }
+        },
+        response.status
       );
     }
 
@@ -138,60 +145,36 @@ Deno.serve(async (req) => {
       typeof message !== "string" ||
       !message.trim()
     ) {
-      return new Response(
-        JSON.stringify({
+      return jsonResponse(
+        {
           success: false,
           error:
             "OpenAI returned an empty response.",
-        }),
-        {
-          status: 502,
-          headers: {
-            ...corsHeaders,
-            "Content-Type":
-              "application/json",
-          },
-        }
+        },
+        502
       );
     }
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        message: message.trim(),
-        model,
-      }),
-      {
-        status: 200,
-        headers: {
-          ...corsHeaders,
-          "Content-Type":
-            "application/json",
-        },
-      }
-    );
+    return jsonResponse({
+      success: true,
+      message: message.trim(),
+      model,
+    });
   } catch (error) {
     console.error(
       "openai-chat error:",
       error
     );
 
-    return new Response(
-      JSON.stringify({
+    return jsonResponse(
+      {
         success: false,
         error:
           error instanceof Error
             ? error.message
             : "Unexpected server error.",
-      }),
-      {
-        status: 500,
-        headers: {
-          ...corsHeaders,
-          "Content-Type":
-            "application/json",
-        },
-      }
+      },
+      500
     );
   }
 });
