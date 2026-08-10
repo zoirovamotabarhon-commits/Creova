@@ -1,80 +1,165 @@
-import { router } from "expo-router";
+import { useEffect, useState } from "react";
 import {
+  Alert,
   Pressable,
   StyleSheet,
   Switch,
   Text,
   View,
 } from "react-native";
-import { useState } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { STORAGE_KEYS } from "../utils/storageKeys";
+
+type ThemeMode = "light" | "dark";
+
+const DEFAULT_THEME: ThemeMode = "dark";
+const DEFAULT_NOTIFICATIONS = true;
 
 export default function SettingsScreen() {
-  const [notifications, setNotifications] = useState(true);
-  const [darkMode, setDarkMode] = useState(true);
+  const [theme, setTheme] =
+    useState<ThemeMode>(DEFAULT_THEME);
+
+  const [notifications, setNotifications] =
+    useState(DEFAULT_NOTIFICATIONS);
+
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    void loadSettings();
+  }, []);
+
+  const loadSettings = async () => {
+    try {
+      const [
+        savedTheme,
+        savedNotifications,
+      ] = await Promise.all([
+        AsyncStorage.getItem(
+          STORAGE_KEYS.THEME
+        ),
+        AsyncStorage.getItem(
+          STORAGE_KEYS.NOTIFICATIONS
+        ),
+      ]);
+
+      if (
+        savedTheme === "light" ||
+        savedTheme === "dark"
+      ) {
+        setTheme(savedTheme);
+      }
+
+      if (savedNotifications !== null) {
+        setNotifications(
+          savedNotifications === "true"
+        );
+      }
+    } catch {
+      Alert.alert(
+        "CREOVA",
+        "Созламаларни юклашда хато юз берди."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleThemeChange = async (
+    value: boolean
+  ) => {
+    const nextTheme: ThemeMode = value
+      ? "dark"
+      : "light";
+
+    setTheme(nextTheme);
+
+    try {
+      await AsyncStorage.setItem(
+        STORAGE_KEYS.THEME,
+        nextTheme
+      );
+    } catch {
+      Alert.alert(
+        "CREOVA",
+        "Theme созламасини сақлашда хато юз берди."
+      );
+    }
+  };
+
+  const handleNotificationsChange =
+    async (value: boolean) => {
+      setNotifications(value);
+
+      try {
+        await AsyncStorage.setItem(
+          STORAGE_KEYS.NOTIFICATIONS,
+          String(value)
+        );
+      } catch {
+        Alert.alert(
+          "CREOVA",
+          "Notification созламасини сақлашда хато юз берди."
+        );
+      }
+    };
+
+  if (loading) {
+    return (
+      <View style={styles.loading}>
+        <Text style={styles.loadingText}>
+          Юкланмоқда...
+        </Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Settings</Text>
-
-      <Text style={styles.subtitle}>
-        CREOVA sozlamalari
+      <Text style={styles.title}>
+        Созламалар
       </Text>
 
       <View style={styles.card}>
         <View style={styles.row}>
-          <View style={styles.textContainer}>
-            <Text style={styles.rowTitle}>
-              Bildirishnomalar
+          <View style={styles.textBlock}>
+            <Text style={styles.label}>
+              Dark Mode
             </Text>
 
-            <Text style={styles.rowDescription}>
-              CREOVA yangiliklari va xabarlarini olish
+            <Text style={styles.description}>
+              Қоронғи интерфейсни ишлатиш
+            </Text>
+          </View>
+
+          <Switch
+            value={theme === "dark"}
+            onValueChange={
+              handleThemeChange
+            }
+          />
+        </View>
+
+        <View style={styles.divider} />
+
+        <View style={styles.row}>
+          <View style={styles.textBlock}>
+            <Text style={styles.label}>
+              Notifications
+            </Text>
+
+            <Text style={styles.description}>
+              Билдиришномаларни қабул қилиш
             </Text>
           </View>
 
           <Switch
             value={notifications}
-            onValueChange={setNotifications}
-          />
-        </View>
-
-        <View style={styles.separator} />
-
-        <View style={styles.row}>
-          <View style={styles.textContainer}>
-            <Text style={styles.rowTitle}>
-              Dark Mode
-            </Text>
-
-            <Text style={styles.rowDescription}>
-              Qorong'i interfeysdan foydalanish
-            </Text>
-          </View>
-
-          <Switch
-            value={darkMode}
-            onValueChange={setDarkMode}
+            onValueChange={
+              handleNotificationsChange
+            }
           />
         </View>
       </View>
-
-      <Pressable
-        style={styles.profileButton}
-        onPress={() => router.push("/profile")}
-      >
-        <Text style={styles.profileButtonText}>
-          Profilni ochish
-        </Text>
-      </Pressable>
-
-      <Pressable
-        style={styles.backButton}
-        onPress={() => router.back()}
-      >
-        <Text style={styles.backButtonText}>
-          Orqaga
-        </Text>
-      </Pressable>
     </View>
   );
 }
@@ -87,86 +172,59 @@ const styles = StyleSheet.create({
     paddingTop: 60,
   },
 
-  title: {
-    color: "#FFFFFF",
-    fontSize: 32,
-    fontWeight: "800",
-    textAlign: "center",
+  loading: {
+    flex: 1,
+    backgroundColor: "#0F172A",
+    alignItems: "center",
+    justifyContent: "center",
   },
 
-  subtitle: {
-    color: "#94A3B8",
+  loadingText: {
+    color: "#FFFFFF",
     fontSize: 16,
-    textAlign: "center",
-    marginTop: 8,
-    marginBottom: 28,
+  },
+
+  title: {
+    color: "#FFFFFF",
+    fontSize: 30,
+    fontWeight: "800",
+    marginBottom: 24,
   },
 
   card: {
     backgroundColor: "#1E293B",
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: "#334155",
-    borderRadius: 16,
     paddingHorizontal: 18,
   },
 
   row: {
-    minHeight: 82,
+    minHeight: 80,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
   },
 
-  textContainer: {
+  textBlock: {
     flex: 1,
-    paddingRight: 16,
+    paddingRight: 15,
   },
 
-  rowTitle: {
+  label: {
     color: "#FFFFFF",
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: "700",
   },
 
-  rowDescription: {
+  description: {
     color: "#94A3B8",
     fontSize: 13,
     marginTop: 5,
   },
 
-  separator: {
+  divider: {
     height: 1,
     backgroundColor: "#334155",
-  },
-
-  profileButton: {
-    height: 52,
-    backgroundColor: "#2563EB",
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 24,
-  },
-
-  profileButtonText: {
-    color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "700",
-  },
-
-  backButton: {
-    height: 50,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#334155",
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 12,
-  },
-
-  backButtonText: {
-    color: "#CBD5E1",
-    fontSize: 16,
-    fontWeight: "600",
   },
 });
