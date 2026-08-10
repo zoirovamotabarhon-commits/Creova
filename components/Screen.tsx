@@ -1,5 +1,11 @@
 import type { ReactNode } from "react";
-import { StyleSheet, View, type StyleProp, type ViewStyle } from "react-native";
+import {
+  StyleSheet,
+  View,
+  type StyleProp,
+  type ViewStyle,
+} from "react-native";
+
 import { useTheme } from "../hooks/useTheme";
 
 type Props = {
@@ -7,11 +13,23 @@ type Props = {
   style?: StyleProp<ViewStyle>;
 };
 
-export default function Screen({ children, style }: Props) {
+export default function Screen({
+  children,
+  style,
+}: Props) {
   const { colors } = useTheme();
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }, style]}>
+    <View
+      style={[
+        styles.container,
+        {
+          backgroundColor:
+            colors.background,
+        },
+        style,
+      ]}
+    >
       {children}
     </View>
   );
