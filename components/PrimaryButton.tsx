@@ -1,4 +1,9 @@
-import { Pressable, Text, StyleSheet } from "react-native";
+import {
+  Pressable,
+  Text,
+  StyleSheet,
+} from "react-native";
+
 import { useTheme } from "../hooks/useTheme";
 
 type Props = {
@@ -18,13 +23,19 @@ export default function PrimaryButton({
     <Pressable
       style={[
         styles.button,
-        { backgroundColor: colors.primary },
-        disabled && styles.disabled,
+        {
+          backgroundColor:
+            colors.primary,
+        },
+        disabled &&
+          styles.disabled,
       ]}
       onPress={onPress}
       disabled={disabled}
     >
-      <Text style={styles.text}>{title}</Text>
+      <Text style={styles.text}>
+        {title}
+      </Text>
     </Pressable>
   );
 }
@@ -35,9 +46,11 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: "center",
   },
+
   disabled: {
     opacity: 0.6,
   },
+
   text: {
     color: "#FFFFFF",
     fontSize: 16,
