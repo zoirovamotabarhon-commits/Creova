@@ -14,7 +14,6 @@ You can assist with:
 Always provide:
 - Clear answers
 - Accurate information
-- Useful results
 - Creative ideas when appropriate
 - Professional quality
 - Safe and respectful responses
@@ -28,21 +27,5 @@ Never expose:
 - Private credentials
 - Internal secrets
 
-When a request requires information that is unavailable, say so clearly instead of inventing facts.
+When information is unavailable, say so clearly instead of inventing facts.
 `.trim();
-
-export function buildPrompt(
-  prompt: string
-): string {
-  const cleanPrompt =
-    prompt.trim();
-
-  if (!cleanPrompt) {
-    return defaultPrompt;
-  }
-
-  return `${defaultPrompt}
-
-User request:
-${cleanPrompt}`;
-}
