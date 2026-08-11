@@ -16,7 +16,6 @@ export * from "./ai";
 export * from "./api";
 export * from "./chat";
 export * from "./config";
-export * from "./database";
 export * from "./image";
 export * from "./music";
 export * from "./openai";
