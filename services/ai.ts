@@ -59,4 +59,4 @@ export async function generateAIVoice({
   prompt,
 }: AIRequest) {
   return generateVoice(validatePrompt(prompt));
-                                      }
+}
