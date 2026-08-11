@@ -71,8 +71,8 @@ Rules:
     }
 
     const code =
-      typeof data.message === "string"
-        ? data.message.trim()
+      typeof data.text === "string"
+        ? data.text.trim()
         : "";
 
     if (!code) {
