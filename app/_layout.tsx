@@ -25,6 +25,9 @@ const PUBLIC_ROUTES = [
   "/forgot-password",
 ];
 
+const RESET_PASSWORD_ROUTE =
+  "/reset-password";
+
 const PROTECTED_ROUTES = [
   "/dashboard",
   "/ai-chat",
@@ -99,6 +102,12 @@ function AppShell() {
       matchesPath(pathname, route)
     );
 
+  const onResetPasswordRoute =
+    matchesPath(
+      pathname,
+      RESET_PASSWORD_ROUTE
+    );
+
   const onProtectedRoute =
     PROTECTED_ROUTES.some((route) =>
       matchesPath(pathname, route)
@@ -113,7 +122,8 @@ function AppShell() {
 
   if (
     isAuthenticated &&
-    onPublicRoute
+    onPublicRoute &&
+    !onResetPasswordRoute
   ) {
     return (
       <Redirect href="/dashboard" />
