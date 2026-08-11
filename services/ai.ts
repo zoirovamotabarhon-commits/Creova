@@ -11,10 +11,22 @@ export interface AIRequest {
   provider?: AIProvider;
 }
 
+function validatePrompt(prompt: string): string {
+  const cleanPrompt = prompt.trim();
+
+  if (!cleanPrompt) {
+    throw new Error("Prompt is required.");
+  }
+
+  return cleanPrompt;
+}
+
 export async function generateAIText({
   prompt,
   provider = "openai",
 }: AIRequest) {
+  const cleanPrompt = validatePrompt(prompt);
+
   if (provider !== "openai") {
     return {
       success: false,
@@ -22,29 +34,29 @@ export async function generateAIText({
     };
   }
 
-  return generateText(prompt);
+  return generateText(cleanPrompt);
 }
 
 export async function generateAIImage({
   prompt,
 }: AIRequest) {
-  return generateImage(prompt);
+  return generateImage(validatePrompt(prompt));
 }
 
 export async function generateAIVideo({
   prompt,
 }: AIRequest) {
-  return generateVideo(prompt);
+  return generateVideo(validatePrompt(prompt));
 }
 
 export async function generateAIMusic({
   prompt,
 }: AIRequest) {
-  return generateMusic(prompt);
+  return generateMusic(validatePrompt(prompt));
 }
 
 export async function generateAIVoice({
   prompt,
 }: AIRequest) {
-  return generateVoice(prompt);
-}
+  return generateVoice(validatePrompt(prompt));
+                                      }
