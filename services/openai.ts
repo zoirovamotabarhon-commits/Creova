@@ -3,14 +3,16 @@ import { OPENAI_MODEL } from "./config";
 
 export interface GenerateTextResult {
   success: boolean;
-  message?: string;
+  text?: string;
   error?: string;
 }
 
 export async function generateText(
   prompt: string
 ): Promise<GenerateTextResult> {
-  if (!prompt || !prompt.trim()) {
+  const cleanPrompt = prompt.trim();
+
+  if (!cleanPrompt) {
     return {
       success: false,
       error: "Prompt is required.",
@@ -23,7 +25,7 @@ export async function generateText(
         "openai-chat",
         {
           body: {
-            prompt: prompt.trim(),
+            prompt: cleanPrompt,
             model: OPENAI_MODEL,
           },
         }
@@ -46,7 +48,8 @@ export async function generateText(
     if (!data) {
       return {
         success: false,
-        error: "Empty response from AI service.",
+        error:
+          "Empty response from AI service.",
       };
     }
 
@@ -59,13 +62,22 @@ export async function generateText(
       };
     }
 
+    const text =
+      typeof data.text === "string"
+        ? data.text.trim()
+        : "";
+
+    if (!text) {
+      return {
+        success: false,
+        error:
+          "AI service returned empty text.",
+      };
+    }
+
     return {
       success: true,
-      message:
-        data.message ||
-        data.text ||
-        data.content ||
-        "",
+      text,
     };
   } catch (error) {
     console.error(
