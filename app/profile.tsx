@@ -13,4 +13,260 @@ import { supabase } from "../services/supabase";
 
 export default function ProfileScreen() {
   const [name, setName] = useState("");
- 
+  const [email, setEmail] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadProfile = async () => {
+      try {
+        const {
+          data: { user },
+          error,
+        } = await supabase.auth.getUser();
+
+        if (error) {
+          throw error;
+        }
+
+        if (!mounted) {
+          return;
+        }
+
+        if (!user) {
+          setName("");
+          setEmail("");
+          return;
+        }
+
+        setEmail(user.email ?? "");
+
+        const metadataName =
+          typeof user.user_metadata?.name === "string"
+            ? user.user_metadata.name
+            : "";
+
+        setName(metadataName);
+      } catch (error) {
+        console.error("Profile load error:", error);
+
+        if (mounted) {
+          Alert.alert(
+            "Error",
+            error instanceof Error
+              ? error.message
+              : "Failed to load profile."
+          );
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    void loadProfile();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const saveProfile = async () => {
+    const cleanName = name.trim();
+
+    if (!cleanName) {
+      Alert.alert("Error", "Name is required.");
+      return;
+    }
+
+    setSaving(true);
+
+    try {
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
+      if (userError) {
+        throw userError;
+      }
+
+      if (!user) {
+        Alert.alert(
+          "Error",
+          "You must be logged in."
+        );
+        return;
+      }
+
+      const { error } =
+        await supabase.auth.updateUser({
+          data: {
+            name: cleanName,
+          },
+        });
+
+      if (error) {
+        throw error;
+      }
+
+      setName(cleanName);
+
+      Alert.alert(
+        "Success",
+        "Profile updated successfully."
+      );
+    } catch (error) {
+      console.error(
+        "Profile update error:",
+        error
+      );
+
+      Alert.alert(
+        "Error",
+        error instanceof Error
+          ? error.message
+          : "Failed to update profile."
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator size="large" />
+      </View>
+    );
+  }
+
+  return (
+    <ScrollView
+      contentContainerStyle={styles.container}
+      keyboardShouldPersistTaps="handled"
+    >
+      <View style={styles.card}>
+        <Text style={styles.title}>
+          Profile
+        </Text>
+
+        <Text style={styles.label}>
+          Name
+        </Text>
+
+        <TextInput
+          value={name}
+          onChangeText={setName}
+          placeholder="Enter your name"
+          autoCapitalize="words"
+          style={styles.input}
+          editable={!saving}
+        />
+
+        <Text style={styles.label}>
+          Email
+        </Text>
+
+        <TextInput
+          value={email}
+          editable={false}
+          autoCapitalize="none"
+          keyboardType="email-address"
+          style={[
+            styles.input,
+            styles.disabledInput,
+          ]}
+        />
+
+        <TouchableOpacity
+          style={[
+            styles.button,
+            saving && styles.disabledButton,
+          ]}
+          onPress={() => {
+            void saveProfile();
+          }}
+          disabled={saving}
+        >
+          {saving ? (
+            <ActivityIndicator color="#ffffff" />
+          ) : (
+            <Text style={styles.buttonText}>
+              Save Changes
+            </Text>
+          )}
+        </TouchableOpacity>
+      </View>
+    </ScrollView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flexGrow: 1,
+    padding: 20,
+  },
+
+  center: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  card: {
+    width: "100%",
+    maxWidth: 600,
+    alignSelf: "center",
+  },
+
+  title: {
+    fontSize: 28,
+    fontWeight: "700",
+    marginBottom: 30,
+  },
+
+  label: {
+    fontSize: 15,
+    fontWeight: "600",
+    marginBottom: 8,
+    marginTop: 16,
+  },
+
+  input: {
+    width: "100%",
+    minHeight: 48,
+    borderWidth: 1,
+    borderColor: "#d1d5db",
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    fontSize: 16,
+    backgroundColor: "#ffffff",
+  },
+
+  disabledInput: {
+    opacity: 0.65,
+  },
+
+  button: {
+    minHeight: 48,
+    marginTop: 28,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#111827",
+  },
+
+  disabledButton: {
+    opacity: 0.6,
+  },
+
+  buttonText: {
+    color: "#ffffff",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+});
