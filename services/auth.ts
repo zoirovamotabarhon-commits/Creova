@@ -41,14 +41,30 @@ export async function login(
 }
 
 export async function register(
+  name: string,
   email: string,
   password: string
 ): Promise<AuthResponse> {
   try {
+    const cleanName = name.trim();
+    const cleanEmail = email.trim();
+
+    if (!cleanName) {
+      return {
+        success: false,
+        message: "Name is required.",
+      };
+    }
+
     const { data, error } =
       await supabase.auth.signUp({
-        email: email.trim(),
+        email: cleanEmail,
         password,
+        options: {
+          data: {
+            name: cleanName,
+          },
+        },
       });
 
     if (error) {
@@ -120,8 +136,7 @@ export async function resetPassword(
 
     return {
       success: true,
-      message:
-        "Password reset email sent.",
+      message: "Password reset email sent.",
     };
   } catch (error) {
     return {
@@ -132,26 +147,4 @@ export async function resetPassword(
           : "Password reset failed.",
     };
   }
-}
-
-export async function getCurrentUser() {
-  const { data, error } =
-    await supabase.auth.getUser();
-
-  if (error) {
-    return null;
-  }
-
-  return data.user;
-}
-
-export async function getCurrentSession() {
-  const { data, error } =
-    await supabase.auth.getSession();
-
-  if (error) {
-    return null;
-  }
-
-  return data.session;
 }
