@@ -6,9 +6,9 @@ export interface ChatResponse {
   error?: string;
 }
 
-export async function sendMessage(
+export const sendMessage = async (
   message: string
-): Promise<ChatResponse> {
+): Promise<ChatResponse> => {
   const cleanMessage = message.trim();
 
   if (!cleanMessage) {
@@ -19,24 +19,21 @@ export async function sendMessage(
   }
 
   try {
-    const response =
-      await generateAIText({
-        prompt: cleanMessage,
-      });
+    const response = await generateAIText({
+      prompt: cleanMessage,
+      provider: "openai",
+    });
 
     if (!response.success) {
       return {
         success: false,
-        error:
-          response.error ??
-          "AI request failed.",
+        error: response.error ?? "AI request failed.",
       };
     }
 
     return {
       success: true,
-      message:
-        response.message ?? "",
+      message: response.text ?? "",
     };
   } catch (error) {
     return {
@@ -47,4 +44,4 @@ export async function sendMessage(
           : "Unexpected chat error.",
     };
   }
-}
+};
