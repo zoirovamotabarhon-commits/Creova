@@ -21,6 +21,7 @@ import {
 } from "../utils/validators";
 
 export default function RegisterScreen() {
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] =
@@ -28,7 +29,13 @@ export default function RegisterScreen() {
   const [loading, setLoading] = useState(false);
 
   const handleRegister = async () => {
+    const cleanName = name.trim();
     const cleanEmail = email.trim();
+
+    if (!cleanName) {
+      Alert.alert("CREOVA", "Ismingizni kiriting.");
+      return;
+    }
 
     if (!cleanEmail) {
       Alert.alert("CREOVA", "Email kiriting.");
@@ -68,6 +75,7 @@ export default function RegisterScreen() {
 
     try {
       const result = await register(
+        cleanName,
         cleanEmail,
         password
       );
@@ -114,9 +122,7 @@ export default function RegisterScreen() {
       }
     >
       <ScrollView
-        contentContainerStyle={
-          styles.scrollContent
-        }
+        contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.content}>
@@ -127,6 +133,21 @@ export default function RegisterScreen() {
           <Text style={styles.subtitle}>
             Yangi hisob yarating
           </Text>
+
+          <Text style={styles.label}>
+            Ism
+          </Text>
+
+          <TextInput
+            style={styles.input}
+            placeholder="Ismingizni kiriting"
+            placeholderTextColor="#64748B"
+            value={name}
+            onChangeText={setName}
+            autoCapitalize="words"
+            autoCorrect={false}
+            editable={!loading}
+          />
 
           <Text style={styles.label}>
             Email
@@ -179,22 +200,15 @@ export default function RegisterScreen() {
           <Pressable
             style={[
               styles.button,
-              loading &&
-                styles.buttonDisabled,
+              loading && styles.buttonDisabled,
             ]}
             onPress={handleRegister}
             disabled={loading}
           >
             {loading ? (
-              <ActivityIndicator
-                color="#FFFFFF"
-              />
+              <ActivityIndicator color="#FFFFFF" />
             ) : (
-              <Text
-                style={
-                  styles.buttonText
-                }
-              >
+              <Text style={styles.buttonText}>
                 Ro'yxatdan o'tish
               </Text>
             )}
@@ -207,9 +221,7 @@ export default function RegisterScreen() {
             }
             disabled={loading}
           >
-            <Text
-              style={styles.linkText}
-            >
+            <Text style={styles.linkText}>
               Hisobingiz bormi? Kirish
             </Text>
           </Pressable>
