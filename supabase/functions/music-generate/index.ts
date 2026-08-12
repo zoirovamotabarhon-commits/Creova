@@ -6,24 +6,34 @@ import {
 const ELEVENLABS_API_KEY =
   Deno.env.get(
     "ELEVENLABS_API_KEY"
-  );
+  ) ?? "";
 
 const SUPABASE_URL =
-  Deno.env.get("SUPABASE_URL");
-
-const SUPABASE_SERVICE_ROLE_KEY =
   Deno.env.get(
-    "SUPABASE_SERVICE_ROLE_KEY"
-  ) ??
+    "SUPABASE_URL"
+  ) ?? "";
+
+const SUPABASE_SECRET_KEYS =
+  Deno.env.get(
+    "SUPABASE_SECRET_KEYS"
+  );
+
+const SUPABASE_SECRET_KEY =
   Deno.env.get(
     "SUPABASE_SECRET_KEY"
   );
 
+const SUPABASE_SERVICE_ROLE_KEY =
+  Deno.env.get(
+    "SUPABASE_SERVICE_ROLE_KEY"
+  );
+
 const ELEVENLABS_MUSIC_URL =
-  "https://api.elevenlabs.io/v1/music";
+  "https://api.elevenlabs.io/v1/music/stream";
 
 const CORS_HEADERS = {
-  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Origin":
+    "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods":
@@ -40,21 +50,55 @@ function jsonResponse(
     JSON.stringify(body),
     {
       status,
-      headers: CORS_HEADERS,
+      headers:
+        CORS_HEADERS,
     }
   );
 }
 
-function getServiceRoleKey(): string {
+function getSecretKey(): string {
   if (
-    !SUPABASE_SERVICE_ROLE_KEY
+    SUPABASE_SECRET_KEYS
   ) {
-    throw new Error(
-      "SUPABASE_SERVICE_ROLE_KEY is not configured."
-    );
+    try {
+      const parsed =
+        JSON.parse(
+          SUPABASE_SECRET_KEYS
+        ) as Record<
+          string,
+          unknown
+        >;
+
+      const defaultKey =
+        parsed.default;
+
+      if (
+        typeof defaultKey ===
+          "string" &&
+        defaultKey.trim()
+      ) {
+        return defaultKey.trim();
+      }
+    } catch {
+      // Fall through.
+    }
   }
 
-  return SUPABASE_SERVICE_ROLE_KEY;
+  if (
+    SUPABASE_SECRET_KEY?.trim()
+  ) {
+    return SUPABASE_SECRET_KEY.trim();
+  }
+
+  if (
+    SUPABASE_SERVICE_ROLE_KEY?.trim()
+  ) {
+    return SUPABASE_SERVICE_ROLE_KEY.trim();
+  }
+
+  throw new Error(
+    "Supabase secret key is not configured."
+  );
 }
 
 async function requireUser(
@@ -66,8 +110,7 @@ async function requireUser(
     );
 
   if (
-    !authorization ||
-    !authorization.startsWith(
+    !authorization?.startsWith(
       "Bearer "
     )
   ) {
@@ -78,22 +121,19 @@ async function requireUser(
 
   const token =
     authorization
-      .replace(
-        "Bearer ",
-        ""
-      )
+      .slice("Bearer ".length)
       .trim();
 
-  if (!SUPABASE_URL) {
+  if (!token) {
     throw new Error(
-      "SUPABASE_URL is not configured."
+      "Authentication token is missing."
     );
   }
 
   const supabase =
     createClient(
       SUPABASE_URL,
-      getServiceRoleKey(),
+      getSecretKey(),
       {
         auth: {
           autoRefreshToken:
@@ -131,21 +171,20 @@ function arrayBufferToBase64(
     new Uint8Array(buffer);
 
   let binary = "";
-
   const chunkSize =
     0x8000;
 
   for (
-    let i = 0;
-    i < bytes.length;
-    i += chunkSize
+    let index = 0;
+    index < bytes.length;
+    index += chunkSize
   ) {
     binary +=
       String.fromCharCode(
         ...bytes.subarray(
-          i,
+          index,
           Math.min(
-            i + chunkSize,
+            index + chunkSize,
             bytes.length
           )
         )
@@ -158,8 +197,7 @@ function arrayBufferToBase64(
 Deno.serve(
   async (req) => {
     if (
-      req.method ===
-      "OPTIONS"
+      req.method === "OPTIONS"
     ) {
       return new Response(
         "ok",
@@ -171,8 +209,7 @@ Deno.serve(
     }
 
     if (
-      req.method !==
-      "POST"
+      req.method !== "POST"
     ) {
       return jsonResponse(
         {
@@ -198,20 +235,33 @@ Deno.serve(
 
       await requireUser(req);
 
-      const body =
-        (await req.json()) as Record<
-          string,
-          unknown
-        >;
+      let body:
+        Record<string, unknown>;
+
+      try {
+        body =
+          (await req.json()) as Record<
+            string,
+            unknown
+          >;
+      } catch {
+        return jsonResponse(
+          {
+            success: false,
+            error:
+              "Invalid JSON request body.",
+          },
+          400
+        );
+      }
 
       const prompt =
-        body.prompt;
+        typeof body.prompt ===
+        "string"
+          ? body.prompt.trim()
+          : "";
 
-      if (
-        typeof prompt !==
-          "string" ||
-        !prompt.trim()
-      ) {
+      if (!prompt) {
         return jsonResponse(
           {
             success: false,
@@ -222,23 +272,35 @@ Deno.serve(
         );
       }
 
+      if (
+        prompt.length > 4100
+      ) {
+        return jsonResponse(
+          {
+            success: false,
+            error:
+              "Music prompt is too long. Maximum is 4100 characters.",
+          },
+          400
+        );
+      }
+
       const response =
         await fetch(
-          ELEVENLABS_MUSIC_URL,
+          `${ELEVENLABS_MUSIC_URL}?output_format=mp3_44100_128`,
           {
-            method:
-              "POST",
+            method: "POST",
             headers: {
               "xi-api-key":
                 ELEVENLABS_API_KEY,
               "Content-Type":
                 "application/json",
             },
-            body:
-              JSON.stringify({
-                prompt:
-                  prompt.trim(),
-              }),
+            body: JSON.stringify({
+              prompt,
+              model_id:
+                "music_v1",
+            }),
           }
         );
 
@@ -280,6 +342,11 @@ Deno.serve(
           `data:audio/mpeg;base64,${audioBase64}`,
       });
     } catch (error) {
+      console.error(
+        "music-generate error:",
+        error
+      );
+
       return jsonResponse(
         {
           success: false,
