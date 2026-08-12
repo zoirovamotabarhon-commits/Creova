@@ -6,14 +6,33 @@ export interface AuthResponse {
   data?: unknown;
 }
 
+const RESET_PASSWORD_REDIRECT =
+  "creova://reset-password";
+
 export async function login(
   email: string,
   password: string
 ): Promise<AuthResponse> {
   try {
+    const cleanEmail = email.trim();
+
+    if (!cleanEmail) {
+      return {
+        success: false,
+        message: "Email manzilini kiriting.",
+      };
+    }
+
+    if (!password) {
+      return {
+        success: false,
+        message: "Parolni kiriting.",
+      };
+    }
+
     const { data, error } =
       await supabase.auth.signInWithPassword({
-        email: email.trim(),
+        email: cleanEmail,
         password,
       });
 
@@ -53,6 +72,20 @@ export async function register(
       return {
         success: false,
         message: "Name is required.",
+      };
+    }
+
+    if (!cleanEmail) {
+      return {
+        success: false,
+        message: "Email is required.",
+      };
+    }
+
+    if (!password) {
+      return {
+        success: false,
+        message: "Password is required.",
       };
     }
 
@@ -122,9 +155,22 @@ export async function resetPassword(
   email: string
 ): Promise<AuthResponse> {
   try {
+    const cleanEmail = email.trim();
+
+    if (!cleanEmail) {
+      return {
+        success: false,
+        message: "Email manzilini kiriting.",
+      };
+    }
+
     const { error } =
       await supabase.auth.resetPasswordForEmail(
-        email.trim()
+        cleanEmail,
+        {
+          redirectTo:
+            RESET_PASSWORD_REDIRECT,
+        }
       );
 
     if (error) {
@@ -136,7 +182,8 @@ export async function resetPassword(
 
     return {
       success: true,
-      message: "Password reset email sent.",
+      message:
+        "Password reset email sent.",
     };
   } catch (error) {
     return {
@@ -147,4 +194,70 @@ export async function resetPassword(
           : "Password reset failed.",
     };
   }
+}
+
+export async function updatePassword(
+  password: string
+): Promise<AuthResponse> {
+  try {
+    if (!password) {
+      return {
+        success: false,
+        message: "Parolni kiriting.",
+      };
+    }
+
+    const { data, error } =
+      await supabase.auth.updateUser({
+        password,
+      });
+
+    if (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+
+    return {
+      success: true,
+      message:
+        "Parol muvaffaqiyatli yangilandi.",
+      data,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : "Password update failed.",
+    };
+  }
+}
+
+export async function getCurrentUser() {
+  const {
+    data,
+    error,
+  } = await supabase.auth.getUser();
+
+  if (error) {
+    return null;
+  }
+
+  return data.user;
+}
+
+export async function getCurrentSession() {
+  const {
+    data,
+    error,
+  } = await supabase.auth.getSession();
+
+  if (error) {
+    return null;
+  }
+
+  return data.session;
 }
