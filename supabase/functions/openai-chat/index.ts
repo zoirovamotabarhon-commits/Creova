@@ -1,9 +1,32 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 
-import { createClient } from "jsr:@supabase/supabase-js@2";
+import {
+  createClient,
+} from "jsr:@supabase/supabase-js@2";
+
+const SUPABASE_URL =
+  Deno.env.get(
+    "SUPABASE_URL"
+  ) ?? "";
+
+const SUPABASE_PUBLISHABLE_KEYS =
+  Deno.env.get(
+    "SUPABASE_PUBLISHABLE_KEYS"
+  );
+
+const SUPABASE_PUBLISHABLE_KEY =
+  Deno.env.get(
+    "SUPABASE_PUBLISHABLE_KEY"
+  );
+
+const SUPABASE_ANON_KEY =
+  Deno.env.get(
+    "SUPABASE_ANON_KEY"
+  );
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Origin":
+    "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods":
@@ -43,34 +66,61 @@ function jsonResponse(
   );
 }
 
+function getPublishableKey(): string {
+  if (
+    SUPABASE_PUBLISHABLE_KEYS
+  ) {
+    try {
+      const parsed =
+        JSON.parse(
+          SUPABASE_PUBLISHABLE_KEYS
+        ) as Record<
+          string,
+          unknown
+        >;
+
+      const defaultKey =
+        parsed.default;
+
+      if (
+        typeof defaultKey ===
+          "string" &&
+        defaultKey.trim()
+      ) {
+        return defaultKey.trim();
+      }
+    } catch {
+      // Fall through.
+    }
+  }
+
+  if (
+    SUPABASE_PUBLISHABLE_KEY?.trim()
+  ) {
+    return SUPABASE_PUBLISHABLE_KEY.trim();
+  }
+
+  if (
+    SUPABASE_ANON_KEY?.trim()
+  ) {
+    return SUPABASE_ANON_KEY.trim();
+  }
+
+  throw new Error(
+    "Supabase publishable key is not configured."
+  );
+}
+
 async function requireUser(
   req: Request
 ) {
-  const supabaseUrl =
-    Deno.env.get("SUPABASE_URL");
-
-  const supabaseAnonKey =
-    Deno.env.get(
-      "SUPABASE_ANON_KEY"
-    );
-
-  if (
-    !supabaseUrl ||
-    !supabaseAnonKey
-  ) {
-    throw new Error(
-      "Supabase environment variables are not configured."
-    );
-  }
-
   const authorization =
     req.headers.get(
       "Authorization"
     );
 
   if (
-    !authorization ||
-    !authorization.startsWith(
+    !authorization?.startsWith(
       "Bearer "
     )
   ) {
@@ -79,8 +129,8 @@ async function requireUser(
 
   const supabase =
     createClient(
-      supabaseUrl,
-      supabaseAnonKey,
+      SUPABASE_URL,
+      getPublishableKey(),
       {
         global: {
           headers: {
@@ -118,7 +168,8 @@ function normalizeMessages(
     .filter((message) => {
       if (
         !message ||
-        typeof message !== "object"
+        typeof message !==
+          "object"
       ) {
         return false;
       }
@@ -132,14 +183,12 @@ function normalizeMessages(
       return (
         (
           item.role === "user" ||
-          item.role ===
-            "assistant" ||
+          item.role === "assistant" ||
           item.role === "system"
         ) &&
         typeof item.content ===
           "string" &&
-        item.content.trim()
-          .length > 0
+        item.content.trim().length > 0
       );
     })
     .slice(-MAX_MESSAGES)
@@ -167,8 +216,7 @@ function normalizeMessages(
 Deno.serve(
   async (req) => {
     if (
-      req.method ===
-      "OPTIONS"
+      req.method === "OPTIONS"
     ) {
       return new Response(
         "ok",
@@ -180,8 +228,7 @@ Deno.serve(
     }
 
     if (
-      req.method !==
-      "POST"
+      req.method !== "POST"
     ) {
       return jsonResponse(
         {
@@ -224,10 +271,8 @@ Deno.serve(
         );
       }
 
-      let body: Record<
-        string,
-        unknown
-      >;
+      let body:
+        Record<string, unknown>;
 
       try {
         body =
@@ -278,7 +323,7 @@ Deno.serve(
 
       const requestedModel =
         typeof body.model ===
-          "string"
+        "string"
           ? body.model.trim()
           : "";
 
@@ -308,11 +353,12 @@ Deno.serve(
               Authorization:
                 `Bearer ${apiKey}`,
             },
-            body: JSON.stringify({
-              model,
-              messages:
-                openAIMessages,
-            }),
+            body:
+              JSON.stringify({
+                model,
+                messages:
+                  openAIMessages,
+              }),
           }
         );
 
@@ -320,11 +366,6 @@ Deno.serve(
         await response.json();
 
       if (!response.ok) {
-        console.error(
-          "OpenAI API error:",
-          result
-        );
-
         return jsonResponse(
           {
             success: false,
