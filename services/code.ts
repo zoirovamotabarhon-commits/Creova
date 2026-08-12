@@ -1,10 +1,28 @@
-import { supabase } from "./supabase";
+import { generateText } from "./openai";
 
 export interface CodeResponse {
   success: boolean;
   code?: string;
   error?: string;
 }
+
+const CODE_SYSTEM_PROMPT = `
+You are CREOVA AI Code.
+
+Generate production-quality code based on the user's request.
+
+Rules:
+- Return only the code.
+- Do not add explanations before or after the code.
+- Use TypeScript/TSX for React Native or Expo requests.
+- Keep the code complete and runnable.
+- Do not use fake API keys or secrets.
+- Never expose private credentials.
+- Do not invent unavailable project files.
+- Respect existing project service contracts.
+- Preserve existing imports and project architecture when possible.
+- If the user asks to replace a file, return the complete file.
+`.trim();
 
 export async function generateCode(
   prompt: string
@@ -18,62 +36,32 @@ export async function generateCode(
     };
   }
 
-  const codeSystemPrompt = `
-You are CREOVA AI Code.
-
-Generate production-quality code based on the user's request.
-
-Rules:
-- Return only the code.
-- Do not add explanations before or after the code.
-- Use TypeScript/TSX for React Native or Expo requests.
-- Keep the code complete and runnable.
-- Do not use fake API keys or secrets.
-- Do not invent unavailable project files.
-- Respect existing project service contracts.
-`.trim();
-
   try {
-    const { data, error } =
-      await supabase.functions.invoke(
-        "openai-chat",
-        {
-          body: {
-            prompt: cleanPrompt,
-            systemPrompt: codeSystemPrompt,
+    const result =
+      await generateText(
+        [
+          {
+            role: "user",
+            content: cleanPrompt,
           },
+        ],
+        {
+          systemPrompt:
+            CODE_SYSTEM_PROMPT,
         }
       );
 
-    if (error) {
-      return {
-        success: false,
-        error: error.message,
-      };
-    }
-
-    if (!data) {
+    if (!result.success) {
       return {
         success: false,
         error:
-          "AI server returned an empty response.",
-      };
-    }
-
-    if (data.success !== true) {
-      return {
-        success: false,
-        error:
-          typeof data.error === "string"
-            ? data.error
-            : "Code generation failed.",
+          result.error ||
+          "Code generation failed.",
       };
     }
 
     const code =
-      typeof data.text === "string"
-        ? data.text.trim()
-        : "";
+      result.text?.trim() || "";
 
     if (!code) {
       return {
@@ -88,6 +76,11 @@ Rules:
       code,
     };
   } catch (error) {
+    console.error(
+      "generateCode error:",
+      error
+    );
+
     return {
       success: false,
       error:
