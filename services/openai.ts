@@ -1,6 +1,21 @@
 import { supabase } from "./supabase";
 import { OPENAI_MODEL } from "./config";
 
+export type AIMessageRole =
+  | "user"
+  | "assistant"
+  | "system";
+
+export interface AIMessage {
+  role: AIMessageRole;
+  content: string;
+}
+
+export interface GenerateTextOptions {
+  systemPrompt?: string;
+  model?: string;
+}
+
 export interface GenerateTextResult {
   success: boolean;
   text?: string;
@@ -8,16 +23,34 @@ export interface GenerateTextResult {
 }
 
 export async function generateText(
-  prompt: string
+  messages: AIMessage[],
+  options: GenerateTextOptions = {}
 ): Promise<GenerateTextResult> {
-  const cleanPrompt = prompt.trim();
+  const cleanMessages = messages
+    .filter(
+      (message) =>
+        message &&
+        typeof message.content === "string" &&
+        message.content.trim().length > 0
+    )
+    .map((message) => ({
+      role: message.role,
+      content: message.content.trim(),
+    }));
 
-  if (!cleanPrompt) {
+  if (cleanMessages.length === 0) {
     return {
       success: false,
-      error: "Prompt is required.",
+      error: "At least one message is required.",
     };
   }
+
+  const systemPrompt =
+    options.systemPrompt?.trim() ||
+    "You are CREOVA AI Assistant. Give clear, useful and accurate answers.";
+
+  const model =
+    options.model?.trim() || OPENAI_MODEL;
 
   try {
     const { data, error } =
@@ -25,8 +58,9 @@ export async function generateText(
         "openai-chat",
         {
           body: {
-            prompt: cleanPrompt,
-            model: OPENAI_MODEL,
+            messages: cleanMessages,
+            systemPrompt,
+            model,
           },
         }
       );
@@ -53,12 +87,13 @@ export async function generateText(
       };
     }
 
-    if (data.success === false) {
+    if (data.success !== true) {
       return {
         success: false,
         error:
-          data.error ||
-          "AI service returned an error.",
+          typeof data.error === "string"
+            ? data.error
+            : "AI service returned an error.",
       };
     }
 
