@@ -9,6 +9,7 @@ import {
   View,
 } from "react-native";
 import { Audio, AVPlaybackStatus } from "expo-av";
+
 import { generateMusic } from "../services/music";
 
 export default function AIMusicScreen() {
@@ -19,12 +20,6 @@ export default function AIMusicScreen() {
 
   const soundRef = useRef<Audio.Sound | null>(null);
 
-  useEffect(() => {
-    return () => {
-      void unloadSound();
-    };
-  }, []);
-
   const unloadSound = async () => {
     const sound = soundRef.current;
 
@@ -34,25 +29,31 @@ export default function AIMusicScreen() {
 
     try {
       await sound.unloadAsync();
-    } catch {
-      // Sound already unloaded.
+    } catch (error) {
+      console.warn("Audio unload error:", error);
     } finally {
       soundRef.current = null;
       setPlaying(false);
     }
   };
 
+  useEffect(() => {
+    return () => {
+      void unloadSound();
+    };
+  }, []);
+
   const handlePlaybackStatus = (
-    status: AVPlaybackStatus
+    playbackStatus: AVPlaybackStatus
   ) => {
-    if (!status.isLoaded) {
+    if (!playbackStatus.isLoaded) {
       setPlaying(false);
       return;
     }
 
-    setPlaying(status.isPlaying);
+    setPlaying(playbackStatus.isPlaying);
 
-    if (status.didJustFinish) {
+    if (playbackStatus.didJustFinish) {
       setPlaying(false);
     }
   };
@@ -68,14 +69,17 @@ export default function AIMusicScreen() {
       return;
     }
 
+    if (loading) {
+      return;
+    }
+
     setLoading(true);
 
     try {
       await unloadSound();
       setAudioUrl(null);
 
-      const result =
-        await generateMusic(cleanPrompt);
+      const result = await generateMusic(cleanPrompt);
 
       if (!result.success) {
         Alert.alert(
@@ -86,7 +90,9 @@ export default function AIMusicScreen() {
         return;
       }
 
-      if (!result.audioUrl) {
+      const url = result.audioUrl?.trim();
+
+      if (!url) {
         Alert.alert(
           "CREOVA",
           "Мусиқа аудио файли олинмади."
@@ -94,13 +100,15 @@ export default function AIMusicScreen() {
         return;
       }
 
-      setAudioUrl(result.audioUrl);
+      setAudioUrl(url);
 
       Alert.alert(
         "CREOVA",
         "Мусиқа тайёр бўлди."
       );
     } catch (error) {
+      console.error("AI Music error:", error);
+
       Alert.alert(
         "Хатолик",
         error instanceof Error
@@ -113,21 +121,20 @@ export default function AIMusicScreen() {
   };
 
   const handlePlayPause = async () => {
-    if (!audioUrl) {
+    if (!audioUrl || loading) {
       return;
     }
 
     try {
       if (!soundRef.current) {
-        const { sound } =
-          await Audio.Sound.createAsync(
-            { uri: audioUrl },
-            {
-              shouldPlay: true,
-              progressUpdateIntervalMillis: 250,
-            },
-            handlePlaybackStatus
-          );
+        const { sound } = await Audio.Sound.createAsync(
+          { uri: audioUrl },
+          {
+            shouldPlay: true,
+            progressUpdateIntervalMillis: 250,
+          },
+          handlePlaybackStatus
+        );
 
         soundRef.current = sound;
         return;
@@ -147,6 +154,8 @@ export default function AIMusicScreen() {
         await soundRef.current.playAsync();
       }
     } catch (error) {
+      console.error("Audio playback error:", error);
+
       setPlaying(false);
 
       Alert.alert(
@@ -160,9 +169,7 @@ export default function AIMusicScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>
-        🎵 AI Music
-      </Text>
+      <Text style={styles.title}>🎵 AI Music</Text>
 
       <Text style={styles.subtitle}>
         CREOVA AI орқали мусиқа яратинг
@@ -184,7 +191,9 @@ export default function AIMusicScreen() {
           styles.generateButton,
           loading && styles.disabled,
         ]}
-        onPress={handleGenerate}
+        onPress={() => {
+          void handleGenerate();
+        }}
         disabled={loading}
       >
         {loading ? (
@@ -208,12 +217,12 @@ export default function AIMusicScreen() {
 
           <Pressable
             style={styles.playButton}
-            onPress={handlePlayPause}
+            onPress={() => {
+              void handlePlayPause();
+            }}
           >
             <Text style={styles.playButtonText}>
-              {playing
-                ? "⏸ Тўхтатиш"
-                : "▶️ Эшитиш"}
+              {playing ? "⏸ Тўхтатиш" : "▶️ Эшитиш"}
             </Text>
           </Pressable>
         </View>
@@ -297,17 +306,17 @@ const styles = StyleSheet.create({
   },
 
   playButton: {
-    height: 50,
-    marginTop: 18,
-    borderRadius: 12,
-    backgroundColor: "#16A34A",
+    height: 48,
+    marginTop: 16,
+    borderRadius: 10,
+    backgroundColor: "#2563EB",
     alignItems: "center",
     justifyContent: "center",
   },
 
   playButtonText: {
     color: "#FFFFFF",
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "700",
   },
 });
