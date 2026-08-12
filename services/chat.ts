@@ -1,6 +1,6 @@
 import {
   generateAIText,
-  AIMessage,
+  type AIMessage,
 } from "./ai";
 
 export interface ChatResponse {
@@ -15,7 +15,8 @@ export async function sendMessage(
   message: string,
   history: AIMessage[] = []
 ): Promise<ChatResponse> {
-  const cleanMessage = message.trim();
+  const cleanMessage =
+    message.trim();
 
   if (!cleanMessage) {
     return {
@@ -51,15 +52,13 @@ export async function sendMessage(
       return {
         success: false,
         error:
-          response.message ||
+          response.error ??
           "AI request failed.",
       };
     }
 
     const text =
-      typeof response.data === "string"
-        ? response.data.trim()
-        : "";
+      response.text?.trim() ?? "";
 
     if (!text) {
       return {
