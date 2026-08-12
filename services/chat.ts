@@ -1,4 +1,7 @@
-import { generateAIText } from "./ai";
+import {
+  generateAIText,
+  AIMessage,
+} from "./ai";
 
 export interface ChatResponse {
   success: boolean;
@@ -6,9 +9,12 @@ export interface ChatResponse {
   error?: string;
 }
 
-export const sendMessage = async (
-  message: string
-): Promise<ChatResponse> => {
+const MAX_HISTORY_MESSAGES = 40;
+
+export async function sendMessage(
+  message: string,
+  history: AIMessage[] = []
+): Promise<ChatResponse> {
   const cleanMessage = message.trim();
 
   if (!cleanMessage) {
@@ -18,24 +24,61 @@ export const sendMessage = async (
     };
   }
 
+  const cleanHistory = history
+    .filter(
+      (item) =>
+        item &&
+        (item.role === "user" ||
+          item.role === "assistant" ||
+          item.role === "system") &&
+        typeof item.content === "string" &&
+        item.content.trim().length > 0
+    )
+    .slice(-MAX_HISTORY_MESSAGES);
+
   try {
-    const response = await generateAIText({
-      prompt: cleanMessage,
-      provider: "openai",
-    });
+    const response =
+      await generateAIText(
+        cleanMessage,
+        {
+          messages: cleanHistory,
+          systemPrompt:
+            "You are CREOVA AI Assistant. Continue the conversation naturally. Remember the recent conversation context and answer clearly, accurately and helpfully.",
+        }
+      );
 
     if (!response.success) {
       return {
         success: false,
-        error: response.error ?? "AI request failed.",
+        error:
+          response.message ||
+          "AI request failed.",
+      };
+    }
+
+    const text =
+      typeof response.data === "string"
+        ? response.data.trim()
+        : "";
+
+    if (!text) {
+      return {
+        success: false,
+        error:
+          "AI returned an empty response.",
       };
     }
 
     return {
       success: true,
-      message: response.text ?? "",
+      message: text,
     };
   } catch (error) {
+    console.error(
+      "sendMessage error:",
+      error
+    );
+
     return {
       success: false,
       error:
@@ -44,4 +87,4 @@ export const sendMessage = async (
           : "Unexpected chat error.",
     };
   }
-};
+}
