@@ -5,16 +5,12 @@ import {
 } from "npm:@supabase/supabase-js@2.57.0";
 
 const OPENAI_API_KEY =
-  Deno.env.get(
-    "OPENAI_API_KEY"
-  );
+  Deno.env.get("OPENAI_API_KEY") ?? "";
 
 const SUPABASE_URL =
-  Deno.env.get(
-    "SUPABASE_URL"
-  );
+  Deno.env.get("SUPABASE_URL") ?? "";
 
-const SUPABASE_SECRET_KEY =
+const SUPABASE_SERVICE_ROLE_KEY =
   Deno.env.get(
     "SUPABASE_SERVICE_ROLE_KEY"
   ) ??
@@ -22,11 +18,6 @@ const SUPABASE_SECRET_KEY =
     "SUPABASE_SECRET_KEY"
   ) ??
   "";
-
-const SUPABASE_SECRET_KEYS =
-  Deno.env.get(
-    "SUPABASE_SECRET_KEYS"
-  );
 
 const OPENAI_BASE_URL =
   "https://api.openai.com/v1";
@@ -39,8 +30,7 @@ const CORS_HEADERS = {
     "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods":
     "POST, OPTIONS",
-  "Content-Type":
-    "application/json",
+  "Content-Type": "application/json",
 };
 
 type JsonObject =
@@ -54,57 +44,9 @@ function jsonResponse(
     JSON.stringify(body),
     {
       status,
-      headers:
-        CORS_HEADERS,
+      headers: CORS_HEADERS,
     }
   );
-}
-
-function getSecretKey(): string {
-  if (
-    SUPABASE_SECRET_KEY.trim()
-  ) {
-    return SUPABASE_SECRET_KEY.trim();
-  }
-
-  if (
-    !SUPABASE_SECRET_KEYS
-  ) {
-    throw new Error(
-      "Supabase server secret is not configured."
-    );
-  }
-
-  try {
-    const parsed =
-      JSON.parse(
-        SUPABASE_SECRET_KEYS
-      ) as Record<
-        string,
-        unknown
-      >;
-
-    const defaultKey =
-      parsed.default;
-
-    if (
-      typeof defaultKey !==
-        "string" ||
-      !defaultKey.trim()
-    ) {
-      throw new Error(
-        "Default Supabase secret key is missing."
-      );
-    }
-
-    return defaultKey.trim();
-  } catch (error) {
-    throw new Error(
-      error instanceof Error
-        ? error.message
-        : "Invalid SUPABASE_SECRET_KEYS."
-    );
-  }
 }
 
 function getAdminClient() {
@@ -114,15 +56,19 @@ function getAdminClient() {
     );
   }
 
+  if (!SUPABASE_SERVICE_ROLE_KEY) {
+    throw new Error(
+      "SUPABASE_SERVICE_ROLE_KEY is not configured."
+    );
+  }
+
   return createClient(
     SUPABASE_URL,
-    getSecretKey(),
+    SUPABASE_SERVICE_ROLE_KEY,
     {
       auth: {
-        autoRefreshToken:
-          false,
-        persistSession:
-          false,
+        autoRefreshToken: false,
+        persistSession: false,
       },
     }
   );
@@ -132,13 +78,10 @@ async function requireUser(
   req: Request
 ) {
   const authorization =
-    req.headers.get(
-      "Authorization"
-    );
+    req.headers.get("Authorization");
 
   if (
-    !authorization ||
-    !authorization.startsWith(
+    !authorization?.startsWith(
       "Bearer "
     )
   ) {
@@ -149,9 +92,7 @@ async function requireUser(
 
   const token =
     authorization
-      .slice(
-        "Bearer ".length
-      )
+      .slice("Bearer ".length)
       .trim();
 
   if (!token) {
@@ -171,10 +112,7 @@ async function requireUser(
       token
     );
 
-  if (
-    error ||
-    !data.user
-  ) {
+  if (error || !data.user) {
     throw new Error(
       "Invalid or expired authentication token."
     );
@@ -194,9 +132,7 @@ async function openAIRequest(
   }
 
   const headers =
-    new Headers(
-      options.headers
-    );
+    new Headers(options.headers);
 
   headers.set(
     "Authorization",
@@ -253,16 +189,14 @@ function getErrorMessage(
       ).message;
 
     if (
-      typeof message ===
-      "string"
+      typeof message === "string"
     ) {
       return message;
     }
   }
 
   if (
-    typeof data.raw ===
-    "string"
+    typeof data.raw === "string"
   ) {
     return data.raw;
   }
@@ -299,8 +233,7 @@ async function ensureVideoBucket() {
   }
 
   const {
-    error:
-      createError,
+    error: createError,
   } =
     await supabase.storage
       .createBucket(
@@ -317,9 +250,7 @@ async function ensureVideoBucket() {
     createError &&
     !createError.message
       .toLowerCase()
-      .includes(
-        "already exists"
-      )
+      .includes("already exists")
   ) {
     throw new Error(
       `Unable to create video bucket: ${createError.message}`
@@ -327,10 +258,49 @@ async function ensureVideoBucket() {
   }
 }
 
+async function getStoredVideoUrl(
+  videoId: string
+): Promise<string | null> {
+  await ensureVideoBucket();
+
+  const supabase =
+    getAdminClient();
+
+  const storagePath =
+    `${videoId}.mp4`;
+
+  const {
+    data,
+    error,
+  } =
+    await supabase.storage
+      .from(VIDEO_BUCKET)
+      .createSignedUrl(
+        storagePath,
+        3600
+      );
+
+  if (
+    error ||
+    !data?.signedUrl
+  ) {
+    return null;
+  }
+
+  return data.signedUrl;
+}
+
 async function downloadAndStoreVideo(
   videoId: string
 ): Promise<string> {
-  await ensureVideoBucket();
+  const existingUrl =
+    await getStoredVideoUrl(
+      videoId
+    );
+
+  if (existingUrl) {
+    return existingUrl;
+  }
 
   const response =
     await openAIRequest(
@@ -340,17 +310,14 @@ async function downloadAndStoreVideo(
       {
         method: "GET",
         headers: {
-          Accept:
-            "video/mp4",
+          Accept: "video/mp4",
         },
       }
     );
 
   if (!response.ok) {
     const errorData =
-      await readJson(
-        response
-      );
+      await readJson(response);
 
     throw new Error(
       getErrorMessage(
@@ -364,8 +331,7 @@ async function downloadAndStoreVideo(
     await response.arrayBuffer();
 
   if (
-    videoBuffer.byteLength ===
-    0
+    videoBuffer.byteLength === 0
   ) {
     throw new Error(
       "Generated MP4 is empty."
@@ -379,13 +345,10 @@ async function downloadAndStoreVideo(
     `${videoId}.mp4`;
 
   const {
-    error:
-      uploadError,
+    error: uploadError,
   } =
     await supabase.storage
-      .from(
-        VIDEO_BUCKET
-      )
+      .from(VIDEO_BUCKET)
       .upload(
         storagePath,
         videoBuffer,
@@ -404,13 +367,10 @@ async function downloadAndStoreVideo(
 
   const {
     data,
-    error:
-      signedUrlError,
+    error: signedUrlError,
   } =
     await supabase.storage
-      .from(
-        VIDEO_BUCKET
-      )
+      .from(VIDEO_BUCKET)
       .createSignedUrl(
         storagePath,
         3600
@@ -432,22 +392,17 @@ async function downloadAndStoreVideo(
 Deno.serve(
   async (req) => {
     if (
-      req.method ===
-      "OPTIONS"
+      req.method === "OPTIONS"
     ) {
-      return new Response(
-        "ok",
-        {
-          status: 200,
-          headers:
-            CORS_HEADERS,
-        }
-      );
+      return new Response("ok", {
+        status: 200,
+        headers:
+          CORS_HEADERS,
+      });
     }
 
     if (
-      req.method !==
-      "POST"
+      req.method !== "POST"
     ) {
       return jsonResponse(
         {
@@ -466,19 +421,6 @@ Deno.serve(
             success: false,
             error:
               "OPENAI_API_KEY is not configured.",
-          },
-          500
-        );
-      }
-
-      if (
-        !SUPABASE_URL
-      ) {
-        return jsonResponse(
-          {
-            success: false,
-            error:
-              "SUPABASE_URL is not configured.",
           },
           500
         );
@@ -508,10 +450,7 @@ Deno.serve(
           ? body.action.trim()
           : "";
 
-      if (
-        action ===
-        "create"
-      ) {
+      if (action === "create") {
         const prompt =
           typeof body.prompt ===
           "string"
@@ -546,10 +485,8 @@ Deno.serve(
           await openAIRequest(
             "/videos",
             {
-              method:
-                "POST",
-              body:
-                form,
+              method: "POST",
+              body: form,
             }
           );
 
@@ -558,9 +495,7 @@ Deno.serve(
             response
           );
 
-        if (
-          !response.ok
-        ) {
+        if (!response.ok) {
           return jsonResponse(
             {
               success: false,
@@ -590,8 +525,7 @@ Deno.serve(
 
         return jsonResponse({
           success: true,
-          videoId:
-            data.id,
+          videoId: data.id,
           status:
             typeof data.status ===
             "string"
@@ -611,10 +545,7 @@ Deno.serve(
         });
       }
 
-      if (
-        action ===
-        "status"
-      ) {
+      if (action === "status") {
         const videoId =
           typeof body.videoId ===
           "string"
@@ -638,8 +569,7 @@ Deno.serve(
               videoId
             )}`,
             {
-              method:
-                "GET",
+              method: "GET",
             }
           );
 
@@ -648,9 +578,7 @@ Deno.serve(
             response
           );
 
-        if (
-          !response.ok
-        ) {
+        if (!response.ok) {
           return jsonResponse(
             {
               success: false,
@@ -681,16 +609,13 @@ Deno.serve(
                   data.progress
                 )
               )
-            : status ===
-              "completed"
+            : status === "completed"
             ? 100
             : 0;
 
         if (
-          status ===
-            "failed" ||
-          status ===
-            "cancelled"
+          status === "failed" ||
+          status === "cancelled"
         ) {
           return jsonResponse({
             success: false,
@@ -706,8 +631,7 @@ Deno.serve(
         }
 
         if (
-          status ===
-          "completed"
+          status === "completed"
         ) {
           const videoUrl =
             await downloadAndStoreVideo(
@@ -717,10 +641,8 @@ Deno.serve(
           return jsonResponse({
             success: true,
             videoId,
-            status:
-              "completed",
-            progress:
-              100,
+            status: "completed",
+            progress: 100,
             videoUrl,
           });
         }
