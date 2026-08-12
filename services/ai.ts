@@ -1,75 +1,77 @@
-import { generateText } from "./openai";
+import {
+  generateText,
+  type ChatMessage,
+} from "./openai";
 
 export interface AIResponse {
   success: boolean;
-  message: string;
-  data?: unknown;
+  text?: string;
+  error?: string;
 }
 
-export interface AIMessage {
-  role: "user" | "assistant" | "system";
-  content: string;
-}
-
-export interface GenerateTextOptions {
-  messages?: AIMessage[];
-  systemPrompt?: string;
-  model?: string;
-}
-
-export async function generateAIText(
-  prompt: string,
-  options: GenerateTextOptions = {}
+export async function askAI(
+  message: string,
+  history: ChatMessage[] = []
 ): Promise<AIResponse> {
-  const cleanPrompt = prompt.trim();
+  const cleanMessage = message.trim();
 
-  if (!cleanPrompt) {
+  if (!cleanMessage) {
     return {
       success: false,
-      message: "Prompt is required.",
+      error: "Message is required.",
     };
   }
 
   try {
-    const messages: AIMessage[] = [
-      ...(options.messages ?? []),
+    const messages: ChatMessage[] = [
+      ...history,
       {
         role: "user",
-        content: cleanPrompt,
+        content: cleanMessage,
       },
     ];
 
-    const result = await generateText(
-      messages,
-      {
-        systemPrompt:
-          options.systemPrompt ??
-          "You are CREOVA AI Assistant. Give clear, useful and accurate answers.",
-        model: options.model,
-      }
-    );
+    const result =
+      await generateText(messages);
 
     if (!result.success) {
       return {
         success: false,
-        message: result.message,
+        error:
+          result.error ??
+          "AI request failed.",
+      };
+    }
+
+    const text =
+      typeof result.text === "string"
+        ? result.text.trim()
+        : "";
+
+    if (!text) {
+      return {
+        success: false,
+        error:
+          "AI returned an empty response.",
       };
     }
 
     return {
       success: true,
-      message: "AI response generated successfully.",
-      data: result.data,
+      text,
     };
   } catch (error) {
-    console.error("AI service error:", error);
+    console.error(
+      "askAI error:",
+      error
+    );
 
     return {
       success: false,
-      message:
+      error:
         error instanceof Error
           ? error.message
-          : "AI request failed.",
+          : "Unexpected AI error.",
     };
   }
 }
