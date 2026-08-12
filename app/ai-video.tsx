@@ -28,227 +28,383 @@ import {
 const POLL_INTERVAL_MS = 5000;
 const MAX_POLL_ATTEMPTS = 60;
 
+function normalizeProgress(
+  value: unknown
+): number {
+  if (
+    typeof value !== "number" ||
+    !Number.isFinite(value)
+  ) {
+    return 0;
+  }
+
+  return Math.max(
+    0,
+    Math.min(100, value)
+  );
+}
+
 export default function AIVideoScreen() {
-  const [prompt, setPrompt] = useState("");
+  const [prompt, setPrompt] =
+    useState("");
+
   const [videoId, setVideoId] =
     useState<string | null>(null);
+
   const [videoUrl, setVideoUrl] =
     useState<string | null>(null);
-  const [status, setStatus] = useState("idle");
-  const [progress, setProgress] = useState(0);
-  const [loading, setLoading] = useState(false);
 
-  const pollingRef = useRef<ReturnType<
-    typeof setInterval
-  > | null>(null);
+  const [status, setStatus] =
+    useState("idle");
 
-  const pollCountRef = useRef(0);
-  const checkingRef = useRef(false);
+  const [progress, setProgress] =
+    useState(0);
 
-  const player = useVideoPlayer(
-    videoUrl,
-    (videoPlayer) => {
-      videoPlayer.loop = false;
-    }
-  );
+  const [loading, setLoading] =
+    useState(false);
 
-  const stopPolling = useCallback(() => {
-    if (pollingRef.current) {
-      clearInterval(pollingRef.current);
-      pollingRef.current = null;
-    }
+  const mountedRef =
+    useRef(true);
 
-    checkingRef.current = false;
-  }, []);
+  const pollingTimerRef =
+    useRef<ReturnType<
+      typeof setTimeout
+    > | null>(null);
+
+  const pollCountRef =
+    useRef(0);
+
+  const checkingRef =
+    useRef(false);
+
+  const player =
+    useVideoPlayer(
+      videoUrl,
+      (videoPlayer) => {
+        videoPlayer.loop = false;
+      }
+    );
+
+  const clearPollingTimer =
+    useCallback(() => {
+      if (
+        pollingTimerRef.current
+      ) {
+        clearTimeout(
+          pollingTimerRef.current
+        );
+
+        pollingTimerRef.current =
+          null;
+      }
+    }, []);
+
+  const stopPolling =
+    useCallback(() => {
+      clearPollingTimer();
+      checkingRef.current =
+        false;
+    }, [clearPollingTimer]);
 
   useEffect(() => {
+    mountedRef.current = true;
+
     return () => {
-      stopPolling();
+      mountedRef.current = false;
+      clearPollingTimer();
     };
-  }, [stopPolling]);
+  }, [clearPollingTimer]);
 
-  const checkVideoStatus = useCallback(
-    async (id: string): Promise<boolean> => {
-      if (checkingRef.current) {
-        return false;
-      }
+  const scheduleNextCheck =
+    useCallback(
+      (id: string) => {
+        clearPollingTimer();
 
-      checkingRef.current = true;
+        if (
+          !mountedRef.current
+        ) {
+          return;
+        }
 
-      try {
-        const result = await getVideoStatus(id);
+        pollingTimerRef.current =
+          setTimeout(() => {
+            pollingTimerRef.current =
+              null;
 
-        if (!result.success) {
+            void checkVideoStatus(
+              id
+            );
+          }, POLL_INTERVAL_MS);
+      },
+      [clearPollingTimer]
+    );
+
+  const checkVideoStatus =
+    useCallback(
+      async (
+        id: string
+      ): Promise<boolean> => {
+        if (
+          !mountedRef.current ||
+          checkingRef.current
+        ) {
+          return false;
+        }
+
+        checkingRef.current =
+          true;
+
+        try {
+          const result =
+            await getVideoStatus(
+              id
+            );
+
+          if (
+            !mountedRef.current
+          ) {
+            return true;
+          }
+
+          if (!result.success) {
+            stopPolling();
+            setLoading(false);
+
+            Alert.alert(
+              "Video xatosi",
+              result.error ??
+                "Video holatini olishda xatolik yuz berdi."
+            );
+
+            return true;
+          }
+
+          const nextStatus =
+            result.status ??
+            "unknown";
+
+          const nextProgress =
+            normalizeProgress(
+              result.progress
+            );
+
+          setStatus(
+            nextStatus
+          );
+
+          setProgress(
+            nextProgress
+          );
+
+          if (
+            result.videoUrl
+          ) {
+            setVideoUrl(
+              result.videoUrl
+            );
+          }
+
+          if (
+            nextStatus ===
+            "completed"
+          ) {
+            stopPolling();
+            setLoading(false);
+
+            if (
+              result.videoUrl
+            ) {
+              Alert.alert(
+                "CREOVA",
+                "Video tayyor bo'ldi."
+              );
+            } else {
+              Alert.alert(
+                "CREOVA",
+                "Video tayyor, lekin MP4 URL olinmadi."
+              );
+            }
+
+            return true;
+          }
+
+          if (
+            nextStatus ===
+              "failed" ||
+            nextStatus ===
+              "cancelled"
+          ) {
+            stopPolling();
+            setLoading(false);
+
+            Alert.alert(
+              "Video yaratilmadi",
+              result.error ??
+                `Video holati: ${nextStatus}`
+            );
+
+            return true;
+          }
+
+          pollCountRef.current +=
+            1;
+
+          if (
+            pollCountRef.current >=
+            MAX_POLL_ATTEMPTS
+          ) {
+            stopPolling();
+            setLoading(false);
+
+            Alert.alert(
+              "CREOVA",
+              "Video yaratish juda uzoq davom etdi. Keyinroq statusni qayta tekshiring."
+            );
+
+            return true;
+          }
+
+          scheduleNextCheck(id);
+
+          return false;
+        } catch (error) {
+          if (
+            !mountedRef.current
+          ) {
+            return true;
+          }
+
           stopPolling();
           setLoading(false);
 
           Alert.alert(
             "Video xatosi",
-            result.error ??
-              "Video holatini olishda xatolik yuz berdi."
+            error instanceof Error
+              ? error.message
+              : "Video holatini tekshirishda xatolik."
           );
 
           return true;
+        } finally {
+          checkingRef.current =
+            false;
         }
+      },
+      [
+        scheduleNextCheck,
+        stopPolling,
+      ]
+    );
 
-        const nextStatus =
-          result.status ?? "unknown";
+  const handleGenerate =
+    async () => {
+      const cleanPrompt =
+        prompt.trim();
 
-        setStatus(nextStatus);
-        setProgress(result.progress ?? 0);
+      if (!cleanPrompt) {
+        Alert.alert(
+          "CREOVA",
+          "Video uchun prompt kiriting."
+        );
+        return;
+      }
 
-        if (result.videoUrl) {
-          setVideoUrl(result.videoUrl);
-        }
+      if (loading) {
+        return;
+      }
 
-        if (nextStatus === "completed") {
-          stopPolling();
-          setLoading(false);
+      stopPolling();
 
-          Alert.alert(
-            "CREOVA",
-            result.videoUrl
-              ? "Video tayyor bo'ldi."
-              : "Video tayyor, lekin MP4 URL olinmadi."
+      pollCountRef.current = 0;
+
+      setLoading(true);
+      setVideoId(null);
+      setVideoUrl(null);
+      setStatus("queued");
+      setProgress(0);
+
+      try {
+        const result =
+          await generateVideo(
+            cleanPrompt
           );
 
-          return true;
+        if (
+          !mountedRef.current
+        ) {
+          return;
         }
 
         if (
-          nextStatus === "failed" ||
-          nextStatus === "cancelled"
+          !result.success ||
+          !result.videoId
         ) {
-          stopPolling();
           setLoading(false);
 
           Alert.alert(
             "Video yaratilmadi",
             result.error ??
-              `Video holati: ${nextStatus}`
+              "Video generation failed."
           );
 
-          return true;
+          return;
         }
 
-        pollCountRef.current += 1;
+        const id =
+          result.videoId;
+
+        setVideoId(id);
+
+        setStatus(
+          result.status ??
+            "queued"
+        );
+
+        setProgress(
+          normalizeProgress(
+            result.progress
+          )
+        );
 
         if (
-          pollCountRef.current >=
-          MAX_POLL_ATTEMPTS
+          result.videoUrl
         ) {
-          stopPolling();
-          setLoading(false);
-
-          Alert.alert(
-            "CREOVA",
-            "Video yaratish juda uzoq davom etdi. Keyinroq statusni qayta tekshiring."
+          setVideoUrl(
+            result.videoUrl
           );
-
-          return true;
         }
 
-        return false;
+        const finished =
+          await checkVideoStatus(
+            id
+          );
+
+        if (
+          finished ||
+          !mountedRef.current
+        ) {
+          return;
+        }
+
+        scheduleNextCheck(id);
       } catch (error) {
+        if (
+          !mountedRef.current
+        ) {
+          return;
+        }
+
         stopPolling();
         setLoading(false);
 
         Alert.alert(
-          "Video xatosi",
+          "Xatolik",
           error instanceof Error
             ? error.message
-            : "Video holatini tekshirishda xatolik."
+            : "Video yaratishda kutilmagan xatolik yuz berdi."
         );
-
-        return true;
-      } finally {
-        checkingRef.current = false;
       }
-    },
-    [stopPolling]
-  );
-
-  const handleGenerate = async () => {
-    const cleanPrompt = prompt.trim();
-
-    if (!cleanPrompt) {
-      Alert.alert(
-        "CREOVA",
-        "Video uchun prompt kiriting."
-      );
-      return;
-    }
-
-    if (loading) {
-      return;
-    }
-
-    stopPolling();
-
-    pollCountRef.current = 0;
-
-    setLoading(true);
-    setVideoId(null);
-    setVideoUrl(null);
-    setStatus("queued");
-    setProgress(0);
-
-    try {
-      const result =
-        await generateVideo(cleanPrompt);
-
-      if (
-        !result.success ||
-        !result.videoId
-      ) {
-        setLoading(false);
-
-        Alert.alert(
-          "Video yaratilmadi",
-          result.error ??
-            "Video generation failed."
-        );
-
-        return;
-      }
-
-      const id = result.videoId;
-
-      setVideoId(id);
-      setStatus(
-        result.status ?? "queued"
-      );
-      setProgress(
-        result.progress ?? 0
-      );
-
-      if (result.videoUrl) {
-        setVideoUrl(result.videoUrl);
-      }
-
-      const finished =
-        await checkVideoStatus(id);
-
-      if (finished) {
-        return;
-      }
-
-      pollingRef.current =
-        setInterval(() => {
-          void checkVideoStatus(id);
-        }, POLL_INTERVAL_MS);
-    } catch (error) {
-      stopPolling();
-      setLoading(false);
-
-      Alert.alert(
-        "Xatolik",
-        error instanceof Error
-          ? error.message
-          : "Video yaratishda kutilmagan xatolik yuz berdi."
-      );
-    }
-  };
+    };
 
   return (
     <View style={styles.container}>
@@ -274,7 +430,8 @@ export default function AIVideoScreen() {
       <Pressable
         style={[
           styles.button,
-          loading && styles.buttonDisabled,
+          loading &&
+            styles.buttonDisabled,
         ]}
         onPress={() => {
           void handleGenerate();
@@ -282,26 +439,39 @@ export default function AIVideoScreen() {
         disabled={loading}
       >
         {loading ? (
-          <ActivityIndicator color="#FFFFFF" />
+          <ActivityIndicator
+            color="#FFFFFF"
+          />
         ) : (
-          <Text style={styles.buttonText}>
+          <Text
+            style={styles.buttonText}
+          >
             Video yaratish
           </Text>
         )}
       </Pressable>
 
       {videoId && (
-        <View style={styles.statusCard}>
-          <Text style={styles.statusTitle}>
+        <View
+          style={styles.statusCard}
+        >
+          <Text
+            style={styles.statusTitle}
+          >
             Video holati
           </Text>
 
-          <Text style={styles.statusText}>
+          <Text
+            style={styles.statusText}
+          >
             {status}
           </Text>
 
-          <Text style={styles.progressText}>
-            Progress: {progress}%
+          <Text
+            style={styles.progressText}
+          >
+            Progress:{" "}
+            {Math.round(progress)}%
           </Text>
 
           {loading && (
@@ -311,21 +481,33 @@ export default function AIVideoScreen() {
             />
           )}
 
-          {status === "completed" &&
+          {status ===
+            "completed" &&
             videoUrl && (
-              <View style={styles.videoContainer}>
+              <View
+                style={
+                  styles.videoContainer
+                }
+              >
                 <VideoView
                   player={player}
-                  style={styles.video}
+                  style={
+                    styles.video
+                  }
                   nativeControls
                   contentFit="contain"
                 />
               </View>
             )}
 
-          {status === "completed" &&
+          {status ===
+            "completed" &&
             !videoUrl && (
-              <Text style={styles.errorText}>
+              <Text
+                style={
+                  styles.errorText
+                }
+              >
                 MP4 URL olinmadi.
               </Text>
             )}
@@ -342,113 +524,123 @@ export default function AIVideoScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#0F172A",
-    padding: 20,
-    paddingTop: 60,
-  },
+const styles =
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor:
+        "#0F172A",
+      padding: 20,
+      paddingTop: 60,
+    },
 
-  title: {
-    color: "#FFFFFF",
-    fontSize: 30,
-    fontWeight: "800",
-    textAlign: "center",
-  },
+    title: {
+      color: "#FFFFFF",
+      fontSize: 30,
+      fontWeight: "800",
+      textAlign: "center",
+    },
 
-  subtitle: {
-    color: "#94A3B8",
-    marginTop: 8,
-    marginBottom: 24,
-    fontSize: 16,
-    textAlign: "center",
-  },
+    subtitle: {
+      color: "#94A3B8",
+      marginTop: 8,
+      marginBottom: 24,
+      fontSize: 16,
+      textAlign: "center",
+    },
 
-  input: {
-    minHeight: 120,
-    borderWidth: 1,
-    borderColor: "#334155",
-    borderRadius: 14,
-    backgroundColor: "#1E293B",
-    color: "#FFFFFF",
-    padding: 14,
-    fontSize: 16,
-    textAlignVertical: "top",
-  },
+    input: {
+      minHeight: 120,
+      borderWidth: 1,
+      borderColor:
+        "#334155",
+      borderRadius: 14,
+      backgroundColor:
+        "#1E293B",
+      color: "#FFFFFF",
+      padding: 14,
+      fontSize: 16,
+      textAlignVertical:
+        "top",
+    },
 
-  button: {
-    height: 52,
-    marginTop: 14,
-    borderRadius: 12,
-    backgroundColor: "#2563EB",
-    alignItems: "center",
-    justifyContent: "center",
-  },
+    button: {
+      height: 52,
+      marginTop: 14,
+      borderRadius: 12,
+      backgroundColor:
+        "#2563EB",
+      alignItems: "center",
+      justifyContent:
+        "center",
+    },
 
-  buttonDisabled: {
-    opacity: 0.6,
-  },
+    buttonDisabled: {
+      opacity: 0.6,
+    },
 
-  buttonText: {
-    color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "700",
-  },
+    buttonText: {
+      color: "#FFFFFF",
+      fontSize: 16,
+      fontWeight: "700",
+    },
 
-  statusCard: {
-    marginTop: 24,
-    padding: 18,
-    borderRadius: 14,
-    backgroundColor: "#1E293B",
-    borderWidth: 1,
-    borderColor: "#334155",
-  },
+    statusCard: {
+      marginTop: 24,
+      padding: 18,
+      borderRadius: 14,
+      backgroundColor:
+        "#1E293B",
+      borderWidth: 1,
+      borderColor:
+        "#334155",
+    },
 
-  statusTitle: {
-    color: "#CBD5E1",
-    fontSize: 14,
-    fontWeight: "700",
-  },
+    statusTitle: {
+      color: "#CBD5E1",
+      fontSize: 14,
+      fontWeight: "700",
+    },
 
-  statusText: {
-    color: "#FFFFFF",
-    fontSize: 20,
-    fontWeight: "700",
-    marginTop: 8,
-  },
+    statusText: {
+      color: "#FFFFFF",
+      fontSize: 20,
+      fontWeight: "700",
+      marginTop: 8,
+    },
 
-  progressText: {
-    color: "#94A3B8",
-    fontSize: 14,
-    marginTop: 8,
-  },
+    progressText: {
+      color: "#94A3B8",
+      fontSize: 14,
+      marginTop: 8,
+    },
 
-  loader: {
-    marginTop: 14,
-  },
+    loader: {
+      marginTop: 14,
+    },
 
-  videoContainer: {
-    marginTop: 16,
-    borderRadius: 12,
-    overflow: "hidden",
-    backgroundColor: "#000000",
-  },
+    videoContainer: {
+      marginTop: 16,
+      borderRadius: 12,
+      overflow: "hidden",
+      backgroundColor:
+        "#000000",
+    },
 
-  video: {
-    width: "100%",
-    height: 240,
-  },
+    video: {
+      width: "100%",
+      height: 240,
+    },
 
-  videoId: {
-    color: "#64748B",
-    fontSize: 12,
-    marginTop: 10,
-  },
+    videoId: {
+      color: "#64748B",
+      fontSize: 12,
+      marginTop: 10,
+    },
 
-  errorText: {
-    color: "#F87171",
-    fontSize: 14,
-    marginTop: 14,
-  },
-});
+    errorText: {
+      color: "#F87171",
+      fontSize: 14,
+      marginTop: 14,
+    },
+  });
