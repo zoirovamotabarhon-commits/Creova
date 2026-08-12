@@ -1,15 +1,30 @@
 import "react-native-url-polyfill/auto";
+
 import AsyncStorage from "@react-native-async-storage/async-storage";
+
 import {
   createClient,
   processLock,
 } from "@supabase/supabase-js";
 
 const SUPABASE_URL =
-  "https://krlvzkfevvgorhwaplcb.supabase.co";
+  process.env.EXPO_PUBLIC_SUPABASE_URL?.trim();
 
 const SUPABASE_PUBLISHABLE_KEY =
-  "sb_publishable_tAth3o5tfcb7s5_XmGsnUg_PD-mkrhD";
+  process.env
+    .EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY?.trim();
+
+if (!SUPABASE_URL) {
+  throw new Error(
+    "EXPO_PUBLIC_SUPABASE_URL is not configured."
+  );
+}
+
+if (!SUPABASE_PUBLISHABLE_KEY) {
+  throw new Error(
+    "EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY is not configured."
+  );
+}
 
 export const supabase = createClient(
   SUPABASE_URL,
