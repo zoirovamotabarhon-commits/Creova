@@ -1,10 +1,6 @@
 export {
   askAI,
   generateAIText,
-  generateAIImage,
-  generateAIVideo,
-  generateAIMusic,
-  generateAIVoice,
 } from "./ai";
 
 export {
@@ -16,7 +12,6 @@ export {
 export {
   sendMessage,
   type ChatResponse,
-  type SendMessageOptions,
 } from "./chat";
 
 export {
