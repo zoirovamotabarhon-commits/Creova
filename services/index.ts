@@ -9,7 +9,6 @@ export {
 
 export {
   generateText,
-  type ChatMessage,
   type AIMessage,
   type AIMessageRole,
 } from "./openai";
