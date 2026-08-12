@@ -1,27 +1,31 @@
 export {
+  askAI,
+  generateAIText,
+  generateAIImage,
+  generateAIVideo,
+  generateAIMusic,
+  generateAIVoice,
+} from "./ai";
+
+export {
+  generateText,
+  type ChatMessage,
+  type AIMessage,
+  type AIMessageRole,
+} from "./openai";
+
+export {
+  sendMessage,
+  type ChatResponse,
+  type SendMessageOptions,
+} from "./chat";
+
+export {
   login,
   register,
   logout,
   resetPassword,
+  getCurrentUser,
   getCurrentSession,
   type AuthResponse,
 } from "./auth";
-
-export {
-  getCurrentUser,
-  type CurrentUser,
-} from "./user";
-
-export * from "./ai";
-export * from "./api";
-export * from "./chat";
-export * from "./config";
-export * from "./image";
-export * from "./music";
-export * from "./openai";
-export * from "./profile";
-export * from "./prompt";
-export * from "./storage";
-export * from "./supabase";
-export * from "./video";
-export * from "./voice";
