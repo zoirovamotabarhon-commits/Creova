@@ -1,7 +1,14 @@
-import {
-  generateText,
-  type ChatMessage,
-} from "./openai";
+import { generateText } from "./openai";
+
+export type AIMessageRole =
+  | "user"
+  | "assistant"
+  | "system";
+
+export interface AIMessage {
+  role: AIMessageRole;
+  content: string;
+}
 
 export interface AIResponse {
   success: boolean;
@@ -9,30 +16,54 @@ export interface AIResponse {
   error?: string;
 }
 
-export async function askAI(
-  message: string,
-  history: ChatMessage[] = []
-): Promise<AIResponse> {
-  const cleanMessage = message.trim();
+export interface GenerateAITextOptions {
+  messages?: AIMessage[];
+  systemPrompt?: string;
+  model?: string;
+}
 
-  if (!cleanMessage) {
+export async function generateAIText(
+  prompt: string,
+  options: GenerateAITextOptions = {}
+): Promise<AIResponse> {
+  const cleanPrompt = prompt.trim();
+
+  if (!cleanPrompt) {
     return {
       success: false,
-      error: "Message is required.",
+      error: "Prompt is required.",
     };
   }
 
-  try {
-    const messages: ChatMessage[] = [
-      ...history,
-      {
-        role: "user",
-        content: cleanMessage,
-      },
-    ];
+  const history = (options.messages ?? [])
+    .filter(
+      (message) =>
+        message &&
+        (message.role === "user" ||
+          message.role === "assistant" ||
+          message.role === "system") &&
+        typeof message.content === "string" &&
+        message.content.trim().length > 0
+    )
+    .slice(-40);
 
-    const result =
-      await generateText(messages);
+  const messages: AIMessage[] = [
+    ...history,
+    {
+      role: "user",
+      content: cleanPrompt,
+    },
+  ];
+
+  try {
+    const result = await generateText(
+      messages,
+      {
+        systemPrompt:
+          options.systemPrompt,
+        model: options.model,
+      }
+    );
 
     if (!result.success) {
       return {
@@ -44,9 +75,7 @@ export async function askAI(
     }
 
     const text =
-      typeof result.text === "string"
-        ? result.text.trim()
-        : "";
+      result.text?.trim() ?? "";
 
     if (!text) {
       return {
@@ -62,7 +91,7 @@ export async function askAI(
     };
   } catch (error) {
     console.error(
-      "askAI error:",
+      "generateAIText error:",
       error
     );
 
@@ -74,4 +103,16 @@ export async function askAI(
           : "Unexpected AI error.",
     };
   }
+}
+
+export async function askAI(
+  message: string,
+  history: AIMessage[] = []
+): Promise<AIResponse> {
+  return generateAIText(
+    message,
+    {
+      messages: history,
+    }
+  );
 }
