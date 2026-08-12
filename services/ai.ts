@@ -1,14 +1,12 @@
-import { generateText } from "./openai";
+import {
+  generateText,
+  type AIMessage,
+} from "./openai";
 
-export type AIMessageRole =
-  | "user"
-  | "assistant"
-  | "system";
-
-export interface AIMessage {
-  role: AIMessageRole;
-  content: string;
-}
+export type {
+  AIMessage,
+  AIMessageRole,
+} from "./openai";
 
 export interface AIResponse {
   success: boolean;
@@ -35,14 +33,19 @@ export async function generateAIText(
     };
   }
 
-  const history = (options.messages ?? [])
+  const history = (
+    options.messages ?? []
+  )
     .filter(
       (message) =>
         message &&
-        (message.role === "user" ||
+        (
+          message.role === "user" ||
           message.role === "assistant" ||
-          message.role === "system") &&
-        typeof message.content === "string" &&
+          message.role === "system"
+        ) &&
+        typeof message.content ===
+          "string" &&
         message.content.trim().length > 0
     )
     .slice(-40);
@@ -56,14 +59,16 @@ export async function generateAIText(
   ];
 
   try {
-    const result = await generateText(
-      messages,
-      {
-        systemPrompt:
-          options.systemPrompt,
-        model: options.model,
-      }
-    );
+    const result =
+      await generateText(
+        messages,
+        {
+          systemPrompt:
+            options.systemPrompt,
+          model:
+            options.model,
+        }
+      );
 
     if (!result.success) {
       return {
