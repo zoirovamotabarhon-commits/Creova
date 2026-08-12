@@ -9,6 +9,9 @@
     "assetBundlePatterns": [
       "**/*"
     ],
+    "plugins": [
+      "expo-router"
+    ],
     "android": {
       "package": "com.creova.app"
     },
