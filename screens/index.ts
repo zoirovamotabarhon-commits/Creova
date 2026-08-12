@@ -1,3 +1,13 @@
 export { default as HomeScreen } from "./HomeScreen";
 export { default as LoginScreen } from "./LoginScreen";
+export { default as RegisterScreen } from "./RegisterScreen";
+export { default as ForgotPasswordScreen } from "./ForgotPasswordScreen";
+export { default as ResetPasswordScreen } from "./ResetPasswordScreen";
 export { default as ProfileScreen } from "./ProfileScreen";
+
+export { default as AIChatScreen } from "./AIChatScreen";
+export { default as AICodeScreen } from "./AICodeScreen";
+export { default as AIImageScreen } from "./AIImageScreen";
+export { default as AIMusicScreen } from "./AIMusicScreen";
+export { default as AIVideoScreen } from "./AIVideoScreen";
+export { default as AIVoiceScreen } from "./AIVoiceScreen";
