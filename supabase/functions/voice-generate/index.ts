@@ -10,9 +10,12 @@ const OPENAI_API_KEY =
 const SUPABASE_URL =
   Deno.env.get("SUPABASE_URL");
 
-const SUPABASE_SECRET_KEYS =
+const SUPABASE_SERVICE_ROLE_KEY =
   Deno.env.get(
-    "SUPABASE_SECRET_KEYS"
+    "SUPABASE_SERVICE_ROLE_KEY"
+  ) ??
+  Deno.env.get(
+    "SUPABASE_SECRET_KEY"
   );
 
 const CORS_HEADERS = {
@@ -38,31 +41,16 @@ function jsonResponse(
   );
 }
 
-function getSecretKey(): string {
-  if (!SUPABASE_SECRET_KEYS) {
-    throw new Error(
-      "SUPABASE_SECRET_KEYS is not configured."
-    );
-  }
-
-  const keys =
-    JSON.parse(
-      SUPABASE_SECRET_KEYS
-    ) as Record<string, unknown>;
-
-  const key =
-    keys.default;
-
+function getServiceRoleKey(): string {
   if (
-    typeof key !== "string" ||
-    !key.trim()
+    !SUPABASE_SERVICE_ROLE_KEY
   ) {
     throw new Error(
-      "Default Supabase secret key is missing."
+      "SUPABASE_SERVICE_ROLE_KEY is not configured."
     );
   }
 
-  return key;
+  return SUPABASE_SERVICE_ROLE_KEY;
 }
 
 async function requireUser(
@@ -101,7 +89,7 @@ async function requireUser(
   const supabase =
     createClient(
       SUPABASE_URL,
-      getSecretKey(),
+      getServiceRoleKey(),
       {
         auth: {
           autoRefreshToken:
@@ -163,10 +151,11 @@ function arrayBufferToBase64(
   return btoa(binary);
 }
 
-const openai = new OpenAI({
-  apiKey:
-    OPENAI_API_KEY,
-});
+const openai =
+  new OpenAI({
+    apiKey:
+      OPENAI_API_KEY,
+  });
 
 Deno.serve(
   async (req) => {
