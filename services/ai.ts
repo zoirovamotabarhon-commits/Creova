@@ -1,62 +1,75 @@
 import { generateText } from "./openai";
-import { generateImage } from "./image";
-import { generateVideo } from "./video";
-import { generateMusic } from "./music";
-import { generateVoice } from "./voice";
 
-export type AIProvider = "openai";
-
-export interface AIRequest {
-  prompt: string;
-  provider?: AIProvider;
+export interface AIResponse {
+  success: boolean;
+  message: string;
+  data?: unknown;
 }
 
-function validatePrompt(prompt: string): string {
+export interface AIMessage {
+  role: "user" | "assistant" | "system";
+  content: string;
+}
+
+export interface GenerateTextOptions {
+  messages?: AIMessage[];
+  systemPrompt?: string;
+  model?: string;
+}
+
+export async function generateAIText(
+  prompt: string,
+  options: GenerateTextOptions = {}
+): Promise<AIResponse> {
   const cleanPrompt = prompt.trim();
 
   if (!cleanPrompt) {
-    throw new Error("Prompt is required.");
-  }
-
-  return cleanPrompt;
-}
-
-export async function generateAIText({
-  prompt,
-  provider = "openai",
-}: AIRequest) {
-  const cleanPrompt = validatePrompt(prompt);
-
-  if (provider !== "openai") {
     return {
       success: false,
-      error: `Unsupported AI provider: ${provider}`,
+      message: "Prompt is required.",
     };
   }
 
-  return generateText(cleanPrompt);
-}
+  try {
+    const messages: AIMessage[] = [
+      ...(options.messages ?? []),
+      {
+        role: "user",
+        content: cleanPrompt,
+      },
+    ];
 
-export async function generateAIImage({
-  prompt,
-}: AIRequest) {
-  return generateImage(validatePrompt(prompt));
-}
+    const result = await generateText(
+      messages,
+      {
+        systemPrompt:
+          options.systemPrompt ??
+          "You are CREOVA AI Assistant. Give clear, useful and accurate answers.",
+        model: options.model,
+      }
+    );
 
-export async function generateAIVideo({
-  prompt,
-}: AIRequest) {
-  return generateVideo(validatePrompt(prompt));
-}
+    if (!result.success) {
+      return {
+        success: false,
+        message: result.message,
+      };
+    }
 
-export async function generateAIMusic({
-  prompt,
-}: AIRequest) {
-  return generateMusic(validatePrompt(prompt));
-}
+    return {
+      success: true,
+      message: "AI response generated successfully.",
+      data: result.data,
+    };
+  } catch (error) {
+    console.error("AI service error:", error);
 
-export async function generateAIVoice({
-  prompt,
-}: AIRequest) {
-  return generateVoice(validatePrompt(prompt));
+    return {
+      success: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : "AI request failed.",
+    };
+  }
 }
