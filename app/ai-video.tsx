@@ -1,4 +1,5 @@
 import {
+  useCallback,
   useEffect,
   useRef,
   useState,
@@ -24,77 +25,60 @@ import {
   getVideoStatus,
 } from "../services/video";
 
+const POLL_INTERVAL_MS = 5000;
+const MAX_POLL_ATTEMPTS = 60;
+
 export default function AIVideoScreen() {
-  const [prompt, setPrompt] =
-    useState("");
-
+  const [prompt, setPrompt] = useState("");
   const [videoId, setVideoId] =
-    useState<string | null>(
-      null
-    );
-
+    useState<string | null>(null);
   const [videoUrl, setVideoUrl] =
-    useState<string | null>(
-      null
-    );
+    useState<string | null>(null);
+  const [status, setStatus] = useState("idle");
+  const [progress, setProgress] = useState(0);
+  const [loading, setLoading] = useState(false);
 
-  const [status, setStatus] =
-    useState("idle");
+  const pollingRef = useRef<ReturnType<
+    typeof setInterval
+  > | null>(null);
 
-  const [progress, setProgress] =
-    useState(0);
+  const pollCountRef = useRef(0);
+  const checkingRef = useRef(false);
 
-  const [loading, setLoading] =
-    useState(false);
-
-  const pollingRef =
-    useRef<ReturnType<
-      typeof setInterval
-    > | null>(null);
-
-  const player =
-    useVideoPlayer(
-      videoUrl,
-      (videoPlayer) => {
-        videoPlayer.loop =
-          false;
-      }
-    );
-
-  const stopPolling = () => {
-    if (
-      pollingRef.current
-    ) {
-      clearInterval(
-        pollingRef.current
-      );
-
-      pollingRef.current =
-        null;
+  const player = useVideoPlayer(
+    videoUrl,
+    (videoPlayer) => {
+      videoPlayer.loop = false;
     }
-  };
+  );
+
+  const stopPolling = useCallback(() => {
+    if (pollingRef.current) {
+      clearInterval(pollingRef.current);
+      pollingRef.current = null;
+    }
+
+    checkingRef.current = false;
+  }, []);
 
   useEffect(() => {
     return () => {
       stopPolling();
     };
-  }, []);
+  }, [stopPolling]);
 
-  const checkVideoStatus =
-    async (
-      id: string
-    ): Promise<boolean> => {
+  const checkVideoStatus = useCallback(
+    async (id: string): Promise<boolean> => {
+      if (checkingRef.current) {
+        return false;
+      }
+
+      checkingRef.current = true;
+
       try {
-        const result =
-          await getVideoStatus(
-            id
-          );
+        const result = await getVideoStatus(id);
 
-        if (
-          !result.success &&
-          result.status !==
-            "completed"
-        ) {
+        if (!result.success) {
           stopPolling();
           setLoading(false);
 
@@ -107,28 +91,17 @@ export default function AIVideoScreen() {
           return true;
         }
 
-        setStatus(
-          result.status ??
-            "unknown"
-        );
+        const nextStatus =
+          result.status ?? "unknown";
 
-        setProgress(
-          result.progress ??
-            0
-        );
+        setStatus(nextStatus);
+        setProgress(result.progress ?? 0);
 
-        if (
-          result.videoUrl
-        ) {
-          setVideoUrl(
-            result.videoUrl
-          );
+        if (result.videoUrl) {
+          setVideoUrl(result.videoUrl);
         }
 
-        if (
-          result.status ===
-          "completed"
-        ) {
+        if (nextStatus === "completed") {
           stopPolling();
           setLoading(false);
 
@@ -143,10 +116,8 @@ export default function AIVideoScreen() {
         }
 
         if (
-          result.status ===
-            "failed" ||
-          result.status ===
-            "cancelled"
+          nextStatus === "failed" ||
+          nextStatus === "cancelled"
         ) {
           stopPolling();
           setLoading(false);
@@ -154,7 +125,24 @@ export default function AIVideoScreen() {
           Alert.alert(
             "Video yaratilmadi",
             result.error ??
-              `Video holati: ${result.status}`
+              `Video holati: ${nextStatus}`
+          );
+
+          return true;
+        }
+
+        pollCountRef.current += 1;
+
+        if (
+          pollCountRef.current >=
+          MAX_POLL_ATTEMPTS
+        ) {
+          stopPolling();
+          setLoading(false);
+
+          Alert.alert(
+            "CREOVA",
+            "Video yaratish juda uzoq davom etdi. Keyinroq statusni qayta tekshiring."
           );
 
           return true;
@@ -173,115 +161,102 @@ export default function AIVideoScreen() {
         );
 
         return true;
+      } finally {
+        checkingRef.current = false;
       }
-    };
+    },
+    [stopPolling]
+  );
 
-  const handleGenerate =
-    async () => {
-      const cleanPrompt =
-        prompt.trim();
+  const handleGenerate = async () => {
+    const cleanPrompt = prompt.trim();
 
-      if (!cleanPrompt) {
-        Alert.alert(
-          "CREOVA",
-          "Video uchun prompt kiriting."
-        );
-        return;
-      }
+    if (!cleanPrompt) {
+      Alert.alert(
+        "CREOVA",
+        "Video uchun prompt kiriting."
+      );
+      return;
+    }
 
-      stopPolling();
+    if (loading) {
+      return;
+    }
 
-      setLoading(true);
-      setVideoId(null);
-      setVideoUrl(null);
-      setStatus("queued");
-      setProgress(0);
+    stopPolling();
 
-      try {
-        const result =
-          await generateVideo(
-            cleanPrompt
-          );
+    pollCountRef.current = 0;
 
-        if (
-          !result.success ||
-          !result.videoId
-        ) {
-          setLoading(false);
+    setLoading(true);
+    setVideoId(null);
+    setVideoUrl(null);
+    setStatus("queued");
+    setProgress(0);
 
-          Alert.alert(
-            "Video yaratilmadi",
-            result.error ??
-              "Video generation failed."
-          );
+    try {
+      const result =
+        await generateVideo(cleanPrompt);
 
-          return;
-        }
-
-        const id =
-          result.videoId;
-
-        setVideoId(id);
-
-        setStatus(
-          result.status ??
-            "queued"
-        );
-
-        setProgress(
-          result.progress ??
-            0
-        );
-
-        if (
-          result.videoUrl
-        ) {
-          setVideoUrl(
-            result.videoUrl
-          );
-        }
-
-        const finished =
-          await checkVideoStatus(
-            id
-          );
-
-        if (finished) {
-          return;
-        }
-
-        pollingRef.current =
-          setInterval(() => {
-            void checkVideoStatus(
-              id
-            );
-          }, 5000);
-      } catch (error) {
-        stopPolling();
+      if (
+        !result.success ||
+        !result.videoId
+      ) {
         setLoading(false);
 
         Alert.alert(
-          "Xatolik",
-          error instanceof Error
-            ? error.message
-            : "Video yaratishda kutilmagan xatolik yuz berdi."
+          "Video yaratilmadi",
+          result.error ??
+            "Video generation failed."
         );
+
+        return;
       }
-    };
+
+      const id = result.videoId;
+
+      setVideoId(id);
+      setStatus(
+        result.status ?? "queued"
+      );
+      setProgress(
+        result.progress ?? 0
+      );
+
+      if (result.videoUrl) {
+        setVideoUrl(result.videoUrl);
+      }
+
+      const finished =
+        await checkVideoStatus(id);
+
+      if (finished) {
+        return;
+      }
+
+      pollingRef.current =
+        setInterval(() => {
+          void checkVideoStatus(id);
+        }, POLL_INTERVAL_MS);
+    } catch (error) {
+      stopPolling();
+      setLoading(false);
+
+      Alert.alert(
+        "Xatolik",
+        error instanceof Error
+          ? error.message
+          : "Video yaratishda kutilmagan xatolik yuz berdi."
+      );
+    }
+  };
 
   return (
-    <View
-      style={styles.container}
-    >
-      <Text
-        style={styles.title}
-      >
+    <View style={styles.container}>
+      <Text style={styles.title}>
         🎬 AI Video
       </Text>
 
-      <Text
-        style={styles.subtitle}
-      >
+      <Text style={styles.subtitle}>
         CREOVA AI orqali video yarating
       </Text>
 
@@ -293,100 +268,64 @@ export default function AIVideoScreen() {
         onChangeText={setPrompt}
         multiline
         editable={!loading}
+        textAlignVertical="top"
       />
 
       <Pressable
         style={[
           styles.button,
-          loading &&
-            styles.buttonDisabled,
+          loading && styles.buttonDisabled,
         ]}
-        onPress={
-          handleGenerate
-        }
+        onPress={() => {
+          void handleGenerate();
+        }}
         disabled={loading}
       >
         {loading ? (
-          <ActivityIndicator
-            color="#FFFFFF"
-          />
+          <ActivityIndicator color="#FFFFFF" />
         ) : (
-          <Text
-            style={
-              styles.buttonText
-            }
-          >
+          <Text style={styles.buttonText}>
             Video yaratish
           </Text>
         )}
       </Pressable>
 
       {videoId && (
-        <View
-          style={
-            styles.statusCard
-          }
-        >
-          <Text
-            style={
-              styles.statusTitle
-            }
-          >
+        <View style={styles.statusCard}>
+          <Text style={styles.statusTitle}>
             Video holati
           </Text>
 
-          <Text
-            style={
-              styles.statusText
-            }
-          >
+          <Text style={styles.statusText}>
             {status}
           </Text>
 
-          <Text
-            style={
-              styles.progressText
-            }
-          >
+          <Text style={styles.progressText}>
             Progress: {progress}%
           </Text>
 
           {loading && (
             <ActivityIndicator
               color="#60A5FA"
-              style={
-                styles.loader
-              }
+              style={styles.loader}
             />
           )}
 
-          {status ===
-            "completed" &&
+          {status === "completed" &&
             videoUrl && (
-              <View
-                style={
-                  styles.videoContainer
-                }
-              >
+              <View style={styles.videoContainer}>
                 <VideoView
                   player={player}
-                  style={
-                    styles.video
-                  }
+                  style={styles.video}
                   nativeControls
                   contentFit="contain"
                 />
               </View>
             )}
 
-          {status ===
-            "completed" &&
+          {status === "completed" &&
             !videoUrl && (
-              <Text
-                style={
-                  styles.errorText
-                }
-              >
+              <Text style={styles.errorText}>
                 MP4 URL olinmadi.
               </Text>
             )}
@@ -403,123 +342,113 @@ export default function AIVideoScreen() {
   );
 }
 
-const styles =
-  StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor:
-        "#0F172A",
-      padding: 20,
-      paddingTop: 60,
-    },
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#0F172A",
+    padding: 20,
+    paddingTop: 60,
+  },
 
-    title: {
-      color: "#FFFFFF",
-      fontSize: 30,
-      fontWeight: "800",
-      textAlign: "center",
-    },
+  title: {
+    color: "#FFFFFF",
+    fontSize: 30,
+    fontWeight: "800",
+    textAlign: "center",
+  },
 
-    subtitle: {
-      color: "#94A3B8",
-      marginTop: 8,
-      marginBottom: 24,
-      fontSize: 16,
-      textAlign: "center",
-    },
+  subtitle: {
+    color: "#94A3B8",
+    marginTop: 8,
+    marginBottom: 24,
+    fontSize: 16,
+    textAlign: "center",
+  },
 
-    input: {
-      minHeight: 120,
-      borderWidth: 1,
-      borderColor:
-        "#334155",
-      borderRadius: 14,
-      backgroundColor:
-        "#1E293B",
-      color: "#FFFFFF",
-      padding: 14,
-      fontSize: 16,
-      textAlignVertical:
-        "top",
-    },
+  input: {
+    minHeight: 120,
+    borderWidth: 1,
+    borderColor: "#334155",
+    borderRadius: 14,
+    backgroundColor: "#1E293B",
+    color: "#FFFFFF",
+    padding: 14,
+    fontSize: 16,
+    textAlignVertical: "top",
+  },
 
-    button: {
-      height: 52,
-      marginTop: 14,
-      borderRadius: 12,
-      backgroundColor:
-        "#2563EB",
-      alignItems: "center",
-      justifyContent:
-        "center",
-    },
+  button: {
+    height: 52,
+    marginTop: 14,
+    borderRadius: 12,
+    backgroundColor: "#2563EB",
+    alignItems: "center",
+    justifyContent: "center",
+  },
 
-    buttonDisabled: {
-      opacity: 0.6,
-    },
+  buttonDisabled: {
+    opacity: 0.6,
+  },
 
-    buttonText: {
-      color: "#FFFFFF",
-      fontSize: 16,
-      fontWeight: "700",
-    },
+  buttonText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "700",
+  },
 
-    statusCard: {
-      marginTop: 24,
-      padding: 18,
-      borderRadius: 14,
-      backgroundColor:
-        "#1E293B",
-      borderWidth: 1,
-      borderColor:
-        "#334155",
-    },
+  statusCard: {
+    marginTop: 24,
+    padding: 18,
+    borderRadius: 14,
+    backgroundColor: "#1E293B",
+    borderWidth: 1,
+    borderColor: "#334155",
+  },
 
-    statusTitle: {
-      color: "#CBD5E1",
-      fontSize: 14,
-      fontWeight: "700",
-    },
+  statusTitle: {
+    color: "#CBD5E1",
+    fontSize: 14,
+    fontWeight: "700",
+  },
 
-    statusText: {
-      color: "#FFFFFF",
-      fontSize: 20,
-      fontWeight: "700",
-      marginTop: 8,
-    },
+  statusText: {
+    color: "#FFFFFF",
+    fontSize: 20,
+    fontWeight: "700",
+    marginTop: 8,
+  },
 
-    progressText: {
-      color: "#94A3B8",
-      fontSize: 14,
-      marginTop: 8,
-    },
+  progressText: {
+    color: "#94A3B8",
+    fontSize: 14,
+    marginTop: 8,
+  },
 
-    loader: {
-      marginTop: 14,
-    },
+  loader: {
+    marginTop: 14,
+  },
 
-    videoContainer: {
-      marginTop: 16,
-      borderRadius: 12,
-      overflow: "hidden",
-      backgroundColor:
-        "#000000",
-    },
+  videoContainer: {
+    marginTop: 16,
+    borderRadius: 12,
+    overflow: "hidden",
+    backgroundColor: "#000000",
+  },
 
-    video: {
-      width: "100%",
-      height: 240,
-    },
+  video: {
+    width: "100%",
+    height: 240,
+  },
 
-    videoId: {
-      color: "#64748B",
-      fontSize: 12,
-      marginTop: 10,
-    },
+  videoId: {
+    color: "#64748B",
+    fontSize: 12,
+    marginTop: 10,
+  },
 
-    errorText: {
-      color: "#F87171",
-      fontSize: 14,
-      marginTop: 14,
-    },
-  });
+  errorText: {
+    color: "#F87171",
+    fontSize: 14,
+    marginTop: 14,
+  },
+});
