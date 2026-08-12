@@ -5,19 +5,33 @@ import {
 } from "npm:@supabase/supabase-js@2.57.0";
 
 const OPENAI_API_KEY =
-  Deno.env.get("OPENAI_API_KEY");
+  Deno.env.get(
+    "OPENAI_API_KEY"
+  );
 
 const SUPABASE_URL =
-  Deno.env.get("SUPABASE_URL");
+  Deno.env.get(
+    "SUPABASE_URL"
+  );
+
+const SUPABASE_SECRET_KEY =
+  Deno.env.get(
+    "SUPABASE_SERVICE_ROLE_KEY"
+  ) ??
+  Deno.env.get(
+    "SUPABASE_SECRET_KEY"
+  ) ??
+  "";
 
 const SUPABASE_SECRET_KEYS =
-  Deno.env.get("SUPABASE_SECRET_KEYS");
+  Deno.env.get(
+    "SUPABASE_SECRET_KEYS"
+  );
 
 const OPENAI_BASE_URL =
   "https://api.openai.com/v1";
 
-const VIDEO_BUCKET =
-  "videos";
+const VIDEO_BUCKET = "videos";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -46,21 +60,32 @@ function jsonResponse(
   );
 }
 
-function getDefaultSecretKey(): string {
-  if (!SUPABASE_SECRET_KEYS) {
+function getSecretKey(): string {
+  if (
+    SUPABASE_SECRET_KEY.trim()
+  ) {
+    return SUPABASE_SECRET_KEY.trim();
+  }
+
+  if (
+    !SUPABASE_SECRET_KEYS
+  ) {
     throw new Error(
-      "SUPABASE_SECRET_KEYS is not configured."
+      "Supabase server secret is not configured."
     );
   }
 
   try {
-    const keys =
+    const parsed =
       JSON.parse(
         SUPABASE_SECRET_KEYS
-      ) as Record<string, unknown>;
+      ) as Record<
+        string,
+        unknown
+      >;
 
     const defaultKey =
-      keys.default;
+      parsed.default;
 
     if (
       typeof defaultKey !==
@@ -91,11 +116,13 @@ function getAdminClient() {
 
   return createClient(
     SUPABASE_URL,
-    getDefaultSecretKey(),
+    getSecretKey(),
     {
       auth: {
-        autoRefreshToken: false,
-        persistSession: false,
+        autoRefreshToken:
+          false,
+        persistSession:
+          false,
       },
     }
   );
@@ -122,7 +149,9 @@ async function requireUser(
 
   const token =
     authorization
-      .slice("Bearer ".length)
+      .slice(
+        "Bearer ".length
+      )
       .trim();
 
   if (!token) {
@@ -183,7 +212,7 @@ async function openAIRequest(
   );
 }
 
-async function readOpenAIJson(
+async function readJson(
   response: Response
 ): Promise<JsonObject> {
   const text =
@@ -208,19 +237,17 @@ function getErrorMessage(
   data: JsonObject,
   fallback: string
 ): string {
-  const errorObject =
+  const errorValue =
     data.error;
 
   if (
-    typeof errorObject ===
+    typeof errorValue ===
       "object" &&
-    errorObject !== null &&
-    "message" in
-      errorObject
+    errorValue !== null
   ) {
     const message =
       (
-        errorObject as {
+        errorValue as {
           message?: unknown;
         }
       ).message;
@@ -321,7 +348,7 @@ async function downloadAndStoreVideo(
 
   if (!response.ok) {
     const errorData =
-      await readOpenAIJson(
+      await readJson(
         response
       );
 
@@ -445,22 +472,19 @@ Deno.serve(
       }
 
       if (
-        !SUPABASE_URL ||
-        !SUPABASE_SECRET_KEYS
+        !SUPABASE_URL
       ) {
         return jsonResponse(
           {
             success: false,
             error:
-              "Supabase server configuration is missing.",
+              "SUPABASE_URL is not configured.",
           },
           500
         );
       }
 
-      await requireUser(
-        req
-      );
+      await requireUser(req);
 
       let body: JsonObject;
 
@@ -481,7 +505,7 @@ Deno.serve(
       const action =
         typeof body.action ===
         "string"
-          ? body.action
+          ? body.action.trim()
           : "";
 
       if (
@@ -489,13 +513,12 @@ Deno.serve(
         "create"
       ) {
         const prompt =
-          body.prompt;
+          typeof body.prompt ===
+          "string"
+            ? body.prompt.trim()
+            : "";
 
-        if (
-          typeof prompt !==
-            "string" ||
-          !prompt.trim()
-        ) {
+        if (!prompt) {
           return jsonResponse(
             {
               success: false,
@@ -516,7 +539,7 @@ Deno.serve(
 
         form.append(
           "prompt",
-          prompt.trim()
+          prompt
         );
 
         const response =
@@ -531,7 +554,7 @@ Deno.serve(
           );
 
         const data =
-          await readOpenAIJson(
+          await readJson(
             response
           );
 
@@ -577,7 +600,13 @@ Deno.serve(
           progress:
             typeof data.progress ===
             "number"
-              ? data.progress
+              ? Math.max(
+                  0,
+                  Math.min(
+                    100,
+                    data.progress
+                  )
+                )
               : 0,
         });
       }
@@ -587,13 +616,12 @@ Deno.serve(
         "status"
       ) {
         const videoId =
-          body.videoId;
+          typeof body.videoId ===
+          "string"
+            ? body.videoId.trim()
+            : "";
 
-        if (
-          typeof videoId !==
-            "string" ||
-          !videoId.trim()
-        ) {
+        if (!videoId) {
           return jsonResponse(
             {
               success: false,
@@ -604,13 +632,10 @@ Deno.serve(
           );
         }
 
-        const id =
-          videoId.trim();
-
         const response =
           await openAIRequest(
             `/videos/${encodeURIComponent(
-              id
+              videoId
             )}`,
             {
               method:
@@ -619,7 +644,7 @@ Deno.serve(
           );
 
         const data =
-          await readOpenAIJson(
+          await readJson(
             response
           );
 
@@ -629,8 +654,7 @@ Deno.serve(
           return jsonResponse(
             {
               success: false,
-              videoId:
-                id,
+              videoId,
               error:
                 getErrorMessage(
                   data,
@@ -670,8 +694,7 @@ Deno.serve(
         ) {
           return jsonResponse({
             success: false,
-            videoId:
-              data.id ?? id,
+            videoId,
             status,
             progress,
             error:
@@ -688,13 +711,12 @@ Deno.serve(
         ) {
           const videoUrl =
             await downloadAndStoreVideo(
-              id
+              videoId
             );
 
           return jsonResponse({
             success: true,
-            videoId:
-              data.id ?? id,
+            videoId,
             status:
               "completed",
             progress:
@@ -705,8 +727,7 @@ Deno.serve(
 
         return jsonResponse({
           success: true,
-          videoId:
-            data.id ?? id,
+          videoId,
           status,
           progress,
         });
