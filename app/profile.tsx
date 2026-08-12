@@ -1,4 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useState,
+} from "react";
+
 import {
   ActivityIndicator,
   Alert,
@@ -9,144 +14,156 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { supabase } from "../services/supabase";
+
+import {
+  getProfile,
+  updateProfile,
+} from "../services/profile";
 
 export default function ProfileScreen() {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [name, setName] =
+    useState("");
 
-  useEffect(() => {
-    let mounted = true;
+  const [email, setEmail] =
+    useState("");
 
-    const loadProfile = async () => {
+  const [loading, setLoading] =
+    useState(true);
+
+  const [saving, setSaving] =
+    useState(false);
+
+  const loadProfile =
+    useCallback(async () => {
+      setLoading(true);
+
       try {
-        const {
-          data: { user },
-          error,
-        } = await supabase.auth.getUser();
+        const result =
+          await getProfile();
 
-        if (error) {
-          throw error;
-        }
-
-        if (!mounted) {
+        if (!result.success) {
+          Alert.alert(
+            "Error",
+            result.error ??
+              "Failed to load profile."
+          );
           return;
         }
 
-        if (!user) {
+        if (!result.data) {
           setName("");
           setEmail("");
           return;
         }
 
-        setEmail(user.email ?? "");
+        setName(
+          result.data.name ?? ""
+        );
 
-        const metadataName =
-          typeof user.user_metadata?.name === "string"
-            ? user.user_metadata.name
-            : "";
-
-        setName(metadataName);
+        setEmail(
+          result.data.email ?? ""
+        );
       } catch (error) {
-        console.error("Profile load error:", error);
+        console.error(
+          "Profile load error:",
+          error
+        );
 
-        if (mounted) {
-          Alert.alert(
-            "Error",
-            error instanceof Error
-              ? error.message
-              : "Failed to load profile."
-          );
-        }
-      } finally {
-        if (mounted) {
-          setLoading(false);
-        }
-      }
-    };
-
-    void loadProfile();
-
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
-  const saveProfile = async () => {
-    const cleanName = name.trim();
-
-    if (!cleanName) {
-      Alert.alert("Error", "Name is required.");
-      return;
-    }
-
-    setSaving(true);
-
-    try {
-      const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser();
-
-      if (userError) {
-        throw userError;
-      }
-
-      if (!user) {
         Alert.alert(
           "Error",
-          "You must be logged in."
+          error instanceof Error
+            ? error.message
+            : "Failed to load profile."
+        );
+      } finally {
+        setLoading(false);
+      }
+    }, []);
+
+  useEffect(() => {
+    void loadProfile();
+  }, [loadProfile]);
+
+  const saveProfile =
+    async () => {
+      const cleanName =
+        name.trim();
+
+      if (!cleanName) {
+        Alert.alert(
+          "Error",
+          "Name is required."
         );
         return;
       }
 
-      const { error } =
-        await supabase.auth.updateUser({
-          data: {
-            name: cleanName,
-          },
-        });
-
-      if (error) {
-        throw error;
+      if (saving) {
+        return;
       }
 
-      setName(cleanName);
+      setSaving(true);
 
-      Alert.alert(
-        "Success",
-        "Profile updated successfully."
-      );
-    } catch (error) {
-      console.error(
-        "Profile update error:",
-        error
-      );
+      try {
+        const result =
+          await updateProfile({
+            name: cleanName,
+          });
 
-      Alert.alert(
-        "Error",
-        error instanceof Error
-          ? error.message
-          : "Failed to update profile."
-      );
-    } finally {
-      setSaving(false);
-    }
-  };
+        if (!result.success) {
+          Alert.alert(
+            "Error",
+            result.error ??
+              "Failed to update profile."
+          );
+          return;
+        }
+
+        if (result.data) {
+          setName(
+            result.data.name ?? ""
+          );
+
+          setEmail(
+            result.data.email ?? ""
+          );
+        }
+
+        Alert.alert(
+          "Success",
+          "Profile updated successfully."
+        );
+      } catch (error) {
+        console.error(
+          "Profile update error:",
+          error
+        );
+
+        Alert.alert(
+          "Error",
+          error instanceof Error
+            ? error.message
+            : "Failed to update profile."
+        );
+      } finally {
+        setSaving(false);
+      }
+    };
 
   if (loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" />
+        <ActivityIndicator
+          size="large"
+        />
       </View>
     );
   }
 
   return (
     <ScrollView
-      contentContainerStyle={styles.container}
+      contentContainerStyle={
+        styles.container
+      }
       keyboardShouldPersistTaps="handled"
     >
       <View style={styles.card}>
@@ -163,6 +180,7 @@ export default function ProfileScreen() {
           onChangeText={setName}
           placeholder="Enter your name"
           autoCapitalize="words"
+          autoCorrect={false}
           style={styles.input}
           editable={!saving}
         />
@@ -175,6 +193,7 @@ export default function ProfileScreen() {
           value={email}
           editable={false}
           autoCapitalize="none"
+          autoCorrect={false}
           keyboardType="email-address"
           style={[
             styles.input,
@@ -185,7 +204,8 @@ export default function ProfileScreen() {
         <TouchableOpacity
           style={[
             styles.button,
-            saving && styles.disabledButton,
+            saving &&
+              styles.disabledButton,
           ]}
           onPress={() => {
             void saveProfile();
@@ -193,9 +213,15 @@ export default function ProfileScreen() {
           disabled={saving}
         >
           {saving ? (
-            <ActivityIndicator color="#ffffff" />
+            <ActivityIndicator
+              color="#ffffff"
+            />
           ) : (
-            <Text style={styles.buttonText}>
+            <Text
+              style={
+                styles.buttonText
+              }
+            >
               Save Changes
             </Text>
           )}
@@ -205,68 +231,71 @@ export default function ProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flexGrow: 1,
-    padding: 20,
-  },
+const styles =
+  StyleSheet.create({
+    container: {
+      flexGrow: 1,
+      padding: 20,
+    },
 
-  center: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
+    center: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+    },
 
-  card: {
-    width: "100%",
-    maxWidth: 600,
-    alignSelf: "center",
-  },
+    card: {
+      width: "100%",
+      maxWidth: 600,
+      alignSelf: "center",
+    },
 
-  title: {
-    fontSize: 28,
-    fontWeight: "700",
-    marginBottom: 30,
-  },
+    title: {
+      fontSize: 28,
+      fontWeight: "700",
+      marginBottom: 30,
+    },
 
-  label: {
-    fontSize: 15,
-    fontWeight: "600",
-    marginBottom: 8,
-    marginTop: 16,
-  },
+    label: {
+      fontSize: 15,
+      fontWeight: "600",
+      marginBottom: 8,
+      marginTop: 16,
+    },
 
-  input: {
-    width: "100%",
-    minHeight: 48,
-    borderWidth: 1,
-    borderColor: "#d1d5db",
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    fontSize: 16,
-    backgroundColor: "#ffffff",
-  },
+    input: {
+      width: "100%",
+      minHeight: 48,
+      borderWidth: 1,
+      borderColor: "#d1d5db",
+      borderRadius: 10,
+      paddingHorizontal: 14,
+      fontSize: 16,
+      backgroundColor:
+        "#ffffff",
+    },
 
-  disabledInput: {
-    opacity: 0.65,
-  },
+    disabledInput: {
+      opacity: 0.65,
+    },
 
-  button: {
-    minHeight: 48,
-    marginTop: 28,
-    borderRadius: 10,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#111827",
-  },
+    button: {
+      minHeight: 48,
+      marginTop: 28,
+      borderRadius: 10,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor:
+        "#111827",
+    },
 
-  disabledButton: {
-    opacity: 0.6,
-  },
+    disabledButton: {
+      opacity: 0.6,
+    },
 
-  buttonText: {
-    color: "#ffffff",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-});
+    buttonText: {
+      color: "#ffffff",
+      fontSize: 16,
+      fontWeight: "600",
+    },
+  });
