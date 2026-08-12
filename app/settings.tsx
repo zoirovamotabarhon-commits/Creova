@@ -3,16 +3,20 @@ import {
   useState,
 } from "react";
 import {
+  ActivityIndicator,
   Alert,
+  Pressable,
   StyleSheet,
   Switch,
   Text,
   View,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { router } from "expo-router";
 
 import { STORAGE_KEYS } from "../utils/storageKeys";
 import { useTheme } from "../hooks/useTheme";
+import { logout } from "../services/auth";
 
 const DEFAULT_NOTIFICATIONS = true;
 
@@ -35,6 +39,11 @@ export default function SettingsScreen() {
     notificationsLoading,
     setNotificationsLoading,
   ] = useState(true);
+
+  const [
+    logoutLoading,
+    setLogoutLoading,
+  ] = useState(false);
 
   useEffect(() => {
     const loadNotifications =
@@ -90,6 +99,37 @@ export default function SettingsScreen() {
       }
     };
 
+  const handleLogout = async () => {
+    if (logoutLoading) {
+      return;
+    }
+
+    setLogoutLoading(true);
+
+    try {
+      const result = await logout();
+
+      if (!result.success) {
+        Alert.alert(
+          "CREOVA",
+          result.message
+        );
+        return;
+      }
+
+      router.replace("/login");
+    } catch (error) {
+      Alert.alert(
+        "CREOVA",
+        error instanceof Error
+          ? error.message
+          : "Logout vaqtida xatolik yuz berdi."
+      );
+    } finally {
+      setLogoutLoading(false);
+    }
+  };
+
   if (
     themeLoading ||
     notificationsLoading
@@ -104,13 +144,10 @@ export default function SettingsScreen() {
           },
         ]}
       >
-        <Text
-          style={{
-            color: colors.text,
-          }}
-        >
-          Юкланмоқда...
-        </Text>
+        <ActivityIndicator
+          size="large"
+          color={colors.primary}
+        />
       </View>
     );
   }
@@ -241,6 +278,39 @@ export default function SettingsScreen() {
           />
         </View>
       </View>
+
+      <Pressable
+        style={[
+          styles.logoutButton,
+          {
+            borderColor:
+              colors.border,
+          },
+          logoutLoading &&
+            styles.disabledButton,
+        ]}
+        onPress={() => {
+          void handleLogout();
+        }}
+        disabled={logoutLoading}
+      >
+        {logoutLoading ? (
+          <ActivityIndicator
+            color={colors.text}
+          />
+        ) : (
+          <Text
+            style={[
+              styles.logoutText,
+              {
+                color: colors.text,
+              },
+            ]}
+          >
+            Chiqish
+          </Text>
+        )}
+      </Pressable>
     </View>
   );
 }
@@ -294,5 +364,23 @@ const styles = StyleSheet.create({
 
   divider: {
     height: 1,
+  },
+
+  logoutButton: {
+    minHeight: 52,
+    marginTop: 24,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  logoutText: {
+    fontSize: 16,
+    fontWeight: "700",
+  },
+
+  disabledButton: {
+    opacity: 0.6,
   },
 });
