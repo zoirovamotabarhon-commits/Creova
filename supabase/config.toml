@@ -1,4 +1,4 @@
-project_id = "creova"
+project_id = "krlvzkfevvgorhwa"
 
 [functions.openai-chat]
 verify_jwt = true
