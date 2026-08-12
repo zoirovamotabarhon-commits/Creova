@@ -1,0 +1,16 @@
+project_id = "creova"
+
+[functions.openai-chat]
+verify_jwt = true
+
+[functions.image-generate]
+verify_jwt = true
+
+[functions.music-generate]
+verify_jwt = true
+
+[functions.video-generate]
+verify_jwt = true
+
+[functions.voice-generate]
+verify_jwt = true
