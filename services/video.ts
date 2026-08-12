@@ -22,19 +22,29 @@ const normalizeProgress = (
   );
 };
 
+const normalizeStatus = (
+  value: unknown
+): string => {
+  if (typeof value !== "string") {
+    return "unknown";
+  }
+
+  return value.trim() || "unknown";
+};
+
 export async function generateVideo(
   prompt: string
 ): Promise<VideoResponse> {
+  const cleanPrompt = prompt.trim();
+
+  if (!cleanPrompt) {
+    return {
+      success: false,
+      error: "Prompt is required.",
+    };
+  }
+
   try {
-    const cleanPrompt = prompt.trim();
-
-    if (!cleanPrompt) {
-      return {
-        success: false,
-        error: "Prompt is required.",
-      };
-    }
-
     const {
       data,
       error,
@@ -55,17 +65,23 @@ export async function generateVideo(
       };
     }
 
+    if (!data) {
+      return {
+        success: false,
+        error:
+          "Video server returned an empty response.",
+      };
+    }
+
     if (
-      !data ||
       data.success !== true ||
-      typeof data.videoId !==
-        "string"
+      typeof data.videoId !== "string" ||
+      !data.videoId.trim()
     ) {
       return {
         success: false,
         error:
-          typeof data?.error ===
-          "string"
+          typeof data.error === "string"
             ? data.error
             : "Video generation could not be started.",
       };
@@ -73,23 +89,26 @@ export async function generateVideo(
 
     return {
       success: true,
-      videoId: data.videoId,
-      status:
-        typeof data.status ===
-        "string"
-          ? data.status
-          : "queued",
+      videoId: data.videoId.trim(),
+      status: normalizeStatus(
+        data.status
+      ),
       progress:
         normalizeProgress(
           data.progress
         ),
       videoUrl:
-        typeof data.videoUrl ===
-        "string"
-          ? data.videoUrl
+        typeof data.videoUrl === "string" &&
+        data.videoUrl.trim()
+          ? data.videoUrl.trim()
           : undefined,
     };
   } catch (error) {
+    console.error(
+      "generateVideo error:",
+      error
+    );
+
     return {
       success: false,
       error:
@@ -103,18 +122,17 @@ export async function generateVideo(
 export async function getVideoStatus(
   videoId: string
 ): Promise<VideoResponse> {
+  const cleanVideoId =
+    videoId.trim();
+
+  if (!cleanVideoId) {
+    return {
+      success: false,
+      error: "Video ID is required.",
+    };
+  }
+
   try {
-    const cleanVideoId =
-      videoId.trim();
-
-    if (!cleanVideoId) {
-      return {
-        success: false,
-        error:
-          "Video ID is required.",
-      };
-    }
-
     const {
       data,
       error,
@@ -143,35 +161,38 @@ export async function getVideoStatus(
       };
     }
 
+    const status =
+      normalizeStatus(data.status);
+
     return {
       success:
         data.success === true,
       videoId:
-        typeof data.videoId ===
-        "string"
-          ? data.videoId
+        typeof data.videoId === "string" &&
+        data.videoId.trim()
+          ? data.videoId.trim()
           : cleanVideoId,
-      status:
-        typeof data.status ===
-        "string"
-          ? data.status
-          : "unknown",
+      status,
       progress:
         normalizeProgress(
           data.progress
         ),
       videoUrl:
-        typeof data.videoUrl ===
-        "string"
-          ? data.videoUrl
+        typeof data.videoUrl === "string" &&
+        data.videoUrl.trim()
+          ? data.videoUrl.trim()
           : undefined,
       error:
-        typeof data.error ===
-        "string"
+        typeof data.error === "string"
           ? data.error
           : undefined,
     };
   } catch (error) {
+    console.error(
+      "getVideoStatus error:",
+      error
+    );
+
     return {
       success: false,
       error:
