@@ -15,35 +15,65 @@ export interface ProfileResponse {
   error?: string;
 }
 
+const PROFILE_COLUMNS =
+  "id, name, email, avatar_url, created_at, updated_at";
+
+async function getAuthenticatedUser() {
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
+
+  if (error) {
+    return {
+      success: false as const,
+      user: null,
+      error: error.message,
+    };
+  }
+
+  if (!user) {
+    return {
+      success: false as const,
+      user: null,
+      error:
+        "User is not authenticated.",
+    };
+  }
+
+  return {
+    success: true as const,
+    user,
+    error: undefined,
+  };
+}
+
 export async function getProfile(
   userId?: string
 ): Promise<ProfileResponse> {
   try {
-    let id = userId?.trim();
+    const authResult =
+      await getAuthenticatedUser();
 
-    if (!id) {
-      const {
-        data: {
-          user,
-        },
-        error,
-      } = await supabase.auth.getUser();
+    if (
+      !authResult.success
+    ) {
+      return {
+        success: false,
+        error: authResult.error,
+      };
+    }
 
-      if (error) {
-        return {
-          success: false,
-          error: error.message,
-        };
-      }
+    const id =
+      userId?.trim() ||
+      authResult.user.id;
 
-      if (!user) {
-        return {
-          success: false,
-          error: "User is not authenticated.",
-        };
-      }
-
-      id = user.id;
+    if (id !== authResult.user.id) {
+      return {
+        success: false,
+        error:
+          "You can only access your own profile.",
+      };
     }
 
     const {
@@ -51,9 +81,7 @@ export async function getProfile(
       error,
     } = await supabase
       .from("profiles")
-      .select(
-        "id, name, email, avatar_url, created_at, updated_at"
-      )
+      .select(PROFILE_COLUMNS)
       .eq("id", id)
       .maybeSingle();
 
@@ -64,10 +92,28 @@ export async function getProfile(
       };
     }
 
-    return {
-      success: true,
-      data: data as Profile | null,
-    };
+    if (data) {
+      return {
+        success: true,
+        data: data as Profile,
+      };
+    }
+
+    const createResult =
+      await createProfile();
+
+    if (
+      !createResult.success
+    ) {
+      return {
+        success: false,
+        error:
+          createResult.error ??
+          "Profile does not exist.",
+      };
+    }
+
+    return createResult;
   } catch (error) {
     console.error(
       "getProfile error:",
@@ -88,31 +134,43 @@ export async function createProfile(
   profile: Partial<
     Pick<
       Profile,
-      "name" | "email" | "avatar_url"
+      "name" |
+        "email" |
+        "avatar_url"
     >
-  >
+  > = {}
 ): Promise<ProfileResponse> {
   try {
-    const {
-      data: {
-        user,
-      },
-      error: userError,
-    } = await supabase.auth.getUser();
+    const authResult =
+      await getAuthenticatedUser();
 
-    if (userError) {
+    if (
+      !authResult.success
+    ) {
       return {
         success: false,
-        error: userError.message,
+        error: authResult.error,
       };
     }
 
-    if (!user) {
-      return {
-        success: false,
-        error: "User is not authenticated.",
-      };
-    }
+    const user =
+      authResult.user;
+
+    const name =
+      profile.name ??
+      (
+        typeof user
+          .user_metadata?.name ===
+        "string"
+          ? user.user_metadata
+              .name
+          : null
+      );
+
+    const email =
+      profile.email ??
+      user.email ??
+      null;
 
     const {
       data,
@@ -122,14 +180,8 @@ export async function createProfile(
       .upsert(
         {
           id: user.id,
-          name:
-            profile.name ??
-            user.user_metadata?.name ??
-            null,
-          email:
-            profile.email ??
-            user.email ??
-            null,
+          name,
+          email,
           avatar_url:
             profile.avatar_url ??
             null,
@@ -139,7 +191,7 @@ export async function createProfile(
         }
       )
       .select(
-        "id, name, email, avatar_url, created_at, updated_at"
+        PROFILE_COLUMNS
       )
       .single();
 
@@ -174,30 +226,77 @@ export async function updateProfile(
   updates: Partial<
     Pick<
       Profile,
-      "name" | "email" | "avatar_url"
+      "name" |
+        "email" |
+        "avatar_url"
     >
   >
 ): Promise<ProfileResponse> {
   try {
-    const {
-      data: {
-        user,
-      },
-      error: userError,
-    } = await supabase.auth.getUser();
+    const authResult =
+      await getAuthenticatedUser();
 
-    if (userError) {
+    if (
+      !authResult.success
+    ) {
       return {
         success: false,
-        error: userError.message,
+        error: authResult.error,
       };
     }
 
-    if (!user) {
-      return {
-        success: false,
-        error: "User is not authenticated.",
-      };
+    const user =
+      authResult.user;
+
+    const payload: Partial<
+      Pick<
+        Profile,
+        "name" |
+          "email" |
+          "avatar_url"
+      >
+    > = {};
+
+    if (
+      Object.prototype.hasOwnProperty.call(
+        updates,
+        "name"
+      )
+    ) {
+      payload.name =
+        updates.name?.trim() ||
+        null;
+    }
+
+    if (
+      Object.prototype.hasOwnProperty.call(
+        updates,
+        "email"
+      )
+    ) {
+      payload.email =
+        updates.email?.trim() ||
+        null;
+    }
+
+    if (
+      Object.prototype.hasOwnProperty.call(
+        updates,
+        "avatar_url"
+      )
+    ) {
+      payload.avatar_url =
+        updates.avatar_url
+          ?.trim() || null;
+    }
+
+    if (
+      Object.keys(payload)
+        .length === 0
+    ) {
+      return getProfile(
+        user.id
+      );
     }
 
     const {
@@ -208,14 +307,14 @@ export async function updateProfile(
       .upsert(
         {
           id: user.id,
-          ...updates,
+          ...payload,
         },
         {
           onConflict: "id",
         }
       )
       .select(
-        "id, name, email, avatar_url, created_at, updated_at"
+        PROFILE_COLUMNS
       )
       .single();
 
@@ -224,6 +323,39 @@ export async function updateProfile(
         success: false,
         error: error.message,
       };
+    }
+
+    // Keep legacy Auth metadata synchronized
+    // because some existing CREOVA screens
+    // still read user_metadata.name.
+    if (
+      Object.prototype.hasOwnProperty.call(
+        payload,
+        "name"
+      )
+    ) {
+      const {
+        error:
+          metadataError,
+      } =
+        await supabase.auth.updateUser(
+          {
+            data: {
+              name:
+                payload.name ??
+                "",
+            },
+          }
+        );
+
+      if (
+        metadataError
+      ) {
+        console.warn(
+          "Profile saved, but Auth metadata could not be synchronized:",
+          metadataError.message
+        );
+      }
     }
 
     return {
@@ -251,38 +383,32 @@ export async function deleteProfile(): Promise<{
   error?: string;
 }> {
   try {
+    const authResult =
+      await getAuthenticatedUser();
+
+    if (
+      !authResult.success
+    ) {
+      return {
+        success: false,
+        error: authResult.error,
+      };
+    }
+
     const {
-      data: {
-        user,
-      },
       error,
-    } = await supabase.auth.getUser();
+    } = await supabase
+      .from("profiles")
+      .delete()
+      .eq(
+        "id",
+        authResult.user.id
+      );
 
     if (error) {
       return {
         success: false,
         error: error.message,
-      };
-    }
-
-    if (!user) {
-      return {
-        success: false,
-        error: "User is not authenticated.",
-      };
-    }
-
-    const {
-      error: deleteError,
-    } = await supabase
-      .from("profiles")
-      .delete()
-      .eq("id", user.id);
-
-    if (deleteError) {
-      return {
-        success: false,
-        error: deleteError.message,
       };
     }
 
@@ -303,4 +429,4 @@ export async function deleteProfile(): Promise<{
           : "Failed to delete profile.",
     };
   }
-        }
+}
