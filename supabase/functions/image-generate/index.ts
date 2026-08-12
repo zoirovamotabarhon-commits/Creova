@@ -5,21 +5,33 @@ import {
 } from "npm:@supabase/supabase-js@2.57.0";
 
 const OPENAI_API_KEY =
-  Deno.env.get("OPENAI_API_KEY");
+  Deno.env.get(
+    "OPENAI_API_KEY"
+  ) ?? "";
 
 const SUPABASE_URL =
-  Deno.env.get("SUPABASE_URL");
-
-const SUPABASE_SERVICE_ROLE_KEY =
   Deno.env.get(
-    "SUPABASE_SERVICE_ROLE_KEY"
-  ) ??
+    "SUPABASE_URL"
+  ) ?? "";
+
+const SUPABASE_SECRET_KEYS =
+  Deno.env.get(
+    "SUPABASE_SECRET_KEYS"
+  );
+
+const SUPABASE_SECRET_KEY =
   Deno.env.get(
     "SUPABASE_SECRET_KEY"
   );
 
+const SUPABASE_SERVICE_ROLE_KEY =
+  Deno.env.get(
+    "SUPABASE_SERVICE_ROLE_KEY"
+  );
+
 const CORS_HEADERS = {
-  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Origin":
+    "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods":
@@ -36,21 +48,55 @@ function jsonResponse(
     JSON.stringify(body),
     {
       status,
-      headers: CORS_HEADERS,
+      headers:
+        CORS_HEADERS,
     }
   );
 }
 
-function getServiceRoleKey(): string {
+function getSecretKey(): string {
   if (
-    !SUPABASE_SERVICE_ROLE_KEY
+    SUPABASE_SECRET_KEYS
   ) {
-    throw new Error(
-      "SUPABASE_SERVICE_ROLE_KEY is not configured."
-    );
+    try {
+      const parsed =
+        JSON.parse(
+          SUPABASE_SECRET_KEYS
+        ) as Record<
+          string,
+          unknown
+        >;
+
+      const defaultKey =
+        parsed.default;
+
+      if (
+        typeof defaultKey ===
+          "string" &&
+        defaultKey.trim()
+      ) {
+        return defaultKey.trim();
+      }
+    } catch {
+      // Fall through to legacy keys.
+    }
   }
 
-  return SUPABASE_SERVICE_ROLE_KEY;
+  if (
+    SUPABASE_SECRET_KEY?.trim()
+  ) {
+    return SUPABASE_SECRET_KEY.trim();
+  }
+
+  if (
+    SUPABASE_SERVICE_ROLE_KEY?.trim()
+  ) {
+    return SUPABASE_SERVICE_ROLE_KEY.trim();
+  }
+
+  throw new Error(
+    "Supabase secret key is not configured."
+  );
 }
 
 async function requireUser(
@@ -62,8 +108,7 @@ async function requireUser(
     );
 
   if (
-    !authorization ||
-    !authorization.startsWith(
+    !authorization?.startsWith(
       "Bearer "
     )
   ) {
@@ -74,22 +119,19 @@ async function requireUser(
 
   const token =
     authorization
-      .replace(
-        "Bearer ",
-        ""
-      )
+      .slice("Bearer ".length)
       .trim();
 
-  if (!SUPABASE_URL) {
+  if (!token) {
     throw new Error(
-      "SUPABASE_URL is not configured."
+      "Authentication token is missing."
     );
   }
 
   const supabase =
     createClient(
       SUPABASE_URL,
-      getServiceRoleKey(),
+      getSecretKey(),
       {
         auth: {
           autoRefreshToken:
@@ -120,16 +162,16 @@ async function requireUser(
   return data.user;
 }
 
-const openai = new OpenAI({
-  apiKey:
-    OPENAI_API_KEY,
-});
+const openai =
+  new OpenAI({
+    apiKey:
+      OPENAI_API_KEY,
+  });
 
 Deno.serve(
   async (req) => {
     if (
-      req.method ===
-      "OPTIONS"
+      req.method === "OPTIONS"
     ) {
       return new Response(
         "ok",
@@ -141,8 +183,7 @@ Deno.serve(
     }
 
     if (
-      req.method !==
-      "POST"
+      req.method !== "POST"
     ) {
       return jsonResponse(
         {
@@ -168,20 +209,33 @@ Deno.serve(
 
       await requireUser(req);
 
-      const body =
-        (await req.json()) as Record<
-          string,
-          unknown
-        >;
+      let body:
+        Record<string, unknown>;
+
+      try {
+        body =
+          (await req.json()) as Record<
+            string,
+            unknown
+          >;
+      } catch {
+        return jsonResponse(
+          {
+            success: false,
+            error:
+              "Invalid JSON request body.",
+          },
+          400
+        );
+      }
 
       const prompt =
-        body.prompt;
+        typeof body.prompt ===
+        "string"
+          ? body.prompt.trim()
+          : "";
 
-      if (
-        typeof prompt !==
-          "string" ||
-        !prompt.trim()
-      ) {
+      if (!prompt) {
         return jsonResponse(
           {
             success: false,
@@ -196,9 +250,8 @@ Deno.serve(
         await openai.images.generate(
           {
             model:
-              "gpt-image-1",
-            prompt:
-              prompt.trim(),
+              "gpt-image-2",
+            prompt,
             size:
               "1024x1024",
           }
@@ -214,10 +267,20 @@ Deno.serve(
       }
 
       const imageBase64 =
-        image.b64_json ??
+        image.b64_json?.trim() ??
         "";
 
-      if (!imageBase64) {
+      const imageUrl =
+        "url" in image &&
+        typeof image.url ===
+          "string"
+          ? image.url.trim()
+          : "";
+
+      if (
+        !imageBase64 &&
+        !imageUrl
+      ) {
         throw new Error(
           "Image data was not returned."
         );
@@ -226,10 +289,18 @@ Deno.serve(
       return jsonResponse({
         success: true,
         imageUrl:
+          imageUrl ||
           `data:image/png;base64,${imageBase64}`,
-        imageBase64,
+        imageBase64:
+          imageBase64 ||
+          undefined,
       });
     } catch (error) {
+      console.error(
+        "image-generate error:",
+        error
+      );
+
       return jsonResponse(
         {
           success: false,
