@@ -1,11 +1,29 @@
 -- ============================================================
 -- CREOVA
 -- Migration: 003_wallets
--- Purpose: One coin wallet per authenticated user.
+-- Purpose:
+--   One protected coin wallet per authenticated user.
+--
+-- Security:
+--   - Client can READ own wallet.
+--   - Client cannot INSERT wallets.
+--   - Client cannot UPDATE wallets.
+--   - Client cannot DELETE wallets.
+--   - Wallet creation is performed automatically by a trusted
+--     auth trigger.
+--   - Balance changes are reserved for trusted server-side
+--     coin operations added in later migrations/functions.
+-- ============================================================
+
+
+-- ============================================================
+-- TABLE
 -- ============================================================
 
 create table if not exists public.wallets (
-  id uuid primary key default gen_random_uuid(),
+  id uuid
+    primary key
+    default gen_random_uuid(),
 
   user_id uuid
     not null
@@ -29,7 +47,7 @@ create table if not exists public.wallets (
 
 
 -- ============================================================
--- Index
+-- INDEX
 -- ============================================================
 
 create index if not exists
@@ -38,7 +56,7 @@ on public.wallets(user_id);
 
 
 -- ============================================================
--- Row Level Security
+-- ROW LEVEL SECURITY
 -- ============================================================
 
 alter table public.wallets
@@ -46,8 +64,39 @@ enable row level security;
 
 
 -- ============================================================
+-- REMOVE ANY OLD CLIENT WRITE POLICIES
+--
+-- Important:
+-- Earlier versions allowed authenticated users to INSERT or
+-- UPDATE their own wallet. That would allow manipulation of
+-- the coin balance from the mobile client.
+-- ============================================================
+
+drop policy if exists
+  "Users can insert own wallet"
+on public.wallets;
+
+drop policy if exists
+  "Users can update own wallet"
+on public.wallets;
+
+drop policy if exists
+  "Users cannot insert wallet"
+on public.wallets;
+
+drop policy if exists
+  "Users cannot update wallet"
+on public.wallets;
+
+drop policy if exists
+  "Users cannot delete wallet"
+on public.wallets;
+
+
+-- ============================================================
 -- SELECT
--- Users can read only their own wallet.
+--
+-- Authenticated users may read only their own wallet.
 -- ============================================================
 
 drop policy if exists
@@ -65,64 +114,27 @@ using (
 
 
 -- ============================================================
--- INSERT
--- Users may create only their own wallet.
--- ============================================================
-
-drop policy if exists
-  "Users can insert own wallet"
-on public.wallets;
-
-create policy
-  "Users can insert own wallet"
-on public.wallets
-for insert
-to authenticated
-with check (
-  auth.uid() = user_id
-);
-
-
--- ============================================================
--- UPDATE
--- Users can update only their own wallet.
--- The balance can never become negative because of the
--- database CHECK constraint.
--- ============================================================
-
-drop policy if exists
-  "Users can update own wallet"
-on public.wallets;
-
-create policy
-  "Users can update own wallet"
-on public.wallets
-for update
-to authenticated
-using (
-  auth.uid() = user_id
-)
-with check (
-  auth.uid() = user_id
-);
-
-
--- ============================================================
--- DELETE
--- Wallet deletion is intentionally disabled for clients.
+-- No INSERT / UPDATE / DELETE policies are intentionally
+-- created for authenticated users.
 --
--- Wallets are financial/accounting records and should not be
--- removable directly by an authenticated client.
+-- Result:
+--
+--   authenticated client:
+--     SELECT  -> allowed for own wallet
+--     INSERT  -> denied
+--     UPDATE  -> denied
+--     DELETE  -> denied
+--
+--   trusted server / service_role:
+--     can manage wallets as required.
 -- ============================================================
 
-drop policy if exists
-  "Users cannot delete wallet"
-on public.wallets;
-
 
 -- ============================================================
--- Updated-at trigger
--- Reuses the shared function from 001_profiles.sql.
+-- UPDATED_AT TRIGGER
+--
+-- Reuses the shared function created by
+-- 001_profiles.sql.
 -- ============================================================
 
 drop trigger if exists
@@ -138,10 +150,10 @@ execute function
 
 
 -- ============================================================
--- Automatic wallet creation
+-- AUTOMATIC WALLET CREATION
 --
--- Every newly registered Supabase Auth user receives one
--- wallet automatically.
+-- Every newly created auth.users record receives exactly one
+-- wallet with a zero balance.
 -- ============================================================
 
 create or replace function public.handle_new_user_wallet()
@@ -151,9 +163,16 @@ security definer
 set search_path = public
 as $$
 begin
-  insert into public.wallets (user_id)
-  values (new.id)
-  on conflict (user_id) do nothing;
+  insert into public.wallets (
+    user_id,
+    balance
+  )
+  values (
+    new.id,
+    0
+  )
+  on conflict (user_id)
+  do nothing;
 
   return new;
 end;
@@ -173,27 +192,33 @@ execute function
 
 
 -- ============================================================
--- Existing users
+-- EXISTING USERS
 --
--- Create wallets for users who already existed before this
--- migration was installed.
+-- Creates zero-balance wallets for users who already existed
+-- before this migration was installed.
 -- ============================================================
 
-insert into public.wallets (user_id)
-select id
+insert into public.wallets (
+  user_id,
+  balance
+)
+select
+  id,
+  0
 from auth.users
-on conflict (user_id) do nothing;
+on conflict (user_id)
+do nothing;
 
 
 -- ============================================================
--- Comments
+-- COMMENTS
 -- ============================================================
 
 comment on table public.wallets is
-  'One CREOVA coin wallet per authenticated user.';
+  'One protected CREOVA coin wallet per authenticated user.';
 
 comment on column public.wallets.balance is
-  'Current available CREOVA coin balance.';
+  'Current available CREOVA coin balance. Client users cannot modify this value directly.';
 
 comment on column public.wallets.user_id is
-  'Owner of the wallet. Exactly one wallet per user.';
+  'Owner of the wallet. Exactly one wallet per authenticated user.';
