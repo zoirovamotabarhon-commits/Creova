@@ -5,27 +5,20 @@ import {
 } from "npm:@supabase/supabase-js@2.57.0";
 
 const SUPABASE_URL =
-  Deno.env.get("SUPABASE_URL") ??
-  "";
+  Deno.env.get("SUPABASE_URL") ?? "";
 
 const SERVICE_ROLE_KEY =
-  Deno.env.get(
-    "SUPABASE_SERVICE_ROLE_KEY"
-  ) ??
-  Deno.env.get(
-    "SUPABASE_SECRET_KEY"
-  ) ??
+  Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ??
+  Deno.env.get("SUPABASE_SECRET_KEY") ??
   "";
 
 const CORS_HEADERS = {
-  "Access-Control-Allow-Origin":
-    "*",
+  "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods":
     "POST, OPTIONS",
-  "Content-Type":
-    "application/json",
+  "Content-Type": "application/json",
 };
 
 function json(
@@ -52,8 +45,7 @@ Deno.serve(async (req) => {
     return json(
       {
         success: false,
-        error:
-          "Method not allowed.",
+        error: "Method not allowed.",
       },
       405
     );
@@ -61,9 +53,7 @@ Deno.serve(async (req) => {
 
   try {
     const authorization =
-      req.headers.get(
-        "Authorization"
-      );
+      req.headers.get("Authorization");
 
     if (
       !authorization?.startsWith(
@@ -73,8 +63,7 @@ Deno.serve(async (req) => {
       return json(
         {
           success: false,
-          error:
-            "Authentication required.",
+          error: "Authentication required.",
         },
         401
       );
@@ -96,9 +85,7 @@ Deno.serve(async (req) => {
 
     const token =
       authorization
-        .slice(
-          "Bearer ".length
-        )
+        .slice("Bearer ".length)
         .trim();
 
     const admin =
@@ -107,10 +94,8 @@ Deno.serve(async (req) => {
         SERVICE_ROLE_KEY,
         {
           auth: {
-            autoRefreshToken:
-              false,
-            persistSession:
-              false,
+            autoRefreshToken: false,
+            persistSession: false,
           },
         }
       );
@@ -119,9 +104,7 @@ Deno.serve(async (req) => {
       data: userData,
       error: userError,
     } =
-      await admin.auth.getUser(
-        token
-      );
+      await admin.auth.getUser(token);
 
     if (
       userError ||
@@ -143,29 +126,22 @@ Deno.serve(async (req) => {
         unknown
       >;
 
-    if (
-      body.operation !==
-      "charge"
-    ) {
+    if (body.operation !== "charge") {
       return json(
         {
           success: false,
           error:
-            "Only coin charges are allowed from the client.",
+            "Only generation charges are allowed from the client.",
         },
         403
       );
     }
 
-    const amount =
-      body.amount;
+    const amount = body.amount;
 
     if (
-      typeof amount !==
-        "number" ||
-      !Number.isInteger(
-        amount
-      ) ||
+      typeof amount !== "number" ||
+      !Number.isInteger(amount) ||
       amount <= 0
     ) {
       return json(
@@ -179,8 +155,7 @@ Deno.serve(async (req) => {
     }
 
     const referenceId =
-      typeof body.referenceId ===
-      "string"
+      typeof body.referenceId === "string"
         ? body.referenceId.trim()
         : "";
 
@@ -188,16 +163,14 @@ Deno.serve(async (req) => {
       return json(
         {
           success: false,
-          error:
-            "Reference ID is required.",
+          error: "Reference ID is required.",
         },
         400
       );
     }
 
     const description =
-      typeof body.description ===
-      "string"
+      typeof body.description === "string"
         ? body.description
         : "CREOVA generation";
 
@@ -208,20 +181,14 @@ Deno.serve(async (req) => {
       await admin.rpc(
         "change_wallet_balance",
         {
-          p_user_id:
-            userData.user.id,
+          p_user_id: userData.user.id,
           p_amount: amount,
-          p_transaction_type:
-            "debit",
-          p_reason:
-            "generation",
-          p_reference_id:
-            referenceId,
-          p_description:
-            description,
+          p_transaction_type: "debit",
+          p_reason: "generation",
+          p_reference_id: referenceId,
+          p_description: description,
           p_metadata: {
-            source:
-              "creova-generation",
+            source: "creova-generation",
           },
         }
       );
@@ -259,13 +226,9 @@ Deno.serve(async (req) => {
       walletId:
         result.wallet_id,
       previousBalance:
-        Number(
-          result.previous_balance
-        ),
+        Number(result.previous_balance),
       newBalance:
-        Number(
-          result.new_balance
-        ),
+        Number(result.new_balance),
     });
   } catch (error) {
     return json(
