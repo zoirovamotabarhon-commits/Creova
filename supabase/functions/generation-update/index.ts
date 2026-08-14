@@ -29,6 +29,15 @@ const STATUSES = [
   "cancelled",
 ] as const;
 
+type GenerationStatus =
+  (typeof STATUSES)[number];
+
+const TERMINAL_STATUSES: GenerationStatus[] = [
+  "completed",
+  "failed",
+  "cancelled",
+];
+
 function json(
   body: Record<string, unknown>,
   status = 200
@@ -40,6 +49,51 @@ function json(
       headers: CORS_HEADERS,
     }
   );
+}
+
+function isValidStatus(
+  value: unknown
+): value is GenerationStatus {
+  return (
+    typeof value === "string" &&
+    STATUSES.includes(
+      value as GenerationStatus
+    )
+  );
+}
+
+function canTransition(
+  current: GenerationStatus,
+  next: GenerationStatus
+): boolean {
+  if (current === next) {
+    return true;
+  }
+
+  if (
+    TERMINAL_STATUSES.includes(current)
+  ) {
+    return false;
+  }
+
+  if (current === "queued") {
+    return [
+      "processing",
+      "completed",
+      "failed",
+      "cancelled",
+    ].includes(next);
+  }
+
+  if (current === "processing") {
+    return [
+      "completed",
+      "failed",
+      "cancelled",
+    ].includes(next);
+  }
+
+  return false;
 }
 
 Deno.serve(async (req) => {
@@ -60,6 +114,10 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // ========================================================
+    // AUTHENTICATION
+    // ========================================================
+
     const authorization =
       req.headers.get("Authorization");
 
@@ -96,6 +154,16 @@ Deno.serve(async (req) => {
         .slice("Bearer ".length)
         .trim();
 
+    if (!token) {
+      return json(
+        {
+          success: false,
+          error: "Authentication token is missing.",
+        },
+        401
+      );
+    }
+
     const admin =
       createClient(
         SUPABASE_URL,
@@ -128,6 +196,13 @@ Deno.serve(async (req) => {
       );
     }
 
+    const userId =
+      userData.user.id;
+
+    // ========================================================
+    // REQUEST
+    // ========================================================
+
     const body =
       (await req.json()) as Record<
         string,
@@ -139,7 +214,8 @@ Deno.serve(async (req) => {
         ? body.generationId.trim()
         : "";
 
-    const status = body.status;
+    const status =
+      body.status;
 
     if (!generationId) {
       return json(
@@ -152,12 +228,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    if (
-      typeof status !== "string" ||
-      !STATUSES.includes(
-        status as (typeof STATUSES)[number]
-      )
-    ) {
+    if (!isValidStatus(status)) {
       return json(
         {
           success: false,
@@ -168,6 +239,10 @@ Deno.serve(async (req) => {
       );
     }
 
+    // ========================================================
+    // LOAD GENERATION
+    // ========================================================
+
     const {
       data: existing,
       error: existingError,
@@ -175,13 +250,23 @@ Deno.serve(async (req) => {
       await admin
         .from("generation_history")
         .select(
-          "id,status,started_at,completed_at"
+          [
+            "id",
+            "user_id",
+            "type",
+            "status",
+            "metadata",
+            "started_at",
+            "completed_at",
+            "result_text",
+            "result_url",
+            "provider",
+            "model",
+            "error_message",
+          ].join(",")
         )
         .eq("id", generationId)
-        .eq(
-          "user_id",
-          userData.user.id
-        )
+        .eq("user_id", userId)
         .maybeSingle();
 
     if (existingError) {
@@ -199,6 +284,44 @@ Deno.serve(async (req) => {
       );
     }
 
+    const currentStatus =
+      existing.status as GenerationStatus;
+
+    if (!isValidStatus(currentStatus)) {
+      return json(
+        {
+          success: false,
+          error:
+            "Existing generation has an invalid status.",
+        },
+        500
+      );
+    }
+
+    // ========================================================
+    // STATUS TRANSITION PROTECTION
+    // ========================================================
+
+    if (
+      !canTransition(
+        currentStatus,
+        status
+      )
+    ) {
+      return json(
+        {
+          success: false,
+          error:
+            `Invalid status transition: ${currentStatus} -> ${status}.`,
+        },
+        409
+      );
+    }
+
+    // ========================================================
+    // BUILD UPDATE
+    // ========================================================
+
     const update: Record<
       string,
       unknown
@@ -215,75 +338,198 @@ Deno.serve(async (req) => {
     }
 
     if (
-      (
-        status === "completed" ||
-        status === "failed" ||
-        status === "cancelled"
-      ) &&
+      TERMINAL_STATUSES.includes(status) &&
       !existing.completed_at
     ) {
       update.completed_at =
         new Date().toISOString();
     }
 
+    // --------------------------------------------------------
+    // RESULT DATA
+    // --------------------------------------------------------
+
     if (
-      typeof body.resultText ===
-      "string"
+      status === "completed" &&
+      typeof body.resultText === "string"
     ) {
       update.result_text =
         body.resultText;
     }
 
     if (
-      typeof body.resultUrl ===
-      "string"
+      status === "completed" &&
+      typeof body.resultUrl === "string"
     ) {
       update.result_url =
         body.resultUrl;
     }
 
     if (
-      typeof body.provider ===
-      "string"
+      typeof body.provider === "string"
     ) {
       update.provider =
         body.provider;
     }
 
     if (
-      typeof body.model ===
-      "string"
+      typeof body.model === "string"
     ) {
       update.model =
         body.model;
     }
 
+    // --------------------------------------------------------
+    // ERROR DATA
+    // --------------------------------------------------------
+
     if (
-      typeof body.errorMessage ===
-      "string"
+      (
+        status === "failed" ||
+        status === "cancelled"
+      ) &&
+      typeof body.errorMessage === "string"
     ) {
       update.error_message =
         body.errorMessage;
     }
 
+    // ========================================================
+    // UPDATE GENERATION
+    // ========================================================
+
     const {
-      error,
+      error: updateError,
     } =
       await admin
         .from("generation_history")
         .update(update)
         .eq("id", generationId)
-        .eq(
-          "user_id",
-          userData.user.id
+        .eq("user_id", userId);
+
+    if (updateError) {
+      throw updateError;
+    }
+
+    // ========================================================
+    // AUTOMATIC REFUND
+    //
+    // failed/cancelled generations return the exact amount
+    // originally charged for this generation.
+    //
+    // change_wallet_balance() validates:
+    //   - original generation debit exists
+    //   - same user
+    //   - same wallet
+    //   - exact refund amount
+    //   - refund is idempotent
+    // ========================================================
+
+    let refund:
+      | Record<string, unknown>
+      | null = null;
+
+    if (
+      status === "failed" ||
+      status === "cancelled"
+    ) {
+      const metadata =
+        existing.metadata &&
+        typeof existing.metadata === "object" &&
+        !Array.isArray(existing.metadata)
+          ? (
+              existing.metadata as Record<
+                string,
+                unknown
+              >
+            )
+          : {};
+
+      const rawCost =
+        metadata.coinCost;
+
+      const coinCost =
+        typeof rawCost === "number"
+          ? rawCost
+          : typeof rawCost === "string"
+            ? Number(rawCost)
+            : NaN;
+
+      if (
+        !Number.isInteger(coinCost) ||
+        coinCost <= 0
+      ) {
+        return json(
+          {
+            success: false,
+            error:
+              "Generation failed, but its coin cost could not be determined. Refund was not attempted.",
+            generationId,
+          },
+          500
+        );
+      }
+
+      const {
+        data: refundData,
+        error: refundError,
+      } =
+        await admin.rpc(
+          "change_wallet_balance",
+          {
+            p_user_id: userId,
+            p_amount: coinCost,
+            p_transaction_type:
+              "credit",
+            p_reason:
+              "refund",
+            p_reference_id:
+              generationId,
+            p_description:
+              `CREOVA ${status} generation refund`,
+            p_metadata: {
+              generationId,
+              generationType:
+                existing.type,
+              refundReason:
+                status,
+              amount: coinCost,
+            },
+          }
         );
 
-    if (error) {
-      throw error;
+      if (refundError) {
+        return json(
+          {
+            success: false,
+            error:
+              "Generation status was updated, but coin refund failed.",
+            generationId,
+            refundError:
+              refundError.message,
+          },
+          500
+        );
+      }
+
+      refund =
+        Array.isArray(refundData)
+          ? refundData[0] ?? null
+          : refundData;
     }
+
+    // ========================================================
+    // RESPONSE
+    // ========================================================
 
     return json({
       success: true,
+      generationId,
+      status,
+      refunded:
+        status === "failed" ||
+        status === "cancelled",
+      refund,
     });
   } catch (error) {
     return json(
