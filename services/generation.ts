@@ -41,144 +41,107 @@ export interface GenerationResult<T = unknown> {
   error?: string;
 }
 
+function createGenerationId(): string {
+  const cryptoObject =
+    globalThis.crypto;
+
+  if (
+    cryptoObject &&
+    typeof cryptoObject.randomUUID ===
+      "function"
+  ) {
+    return cryptoObject.randomUUID();
+  }
+
+  const bytes =
+    new Uint8Array(16);
+
+  if (
+    cryptoObject &&
+    typeof cryptoObject.getRandomValues ===
+      "function"
+  ) {
+    cryptoObject.getRandomValues(
+      bytes,
+    );
+  } else {
+    for (
+      let index = 0;
+      index < bytes.length;
+      index += 1
+    ) {
+      bytes[index] =
+        Math.floor(
+          Math.random() * 256,
+        );
+    }
+  }
+
+  bytes[6] =
+    (bytes[6] & 0x0f) |
+    0x40;
+
+  bytes[8] =
+    (bytes[8] & 0x3f) |
+    0x80;
+
+  const hex = Array.from(
+    bytes,
+  ).map((byte) =>
+    byte
+      .toString(16)
+      .padStart(2, "0"),
+  );
+
+  return [
+    hex.slice(0, 4).join(""),
+    hex.slice(4, 6).join(""),
+    hex.slice(6, 8).join(""),
+    hex.slice(8, 10).join(""),
+    hex.slice(10, 16).join(""),
+  ].join("-");
+}
+
 export async function createGeneration(
   type: GenerationType,
   _coinCost?: number,
   prompt?: string,
-  metadata: Record<string, unknown> = {},
-): Promise<GenerationResult<GenerationRecord>> {
-  const cleanPrompt = prompt?.trim() ?? "";
+  metadata: Record<
+    string,
+    unknown
+  > = {},
+): Promise<
+  GenerationResult<GenerationRecord>
+> {
+  const cleanPrompt =
+    prompt?.trim() ?? "";
 
   if (!cleanPrompt) {
     return {
       success: false,
-      error: "Prompt is required.",
+      error:
+        "Prompt is required.",
     };
   }
 
   const {
-    data: { user },
+    data: {
+      user,
+    },
     error: userError,
-  } = await supabase.auth.getUser();
+  } =
+    await supabase.auth.getUser();
 
   if (userError) {
     return {
       success: false,
-      error: userError.message,
+      error:
+        userError.message,
     };
   }
 
   if (!user) {
     return {
       success: false,
-      error: "Authentication required.",
-    };
-  }
-
-  const generationId = crypto.randomUUID();
-  const coinCost = getFeatureCost(type);
-
-  const { data, error } =
-    await supabase.functions.invoke(
-      "generation-record",
-      {
-        body: {
-          generationId,
-          type,
-          prompt: cleanPrompt,
-          metadata: {
-            ...metadata,
-            coinCost,
-          },
-        },
-      },
-    );
-
-  if (error) {
-    return {
-      success: false,
-      error: error.message,
-    };
-  }
-
-  if (!data?.success || !data.generationId) {
-    return {
-      success: false,
       error:
-        data?.error ??
-        "Generation could not be created.",
-    };
-  }
-
-  return {
-    success: true,
-    generationId: data.generationId,
-    data: data.generation,
-  };
-}
-
-export async function getGeneration(
-  generationId: string,
-): Promise<GenerationResult<GenerationRecord>> {
-  const id = generationId.trim();
-
-  if (!id) {
-    return {
-      success: false,
-      error: "Generation ID is required.",
-    };
-  }
-
-  const { data, error } = await supabase
-    .from("generation_history")
-    .select("*")
-    .eq("id", id)
-    .maybeSingle();
-
-  if (error) {
-    return {
-      success: false,
-      error: error.message,
-    };
-  }
-
-  if (!data) {
-    return {
-      success: false,
-      error: "Generation not found.",
-    };
-  }
-
-  const metadata =
-    data.metadata &&
-    typeof data.metadata === "object" &&
-    !Array.isArray(data.metadata)
-      ? (data.metadata as Record<string, unknown>)
-      : {};
-
-  return {
-    success: true,
-    data: {
-      id: data.id,
-      userId: data.user_id,
-      type: data.type as GenerationType,
-      status: data.status as GenerationStatus,
-      coinCost: Number(
-        metadata.coinCost ??
-          getFeatureCost(
-            data.type as GenerationType,
-          ),
-      ),
-      prompt: data.prompt,
-      metadata,
-      resultText: data.result_text,
-      resultUrl: data.result_url,
-      provider: data.provider,
-      model: data.model,
-      errorMessage: data.error_message,
-      createdAt: data.created_at,
-      startedAt: data.started_at,
-      completedAt: data.completed_at,
-    },
-  };
-  }
+        "
