@@ -1,31 +1,34 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+
+import { updateGeneration } from "../_shared/generation.ts";
+
 import {
   createClient,
 } from "npm:@supabase/supabase-js@2.57.0";
 
 const ELEVENLABS_API_KEY =
   Deno.env.get(
-    "ELEVENLABS_API_KEY"
+    "ELEVENLABS_API_KEY",
   ) ?? "";
 
 const SUPABASE_URL =
   Deno.env.get(
-    "SUPABASE_URL"
+    "SUPABASE_URL",
   ) ?? "";
 
 const SUPABASE_SECRET_KEYS =
   Deno.env.get(
-    "SUPABASE_SECRET_KEYS"
+    "SUPABASE_SECRET_KEYS",
   );
 
 const SUPABASE_SECRET_KEY =
   Deno.env.get(
-    "SUPABASE_SECRET_KEY"
+    "SUPABASE_SECRET_KEY",
   );
 
 const SUPABASE_SERVICE_ROLE_KEY =
   Deno.env.get(
-    "SUPABASE_SERVICE_ROLE_KEY"
+    "SUPABASE_SERVICE_ROLE_KEY",
   );
 
 const ELEVENLABS_MUSIC_URL =
@@ -44,7 +47,7 @@ const CORS_HEADERS = {
 
 function jsonResponse(
   body: Record<string, unknown>,
-  status = 200
+  status = 200,
 ) {
   return new Response(
     JSON.stringify(body),
@@ -52,7 +55,7 @@ function jsonResponse(
       status,
       headers:
         CORS_HEADERS,
-    }
+    },
   );
 }
 
@@ -63,7 +66,7 @@ function getSecretKey(): string {
     try {
       const parsed =
         JSON.parse(
-          SUPABASE_SECRET_KEYS
+          SUPABASE_SECRET_KEYS,
         ) as Record<
           string,
           unknown
@@ -80,7 +83,7 @@ function getSecretKey(): string {
         return defaultKey.trim();
       }
     } catch {
-      // Fall through.
+      // Continue with fallback keys.
     }
   }
 
@@ -97,25 +100,25 @@ function getSecretKey(): string {
   }
 
   throw new Error(
-    "Supabase secret key is not configured."
+    "Supabase secret key is not configured.",
   );
 }
 
 async function requireUser(
-  req: Request
+  req: Request,
 ) {
   const authorization =
     req.headers.get(
-      "Authorization"
+      "Authorization",
     );
 
   if (
     !authorization?.startsWith(
-      "Bearer "
+      "Bearer ",
     )
   ) {
     throw new Error(
-      "Authentication required."
+      "Authentication required.",
     );
   }
 
@@ -126,7 +129,7 @@ async function requireUser(
 
   if (!token) {
     throw new Error(
-      "Authentication token is missing."
+      "Authentication token is missing.",
     );
   }
 
@@ -141,7 +144,7 @@ async function requireUser(
           persistSession:
             false,
         },
-      }
+      },
     );
 
   const {
@@ -149,7 +152,7 @@ async function requireUser(
     error,
   } =
     await supabase.auth.getUser(
-      token
+      token,
     );
 
   if (
@@ -157,7 +160,7 @@ async function requireUser(
     !data.user
   ) {
     throw new Error(
-      "Invalid or expired authentication token."
+      "Invalid or expired authentication token.",
     );
   }
 
@@ -165,12 +168,15 @@ async function requireUser(
 }
 
 function arrayBufferToBase64(
-  buffer: ArrayBuffer
+  buffer: ArrayBuffer,
 ): string {
   const bytes =
-    new Uint8Array(buffer);
+    new Uint8Array(
+      buffer,
+    );
 
   let binary = "";
+
   const chunkSize =
     0x8000;
 
@@ -184,10 +190,11 @@ function arrayBufferToBase64(
         ...bytes.subarray(
           index,
           Math.min(
-            index + chunkSize,
-            bytes.length
-          )
-        )
+            index +
+              chunkSize,
+            bytes.length,
+          ),
+        ),
       );
   }
 
@@ -196,6 +203,16 @@ function arrayBufferToBase64(
 
 Deno.serve(
   async (req) => {
+    let user:
+      | Awaited<
+          ReturnType<
+            typeof requireUser
+          >
+        >
+      | null = null;
+
+    let generationId = "";
+
     if (
       req.method === "OPTIONS"
     ) {
@@ -204,7 +221,7 @@ Deno.serve(
         {
           headers:
             CORS_HEADERS,
-        }
+        },
       );
     }
 
@@ -217,23 +234,28 @@ Deno.serve(
           error:
             "Method not allowed.",
         },
-        405
+        405,
       );
     }
 
     try {
-      if (!ELEVENLABS_API_KEY) {
+      if (
+        !ELEVENLABS_API_KEY
+      ) {
         return jsonResponse(
           {
             success: false,
             error:
               "ELEVENLABS_API_KEY is not configured.",
           },
-          500
+          500,
         );
       }
 
-      await requireUser(req);
+      user =
+        await requireUser(
+          req,
+        );
 
       let body:
         Record<string, unknown>;
@@ -251,7 +273,7 @@ Deno.serve(
             error:
               "Invalid JSON request body.",
           },
-          400
+          400,
         );
       }
 
@@ -261,6 +283,23 @@ Deno.serve(
           ? body.prompt.trim()
           : "";
 
+      generationId =
+        typeof body.generationId ===
+        "string"
+          ? body.generationId.trim()
+          : "";
+
+      if (!generationId) {
+        return jsonResponse(
+          {
+            success: false,
+            error:
+              "Generation ID is required.",
+          },
+          400,
+        );
+      }
+
       if (!prompt) {
         return jsonResponse(
           {
@@ -268,7 +307,7 @@ Deno.serve(
             error:
               "Prompt is required.",
           },
-          400
+          400,
         );
       }
 
@@ -281,15 +320,24 @@ Deno.serve(
             error:
               "Music prompt is too long. Maximum is 4100 characters.",
           },
-          400
+          400,
         );
       }
+
+      await updateGeneration({
+        generationId,
+        userId:
+          user.id,
+        status:
+          "processing",
+      });
 
       const response =
         await fetch(
           `${ELEVENLABS_MUSIC_URL}?output_format=mp3_44100_128`,
           {
-            method: "POST",
+            method:
+              "POST",
             headers: {
               "xi-api-key":
                 ELEVENLABS_API_KEY,
@@ -301,21 +349,16 @@ Deno.serve(
               model_id:
                 "music_v1",
             }),
-          }
+          },
         );
 
       if (!response.ok) {
         const errorText =
           await response.text();
 
-        return jsonResponse(
-          {
-            success: false,
-            error:
-              errorText ||
-              `ElevenLabs request failed with status ${response.status}.`,
-          },
-          response.status
+        throw new Error(
+          errorText ||
+            `ElevenLabs request failed with status ${response.status}.`,
         );
       }
 
@@ -327,36 +370,82 @@ Deno.serve(
         0
       ) {
         throw new Error(
-          "Generated music is empty."
+          "Generated music is empty.",
         );
       }
 
       const audioBase64 =
         arrayBufferToBase64(
-          audioBuffer
+          audioBuffer,
         );
+
+      const audioUrl =
+        `data:audio/mpeg;base64,${audioBase64}`;
+
+      await updateGeneration({
+        generationId,
+        userId:
+          user.id,
+        status:
+          "completed",
+        provider:
+          "elevenlabs",
+        model:
+          "music_v1",
+        resultUrl:
+          audioUrl,
+      });
 
       return jsonResponse({
         success: true,
-        audioUrl:
-          `data:audio/mpeg;base64,${audioBase64}`,
+        generationId,
+        audioUrl,
       });
     } catch (error) {
+      if (
+        generationId &&
+        user?.id
+      ) {
+        try {
+          await updateGeneration({
+            generationId,
+            userId:
+              user.id,
+            status:
+              "failed",
+            errorMessage:
+              error instanceof Error
+                ? error.message
+                : "Music generation failed.",
+          });
+        } catch (
+          refundError
+        ) {
+          console.error(
+            "Generation update/refund failed:",
+            refundError,
+          );
+        }
+      }
+
       console.error(
         "music-generate error:",
-        error
+        error,
       );
 
       return jsonResponse(
         {
           success: false,
+          generationId:
+            generationId ||
+            undefined,
           error:
             error instanceof Error
               ? error.message
               : "Music generation failed.",
         },
-        500
+        500,
       );
     }
-  }
+  },
 );
