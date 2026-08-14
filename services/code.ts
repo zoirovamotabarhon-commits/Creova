@@ -8,11 +8,16 @@ export interface CodeGenerationResult {
   error?: string;
 }
 
+export type CodeResponse =
+  CodeGenerationResult;
+
 export async function generateCode(
   prompt: string,
-  coinCost = 1,
+  coinCost?: number,
 ): Promise<CodeGenerationResult> {
-  if (!prompt.trim()) {
+  const cleanPrompt = prompt.trim();
+
+  if (!cleanPrompt) {
     return {
       success: false,
       error: "Code prompt is required.",
@@ -23,7 +28,7 @@ export async function generateCode(
     await createGeneration(
       "code",
       coinCost,
-      prompt,
+      cleanPrompt,
       {
         feature: "code",
       },
