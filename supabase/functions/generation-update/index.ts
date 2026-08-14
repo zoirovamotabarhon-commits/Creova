@@ -5,39 +5,29 @@ import {
 } from "npm:@supabase/supabase-js@2.57.0";
 
 const SUPABASE_URL =
-  Deno.env.get("SUPABASE_URL") ??
-  "";
+  Deno.env.get("SUPABASE_URL") ?? "";
 
 const SERVICE_ROLE_KEY =
-  Deno.env.get(
-    "SUPABASE_SERVICE_ROLE_KEY"
-  ) ??
-  Deno.env.get(
-    "SUPABASE_SECRET_KEY"
-  ) ??
+  Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ??
+  Deno.env.get("SUPABASE_SECRET_KEY") ??
   "";
 
 const CORS_HEADERS = {
-  "Access-Control-Allow-Origin":
-    "*",
+  "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods":
     "POST, OPTIONS",
-  "Content-Type":
-    "application/json",
+  "Content-Type": "application/json",
 };
 
-const ALLOWED_STATUSES = [
+const STATUSES = [
   "queued",
   "processing",
   "completed",
   "failed",
   "cancelled",
 ] as const;
-
-type GenerationStatus =
-  (typeof ALLOWED_STATUSES)[number];
 
 function json(
   body: Record<string, unknown>,
@@ -63,8 +53,7 @@ Deno.serve(async (req) => {
     return json(
       {
         success: false,
-        error:
-          "Method not allowed.",
+        error: "Method not allowed.",
       },
       405
     );
@@ -72,9 +61,7 @@ Deno.serve(async (req) => {
 
   try {
     const authorization =
-      req.headers.get(
-        "Authorization"
-      );
+      req.headers.get("Authorization");
 
     if (
       !authorization?.startsWith(
@@ -84,8 +71,7 @@ Deno.serve(async (req) => {
       return json(
         {
           success: false,
-          error:
-            "Authentication required.",
+          error: "Authentication required.",
         },
         401
       );
@@ -107,9 +93,7 @@ Deno.serve(async (req) => {
 
     const token =
       authorization
-        .slice(
-          "Bearer ".length
-        )
+        .slice("Bearer ".length)
         .trim();
 
     const admin =
@@ -118,10 +102,8 @@ Deno.serve(async (req) => {
         SERVICE_ROLE_KEY,
         {
           auth: {
-            autoRefreshToken:
-              false,
-            persistSession:
-              false,
+            autoRefreshToken: false,
+            persistSession: false,
           },
         }
       );
@@ -130,9 +112,7 @@ Deno.serve(async (req) => {
       data: userData,
       error: userError,
     } =
-      await admin.auth.getUser(
-        token
-      );
+      await admin.auth.getUser(token);
 
     if (
       userError ||
@@ -155,13 +135,11 @@ Deno.serve(async (req) => {
       >;
 
     const generationId =
-      typeof body.generationId ===
-      "string"
+      typeof body.generationId === "string"
         ? body.generationId.trim()
         : "";
 
-    const status =
-      body.status;
+    const status = body.status;
 
     if (!generationId) {
       return json(
@@ -175,10 +153,9 @@ Deno.serve(async (req) => {
     }
 
     if (
-      typeof status !==
-        "string" ||
-      !ALLOWED_STATUSES.includes(
-        status as GenerationStatus
+      typeof status !== "string" ||
+      !STATUSES.includes(
+        status as (typeof STATUSES)[number]
       )
     ) {
       return json(
@@ -191,6 +168,37 @@ Deno.serve(async (req) => {
       );
     }
 
+    const {
+      data: existing,
+      error: existingError,
+    } =
+      await admin
+        .from("generation_history")
+        .select(
+          "id,status,started_at,completed_at"
+        )
+        .eq("id", generationId)
+        .eq(
+          "user_id",
+          userData.user.id
+        )
+        .maybeSingle();
+
+    if (existingError) {
+      throw existingError;
+    }
+
+    if (!existing) {
+      return json(
+        {
+          success: false,
+          error:
+            "Generation record not found.",
+        },
+        404
+      );
+    }
+
     const update: Record<
       string,
       unknown
@@ -199,16 +207,20 @@ Deno.serve(async (req) => {
     };
 
     if (
-      status === "processing"
+      status === "processing" &&
+      !existing.started_at
     ) {
       update.started_at =
         new Date().toISOString();
     }
 
     if (
-      status === "completed" ||
-      status === "failed" ||
-      status === "cancelled"
+      (
+        status === "completed" ||
+        status === "failed" ||
+        status === "cancelled"
+      ) &&
+      !existing.completed_at
     ) {
       update.completed_at =
         new Date().toISOString();
@@ -255,51 +267,12 @@ Deno.serve(async (req) => {
     }
 
     const {
-      data: existing,
-      error: existingError,
+      error,
     } =
       await admin
-        .from(
-          "generation_history"
-        )
-        .select(
-          "id,status"
-        )
-        .eq(
-          "id",
-          generationId
-        )
-        .eq(
-          "user_id",
-          userData.user.id
-        )
-        .maybeSingle();
-
-    if (existingError) {
-      throw existingError;
-    }
-
-    if (!existing) {
-      return json(
-        {
-          success: false,
-          error:
-            "Generation record not found.",
-        },
-        404
-      );
-    }
-
-    const { error } =
-      await admin
-        .from(
-          "generation_history"
-        )
+        .from("generation_history")
         .update(update)
-        .eq(
-          "id",
-          generationId
-        )
+        .eq("id", generationId)
         .eq(
           "user_id",
           userData.user.id
