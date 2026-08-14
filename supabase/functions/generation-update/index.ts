@@ -12,10 +12,13 @@ const SERVICE_ROLE_KEY =
   Deno.env.get("SUPABASE_SECRET_KEY") ??
   "";
 
+const INTERNAL_KEY =
+  Deno.env.get("CREOVA_INTERNAL_KEY") ?? "";
+
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+    "authorization, x-client-info, apikey, content-type, x-creova-internal-key",
   "Access-Control-Allow-Methods":
     "POST, OPTIONS",
   "Content-Type": "application/json",
@@ -51,7 +54,7 @@ function json(
   );
 }
 
-function isValidStatus(
+function validStatus(
   value: unknown
 ): value is GenerationStatus {
   return (
@@ -62,7 +65,7 @@ function isValidStatus(
   );
 }
 
-function canTransition(
+function validTransition(
   current: GenerationStatus,
   next: GenerationStatus
 ): boolean {
@@ -96,6 +99,71 @@ function canTransition(
   return false;
 }
 
+function isInternalRequest(
+  req: Request
+): boolean {
+  if (!INTERNAL_KEY) {
+    return false;
+  }
+
+  return (
+    req.headers.get(
+      "x-creova-internal-key"
+    ) === INTERNAL_KEY
+  );
+}
+
+async function getAuthenticatedUser(
+  req: Request
+) {
+  const authorization =
+    req.headers.get("Authorization");
+
+  if (
+    !authorization?.startsWith(
+      "Bearer "
+    )
+  ) {
+    return null;
+  }
+
+  const token =
+    authorization
+      .slice("Bearer ".length)
+      .trim();
+
+  if (!token) {
+    return null;
+  }
+
+  const admin =
+    createClient(
+      SUPABASE_URL,
+      SERVICE_ROLE_KEY,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
+        },
+      }
+    );
+
+  const {
+    data,
+    error,
+  } =
+    await admin.auth.getUser(token);
+
+  if (
+    error ||
+    !data.user
+  ) {
+    return null;
+  }
+
+  return data.user;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", {
@@ -113,95 +181,40 @@ Deno.serve(async (req) => {
     );
   }
 
+  if (
+    !SUPABASE_URL ||
+    !SERVICE_ROLE_KEY
+  ) {
+    return json(
+      {
+        success: false,
+        error:
+          "Supabase server configuration is missing.",
+      },
+      500
+    );
+  }
+
   try {
-    // ========================================================
-    // AUTHENTICATION
-    // ========================================================
+    const internal =
+      isInternalRequest(req);
 
-    const authorization =
-      req.headers.get("Authorization");
+    const user =
+      internal
+        ? null
+        : await getAuthenticatedUser(
+            req
+          );
 
-    if (
-      !authorization?.startsWith(
-        "Bearer "
-      )
-    ) {
+    if (!internal && !user) {
       return json(
         {
           success: false,
-          error: "Authentication required.",
+          error: "Unauthorized.",
         },
         401
       );
     }
-
-    if (
-      !SUPABASE_URL ||
-      !SERVICE_ROLE_KEY
-    ) {
-      return json(
-        {
-          success: false,
-          error:
-            "Supabase server configuration is missing.",
-        },
-        500
-      );
-    }
-
-    const token =
-      authorization
-        .slice("Bearer ".length)
-        .trim();
-
-    if (!token) {
-      return json(
-        {
-          success: false,
-          error: "Authentication token is missing.",
-        },
-        401
-      );
-    }
-
-    const admin =
-      createClient(
-        SUPABASE_URL,
-        SERVICE_ROLE_KEY,
-        {
-          auth: {
-            autoRefreshToken: false,
-            persistSession: false,
-          },
-        }
-      );
-
-    const {
-      data: userData,
-      error: userError,
-    } =
-      await admin.auth.getUser(token);
-
-    if (
-      userError ||
-      !userData.user
-    ) {
-      return json(
-        {
-          success: false,
-          error:
-            "Invalid or expired authentication token.",
-        },
-        401
-      );
-    }
-
-    const userId =
-      userData.user.id;
-
-    // ========================================================
-    // REQUEST
-    // ========================================================
 
     const body =
       (await req.json()) as Record<
@@ -228,7 +241,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    if (!isValidStatus(status)) {
+    if (!validStatus(status)) {
       return json(
         {
           success: false,
@@ -239,38 +252,56 @@ Deno.serve(async (req) => {
       );
     }
 
-    // ========================================================
-    // LOAD GENERATION
-    // ========================================================
+    /*
+     * Terminal states may ONLY be written by
+     * trusted server-side AI functions.
+     */
+    if (
+      TERMINAL_STATUSES.includes(status) &&
+      !internal
+    ) {
+      return json(
+        {
+          success: false,
+          error:
+            "Terminal generation updates are server-only.",
+        },
+        403
+      );
+    }
+
+    const admin =
+      createClient(
+        SUPABASE_URL,
+        SERVICE_ROLE_KEY,
+        {
+          auth: {
+            autoRefreshToken: false,
+            persistSession: false,
+          },
+        }
+      );
+
+    let query =
+      admin
+        .from("generation_history")
+        .select("*")
+        .eq("id", generationId);
+
+    if (!internal && user) {
+      query = query.eq(
+        "user_id",
+        user.id
+      );
+    }
 
     const {
       data: existing,
-      error: existingError,
-    } =
-      await admin
-        .from("generation_history")
-        .select(
-          [
-            "id",
-            "user_id",
-            "type",
-            "status",
-            "metadata",
-            "started_at",
-            "completed_at",
-            "result_text",
-            "result_url",
-            "provider",
-            "model",
-            "error_message",
-          ].join(",")
-        )
-        .eq("id", generationId)
-        .eq("user_id", userId)
-        .maybeSingle();
+      error: readError,
+    } = await query.maybeSingle();
 
-    if (existingError) {
-      throw existingError;
+    if (readError) {
+      throw readError;
     }
 
     if (!existing) {
@@ -284,27 +315,23 @@ Deno.serve(async (req) => {
       );
     }
 
-    const currentStatus =
+    const current =
       existing.status as GenerationStatus;
 
-    if (!isValidStatus(currentStatus)) {
+    if (!validStatus(current)) {
       return json(
         {
           success: false,
           error:
-            "Existing generation has an invalid status.",
+            "Existing generation status is invalid.",
         },
         500
       );
     }
 
-    // ========================================================
-    // STATUS TRANSITION PROTECTION
-    // ========================================================
-
     if (
-      !canTransition(
-        currentStatus,
+      !validTransition(
+        current,
         status
       )
     ) {
@@ -312,21 +339,19 @@ Deno.serve(async (req) => {
         {
           success: false,
           error:
-            `Invalid status transition: ${currentStatus} -> ${status}.`,
+            `Invalid status transition: ${current} -> ${status}.`,
         },
         409
       );
     }
-
-    // ========================================================
-    // BUILD UPDATE
-    // ========================================================
 
     const update: Record<
       string,
       unknown
     > = {
       status,
+      updated_at:
+        new Date().toISOString(),
     };
 
     if (
@@ -345,16 +370,12 @@ Deno.serve(async (req) => {
         new Date().toISOString();
     }
 
-    // --------------------------------------------------------
-    // RESULT DATA
-    // --------------------------------------------------------
-
     if (
       status === "completed" &&
       typeof body.resultText === "string"
     ) {
       update.result_text =
-        body.resultText;
+        body.resultText.trim();
     }
 
     if (
@@ -362,26 +383,22 @@ Deno.serve(async (req) => {
       typeof body.resultUrl === "string"
     ) {
       update.result_url =
-        body.resultUrl;
+        body.resultUrl.trim();
     }
 
     if (
       typeof body.provider === "string"
     ) {
       update.provider =
-        body.provider;
+        body.provider.trim();
     }
 
     if (
       typeof body.model === "string"
     ) {
       update.model =
-        body.model;
+        body.model.trim();
     }
-
-    // --------------------------------------------------------
-    // ERROR DATA
-    // --------------------------------------------------------
 
     if (
       (
@@ -391,12 +408,8 @@ Deno.serve(async (req) => {
       typeof body.errorMessage === "string"
     ) {
       update.error_message =
-        body.errorMessage;
+        body.errorMessage.trim();
     }
-
-    // ========================================================
-    // UPDATE GENERATION
-    // ========================================================
 
     const {
       error: updateError,
@@ -404,30 +417,16 @@ Deno.serve(async (req) => {
       await admin
         .from("generation_history")
         .update(update)
-        .eq("id", generationId)
-        .eq("user_id", userId);
+        .eq("id", generationId);
 
     if (updateError) {
       throw updateError;
     }
 
-    // ========================================================
-    // AUTOMATIC REFUND
-    //
-    // failed/cancelled generations return the exact amount
-    // originally charged for this generation.
-    //
-    // change_wallet_balance() validates:
-    //   - original generation debit exists
-    //   - same user
-    //   - same wallet
-    //   - exact refund amount
-    //   - refund is idempotent
-    // ========================================================
-
-    let refund:
-      | Record<string, unknown>
-      | null = null;
+    /*
+     * Refund is performed ONLY by this trusted server path.
+     */
+    let refund = null;
 
     if (
       status === "failed" ||
@@ -463,7 +462,7 @@ Deno.serve(async (req) => {
           {
             success: false,
             error:
-              "Generation failed, but its coin cost could not be determined. Refund was not attempted.",
+              "Generation cost is invalid; refund was not performed.",
             generationId,
           },
           500
@@ -471,14 +470,16 @@ Deno.serve(async (req) => {
       }
 
       const {
-        data: refundData,
-        error: refundError,
+        data,
+        error,
       } =
         await admin.rpc(
           "change_wallet_balance",
           {
-            p_user_id: userId,
-            p_amount: coinCost,
+            p_user_id:
+              existing.user_id,
+            p_amount:
+              coinCost,
             p_transaction_type:
               "credit",
             p_reason:
@@ -493,34 +494,23 @@ Deno.serve(async (req) => {
                 existing.type,
               refundReason:
                 status,
-              amount: coinCost,
+              amount:
+                coinCost,
             },
           }
         );
 
-      if (refundError) {
-        return json(
-          {
-            success: false,
-            error:
-              "Generation status was updated, but coin refund failed.",
-            generationId,
-            refundError:
-              refundError.message,
-          },
-          500
+      if (error) {
+        throw new Error(
+          `Refund failed: ${error.message}`
         );
       }
 
       refund =
-        Array.isArray(refundData)
-          ? refundData[0] ?? null
-          : refundData;
+        Array.isArray(data)
+          ? data[0] ?? null
+          : data;
     }
-
-    // ========================================================
-    // RESPONSE
-    // ========================================================
 
     return json({
       success: true,
@@ -532,6 +522,11 @@ Deno.serve(async (req) => {
       refund,
     });
   } catch (error) {
+    console.error(
+      "generation-update error:",
+      error
+    );
+
     return json(
       {
         success: false,
