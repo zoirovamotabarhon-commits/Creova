@@ -1,93 +1,81 @@
 export {
-  askAI,
-  generateAIText,
-} from "./ai";
-
-export {
-  generateText,
-  type AIMessage,
-  type AIMessageRole,
-} from "./openai";
-
-export {
-  sendMessage,
-  type ChatResponse,
+  generateChat,
 } from "./chat";
 
 export {
   generateCode,
-  type CodeResponse,
 } from "./code";
 
 export {
   generateImage,
-  type ImageResponse,
 } from "./image";
 
 export {
   generateMusic,
-  type MusicResponse,
 } from "./music";
-
-export {
-  generateVoice,
-  type VoiceResponse,
-} from "./voice";
 
 export {
   generateVideo,
   getVideoStatus,
-  type VideoResponse,
 } from "./video";
 
 export {
-  createGenerationRecord,
-  updateGenerationRecord,
+  generateVoice,
+} from "./voice";
+
+export {
+  generateOpenAIChat,
+  chatWithOpenAI,
+} from "./openai";
+
+export {
+  generateAI,
+} from "./ai";
+
+export {
+  createGeneration,
+  getGeneration,
 } from "./generation";
 
-export {
-  chargeCoins,
-  type CoinOperationResponse,
-} from "./coinOperations";
+export type {
+  GenerationType,
+  GenerationStatus,
+  GenerationRecord,
+  GenerationResult,
+} from "./generation";
 
-export {
-  getFeatureCost,
-  hasEnoughCoins,
-  FEATURE_COSTS,
-} from "./featureCosts";
+export type {
+  ChatResult,
+  ChatResponse,
+} from "./chat";
 
-export {
-  getGenerationHistory,
-  getGenerationById,
-  type GenerationHistoryItem,
-  type GenerationStatus,
-  type GenerationType,
-} from "./history";
+export type {
+  CodeGenerationResult,
+  CodeResponse,
+} from "./code";
 
-export {
-  getWallet,
-  getCoinBalance,
-  type Wallet,
-} from "./wallet";
+export type {
+  ImageGenerationResult,
+  ImageResponse,
+} from "./image";
 
-export {
-  getCoinTransactions,
-  type CoinTransaction,
-} from "./coins";
+export type {
+  MusicGenerationResult,
+  MusicResponse,
+} from "./music";
 
-export {
-  getSubscription,
-  getSubscriptionPlan,
-  isPremiumUser,
-  type Subscription,
-} from "./subscription";
+export type {
+  VideoResponse,
+} from "./video";
 
-export {
-  login,
-  register,
-  logout,
-  resetPassword,
-  getCurrentUser,
-  getCurrentSession,
-  type AuthResponse,
-} from "./auth";
+export type {
+  VoiceResponse,
+} from "./voice";
+
+export type {
+  OpenAIResponse,
+} from "./openai";
+
+export type {
+  AIFeature,
+} from "./ai";
