@@ -10,11 +10,15 @@ export interface ChatResult {
   error?: string;
 }
 
+export type ChatResponse = ChatResult;
+
 export async function generateChat(
   message: string,
-  coinCost = 1,
+  coinCost?: number,
 ): Promise<ChatResult> {
-  if (!message.trim()) {
+  const cleanMessage = message.trim();
+
+  if (!cleanMessage) {
     return {
       success: false,
       error: "Message is required.",
@@ -25,7 +29,7 @@ export async function generateChat(
     await createGeneration(
       "chat",
       coinCost,
-      message,
+      cleanMessage,
       {
         feature: "chat",
       },
@@ -52,10 +56,10 @@ export async function generateChat(
 
 export async function sendMessage(
   message: string,
-  coinCost = 1,
+  coinCost?: number,
 ): Promise<ChatResult> {
   return generateChat(
     message,
     coinCost,
   );
-}
+    }
