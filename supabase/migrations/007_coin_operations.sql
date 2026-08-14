@@ -2,26 +2,20 @@
 -- CREOVA
 -- Migration: 007_coin_operations
 -- Purpose:
---   Trusted server-side atomic coin operations.
+--   Trusted, atomic and idempotent coin operations.
 --
 -- Security:
---   - Only service_role may execute the function.
---   - Wallet balance changes are atomic.
+--   - Only service_role can change balances.
 --   - Wallet row is locked with FOR UPDATE.
---   - Every balance change creates an immutable ledger entry.
---   - Refunds are idempotent by generation reference_id.
+--   - Every balance change creates a ledger entry.
+--   - Refunds are idempotent by reference_id.
+--   - Refund amount must match the original generation debit.
+--   - A refund can only target the same user's generation debit.
 -- ============================================================
 
 
 -- ============================================================
--- IDEMPOTENCY
---
--- A generation may be refunded only once.
---
--- Example:
---   generation ABC -> refund -> +10
---   generation ABC -> refund again -> existing transaction
---                                -> NO second +10
+-- REFUND IDEMPOTENCY
 -- ============================================================
 
 create unique index if not exists
@@ -65,7 +59,11 @@ declare
   v_new_balance bigint;
   v_transaction_id uuid;
   v_delta bigint;
-  v_existing_amount bigint;
+
+  v_existing_refund_id uuid;
+  v_original_debit_amount bigint;
+  v_original_debit_user uuid;
+  v_original_debit_wallet uuid;
 begin
 
   -- ==========================================================
@@ -77,7 +75,8 @@ begin
   end if;
 
   if p_amount is null or p_amount <= 0 then
-    raise exception 'Amount must be greater than zero.';
+    raise exception
+      'Amount must be greater than zero.';
   end if;
 
   if p_transaction_type not in (
@@ -107,14 +106,12 @@ begin
 
 
   -- ==========================================================
-  -- REFERENCE VALIDATION
-  --
-  -- Refunds must identify the generation/operation they refund.
-  -- Without a reference_id a refund cannot be made idempotent.
+  -- REFUND VALIDATION
   -- ==========================================================
 
   if p_reason = 'refund'
      and p_reference_id is null then
+
     raise exception
       'Refund requires a reference ID.';
   end if;
@@ -122,9 +119,6 @@ begin
 
   -- ==========================================================
   -- SECURITY
-  --
-  -- Only trusted backend/service-role callers may change
-  -- balances.
   -- ==========================================================
 
   if coalesce(auth.role(), '') <> 'service_role' then
@@ -134,64 +128,11 @@ begin
 
 
   -- ==========================================================
-  -- IDEMPOTENT REFUND
+  -- GET AND LOCK THE USER WALLET FIRST
   --
-  -- If this exact refund already exists, return the existing
-  -- transaction instead of creating another credit.
-  --
-  -- The unique index above protects this at database level.
-  -- ==========================================================
-
-  if p_transaction_type = 'credit'
-     and p_reason = 'refund'
-     and p_reference_id is not null then
-
-    select
-      ct.id,
-      ct.wallet_id,
-      ct.amount
-    into
-      v_transaction_id,
-      v_wallet_id,
-      v_existing_amount
-    from public.coin_transactions ct
-    where ct.reference_id = p_reference_id
-      and ct.transaction_type = 'credit'
-      and ct.reason = 'refund'
-    limit 1;
-
-    if v_transaction_id is not null then
-
-      select
-        w.balance
-      into
-        v_current_balance
-      from public.wallets w
-      where w.id = v_wallet_id;
-
-      if v_current_balance is null then
-        raise exception
-          'Wallet not found for existing refund transaction.';
-      end if;
-
-      return query
-      select
-        v_transaction_id,
-        v_wallet_id,
-        p_user_id,
-        v_current_balance,
-        v_current_balance;
-
-      return;
-    end if;
-  end if;
-
-
-  -- ==========================================================
-  -- FIND AND LOCK WALLET
-  --
-  -- FOR UPDATE prevents concurrent operations from using the
-  -- same old balance.
+  -- This is important for refund idempotency.
+  -- Concurrent operations for the same user must serialize
+  -- through the same wallet row.
   -- ==========================================================
 
   select
@@ -211,7 +152,88 @@ begin
 
 
   -- ==========================================================
-  -- CALCULATE DELTA
+  -- REFUND FLOW
+  -- ==========================================================
+
+  if p_transaction_type = 'credit'
+     and p_reason = 'refund' then
+
+    -- --------------------------------------------------------
+    -- Check whether this refund was already completed.
+    -- Because the wallet row is locked, concurrent refunds for
+    -- the same user are serialized.
+    -- --------------------------------------------------------
+
+    select
+      ct.id
+    into
+      v_existing_refund_id
+    from public.coin_transactions ct
+    where ct.reference_id = p_reference_id
+      and ct.transaction_type = 'credit'
+      and ct.reason = 'refund'
+      and ct.user_id = p_user_id
+      and ct.wallet_id = v_wallet_id
+    limit 1;
+
+    if v_existing_refund_id is not null then
+
+      return query
+      select
+        v_existing_refund_id,
+        v_wallet_id,
+        p_user_id,
+        v_current_balance,
+        v_current_balance;
+
+      return;
+    end if;
+
+
+    -- --------------------------------------------------------
+    -- Find the original generation debit.
+    --
+    -- A refund must be linked to an existing debit belonging
+    -- to the same user and wallet.
+    -- --------------------------------------------------------
+
+    select
+      abs(ct.amount),
+      ct.user_id,
+      ct.wallet_id
+    into
+      v_original_debit_amount,
+      v_original_debit_user,
+      v_original_debit_wallet
+    from public.coin_transactions ct
+    where ct.reference_id = p_reference_id
+      and ct.transaction_type = 'debit'
+      and ct.reason = 'generation'
+      and ct.user_id = p_user_id
+      and ct.wallet_id = v_wallet_id
+    order by ct.created_at asc
+    limit 1;
+
+    if v_original_debit_amount is null then
+      raise exception
+        'Original generation debit was not found for refund.';
+    end if;
+
+
+    -- --------------------------------------------------------
+    -- Refund must exactly match the original charge.
+    -- --------------------------------------------------------
+
+    if p_amount <> v_original_debit_amount then
+      raise exception
+        'Refund amount does not match the original generation charge.';
+    end if;
+
+  end if;
+
+
+  -- ==========================================================
+  -- CALCULATE BALANCE DELTA
   -- ==========================================================
 
   if p_transaction_type = 'credit' then
@@ -225,7 +247,7 @@ begin
 
 
   -- ==========================================================
-  -- PREVENT NEGATIVE BALANCE
+  -- NEVER ALLOW NEGATIVE BALANCE
   -- ==========================================================
 
   if v_new_balance < 0 then
@@ -246,35 +268,88 @@ begin
 
 
   -- ==========================================================
-  -- IMMUTABLE LEDGER ENTRY
+  -- INSERT IMMUTABLE LEDGER ENTRY
   -- ==========================================================
 
-  insert into public.coin_transactions (
-    user_id,
-    wallet_id,
-    amount,
-    transaction_type,
-    reason,
-    reference_id,
-    description,
-    metadata
-  )
-  values (
-    p_user_id,
-    v_wallet_id,
-    v_delta,
-    p_transaction_type,
-    p_reason,
-    p_reference_id,
-    p_description,
-    p_metadata
-  )
-  returning id
-  into v_transaction_id;
+  begin
+
+    insert into public.coin_transactions (
+      user_id,
+      wallet_id,
+      amount,
+      transaction_type,
+      reason,
+      reference_id,
+      description,
+      metadata
+    )
+    values (
+      p_user_id,
+      v_wallet_id,
+      v_delta,
+      p_transaction_type,
+      p_reason,
+      p_reference_id,
+      p_description,
+      p_metadata
+    )
+    returning id
+    into v_transaction_id;
+
+  exception
+    when unique_violation then
+
+      -- ------------------------------------------------------
+      -- Defensive race-condition fallback.
+      -- If another concurrent refund created the same unique
+      -- reference, return the existing refund instead of
+      -- failing the whole operation.
+      -- ------------------------------------------------------
+
+      if p_transaction_type = 'credit'
+         and p_reason = 'refund' then
+
+        select
+          ct.id
+        into
+          v_existing_refund_id
+        from public.coin_transactions ct
+        where ct.reference_id = p_reference_id
+          and ct.transaction_type = 'credit'
+          and ct.reason = 'refund'
+          and ct.user_id = p_user_id
+          and ct.wallet_id = v_wallet_id
+        limit 1;
+
+        if v_existing_refund_id is not null then
+
+          -- Restore the wallet mutation that this transaction
+          -- attempted before the duplicate was detected.
+          update public.wallets
+          set
+            balance = v_current_balance,
+            updated_at = now()
+          where id = v_wallet_id;
+
+          return query
+          select
+            v_existing_refund_id,
+            v_wallet_id,
+            p_user_id,
+            v_current_balance,
+            v_current_balance;
+
+          return;
+        end if;
+      end if;
+
+      raise;
+
+  end;
 
 
   -- ==========================================================
-  -- RETURN RESULT
+  -- RETURN OPERATION RESULT
   -- ==========================================================
 
   return query
@@ -290,7 +365,7 @@ $$;
 
 
 -- ============================================================
--- SECURITY
+-- FUNCTION SECURITY
 -- ============================================================
 
 revoke all
@@ -344,4 +419,4 @@ comment on function public.change_wallet_balance(
   jsonb
 )
 is
-  'Trusted atomic CREOVA coin operation. Updates wallet and immutable ledger in one transaction. Refunds are idempotent by reference_id and execution is restricted to service_role.';
+  'Trusted atomic CREOVA coin operation. Wallet changes and ledger writes are transactional. Generation refunds are validated against the original generation debit and are idempotent by reference_id.';
