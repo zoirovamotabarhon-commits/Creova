@@ -1,14 +1,8 @@
 import { supabase } from "./supabase";
 import {
-  getFeatureCost,
-} from "./featureCosts";
-import {
   GenerationRequest,
   GenerationResult,
 } from "./generationTypes";
-import {
-  chargeCoins,
-} from "./coinOperations";
 
 export async function createGenerationRecord(
   request: GenerationRequest
@@ -39,107 +33,77 @@ export async function createGenerationRecord(
   if (!userData.user) {
     return {
       success: false,
-      error: "Authentication required.",
+      error:
+        "Authentication required.",
     };
   }
 
-  const cost =
-    getFeatureCost(request.type);
+  try {
+    const {
+      data,
+      error,
+    } =
+      await supabase.functions.invoke(
+        "generation-record",
+        {
+          body: {
+            type: request.type,
+            prompt,
+            metadata:
+              request.metadata ??
+              {},
+          },
+        }
+      );
 
-  /*
-   * The generation record function creates the
-   * history record first. The returned generationId
-   * becomes the idempotency/reference key for the
-   * coin charge.
-   */
-
-  const {
-    data,
-    error,
-  } = await supabase.functions.invoke(
-    "generation-record",
-    {
-      body: {
-        type: request.type,
-        prompt,
-        cost,
-        metadata:
-          request.metadata ?? {},
-      },
+    if (error) {
+      return {
+        success: false,
+        error: error.message,
+      };
     }
-  );
 
-  if (error) {
+    if (
+      !data ||
+      data.success !== true ||
+      typeof data.generationId !==
+        "string"
+    ) {
+      return {
+        success: false,
+        error:
+          typeof data?.error ===
+          "string"
+            ? data.error
+            : "Unable to create generation.",
+      };
+    }
+
     return {
-      success: false,
-      error: error.message,
+      success: true,
+      generationId:
+        data.generationId,
     };
-  }
-
-  if (
-    !data ||
-    data.success !== true ||
-    typeof data.generationId !==
-      "string"
-  ) {
+  } catch (error) {
     return {
       success: false,
       error:
-        typeof data?.error === "string"
-          ? data.error
-          : "Unable to create generation.",
+        error instanceof Error
+          ? error.message
+          : "Generation creation failed.",
     };
   }
-
-  const generationId =
-    data.generationId;
-
-  /*
-   * Charge coins only after the generation
-   * record exists.
-   */
-  const charge =
-    await chargeCoins(
-      cost,
-      "generation",
-      generationId,
-      `CREOVA ${request.type} generation`
-    );
-
-  if (!charge.success) {
-    await updateGenerationRecord(
-      generationId,
-      {
-        status: "failed",
-        errorMessage:
-          charge.error ??
-          "Coin charge failed.",
-      }
-    );
-
-    return {
-      success: false,
-      generationId,
-      error:
-        charge.error ??
-        "Insufficient coins.",
-    };
-  }
-
-  return {
-    success: true,
-    generationId,
-  };
 }
 
 export async function updateGenerationRecord(
   generationId: string,
   update: {
-    status: "queued" |
-      "processing" |
-      "completed" |
-      "failed" |
-      "cancelled";
+    status:
+      | "queued"
+      | "processing"
+      | "completed"
+      | "failed"
+      | "cancelled";
     resultText?: string;
     resultUrl?: string;
     provider?: string;
@@ -202,7 +166,8 @@ export async function updateGenerationRecord(
       success:
         data?.success === true,
       error:
-        typeof data?.error === "string"
+        typeof data?.error ===
+        "string"
           ? data.error
           : undefined,
     };
@@ -215,4 +180,4 @@ export async function updateGenerationRecord(
           : "Generation update failed.",
     };
   }
-      }
+}
