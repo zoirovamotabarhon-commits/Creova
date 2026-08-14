@@ -1,131 +1,82 @@
 import { supabase } from "./supabase";
-import { OPENAI_MODEL } from "./config";
 
-export type AIMessageRole =
-  | "user"
-  | "assistant"
-  | "system";
-
-export interface AIMessage {
-  role: AIMessageRole;
-  content: string;
-}
-
-export interface GenerateTextOptions {
-  systemPrompt?: string;
-  model?: string;
-}
-
-export interface GenerateTextResult {
+export interface OpenAIResponse {
   success: boolean;
-  text?: string;
+  generationId?: string;
+  message?: string;
   error?: string;
 }
 
-export async function generateText(
-  messages: AIMessage[],
-  options: GenerateTextOptions = {}
-): Promise<GenerateTextResult> {
-  const cleanMessages = messages
-    .filter(
-      (message) =>
-        message &&
-        typeof message.content === "string" &&
-        message.content.trim().length > 0
-    )
-    .map((message) => ({
-      role: message.role,
-      content: message.content.trim(),
-    }));
+export async function generateOpenAIChat(
+  message: string,
+  generationId?: string,
+): Promise<OpenAIResponse> {
+  const cleanMessage =
+    message.trim();
 
-  if (cleanMessages.length === 0) {
-    return {
-      success: false,
-      error: "At least one message is required.",
-    };
-  }
-
-  const systemPrompt =
-    options.systemPrompt?.trim() ||
-    "You are CREOVA AI Assistant. Give clear, useful and accurate answers.";
-
-  const model =
-    options.model?.trim() || OPENAI_MODEL;
-
-  try {
-    const { data, error } =
-      await supabase.functions.invoke(
-        "openai-chat",
-        {
-          body: {
-            messages: cleanMessages,
-            systemPrompt,
-            model,
-          },
-        }
-      );
-
-    if (error) {
-      console.error(
-        "openai-chat error:",
-        error
-      );
-
-      return {
-        success: false,
-        error:
-          error.message ||
-          "AI request failed.",
-      };
-    }
-
-    if (!data) {
-      return {
-        success: false,
-        error:
-          "Empty response from AI service.",
-      };
-    }
-
-    if (data.success !== true) {
-      return {
-        success: false,
-        error:
-          typeof data.error === "string"
-            ? data.error
-            : "AI service returned an error.",
-      };
-    }
-
-    const text =
-      typeof data.text === "string"
-        ? data.text.trim()
-        : "";
-
-    if (!text) {
-      return {
-        success: false,
-        error:
-          "AI service returned empty text.",
-      };
-    }
-
-    return {
-      success: true,
-      text,
-    };
-  } catch (error) {
-    console.error(
-      "generateText error:",
-      error
-    );
-
+  if (!cleanMessage) {
     return {
       success: false,
       error:
-        error instanceof Error
-          ? error.message
-          : "Unexpected AI error.",
+        "Message is required.",
     };
   }
+
+  const body: Record<
+    string,
+    unknown
+  > = {
+    message: cleanMessage,
+  };
+
+  if (generationId?.trim()) {
+    body.generationId =
+      generationId.trim();
+  }
+
+  const { data, error } =
+    await supabase.functions.invoke(
+      "openai-chat",
+      {
+        body,
+      },
+    );
+
+  if (error) {
+    return {
+      success: false,
+      error: error.message,
+    };
+  }
+
+  if (!data?.success) {
+    return {
+      success: false,
+      generationId:
+        data?.generationId,
+      error:
+        data?.error ??
+        "OpenAI request failed.",
+    };
+  }
+
+  return {
+    success: true,
+    generationId:
+      data.generationId,
+    message:
+      data.message ??
+      data.content ??
+      "",
+  };
+}
+
+export async function chatWithOpenAI(
+  message: string,
+  generationId?: string,
+): Promise<OpenAIResponse> {
+  return generateOpenAIChat(
+    message,
+    generationId,
+  );
 }
