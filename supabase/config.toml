@@ -14,3 +14,12 @@ verify_jwt = true
 
 [functions.voice-generate]
 verify_jwt = true
+
+[functions.coin-operation]
+verify_jwt = true
+
+[functions.generation-record]
+verify_jwt = true
+
+[functions.generation-update]
+verify_jwt = true
