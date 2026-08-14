@@ -1,10 +1,12 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 
-import { updateGeneration } from "../_shared/generation.ts";
-
 import {
   createClient,
-} from "npm:@supabase/supabase-js@2.57.0";
+} from "npm:@supabase/supabase-js@2";
+
+import {
+  updateGeneration,
+} from "../_shared/generation.ts";
 
 const ELEVENLABS_API_KEY =
   Deno.env.get(
@@ -16,27 +18,17 @@ const SUPABASE_URL =
     "SUPABASE_URL",
   ) ?? "";
 
-const SUPABASE_SECRET_KEYS =
-  Deno.env.get(
-    "SUPABASE_SECRET_KEYS",
-  );
-
-const SUPABASE_SECRET_KEY =
-  Deno.env.get(
-    "SUPABASE_SECRET_KEY",
-  );
-
 const SUPABASE_SERVICE_ROLE_KEY =
   Deno.env.get(
     "SUPABASE_SERVICE_ROLE_KEY",
-  );
-
-const ELEVENLABS_MUSIC_URL =
-  "https://api.elevenlabs.io/v1/music/stream";
+  ) ??
+  Deno.env.get(
+    "SUPABASE_SECRET_KEY",
+  ) ??
+  "";
 
 const CORS_HEADERS = {
-  "Access-Control-Allow-Origin":
-    "*",
+  "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods":
@@ -45,7 +37,7 @@ const CORS_HEADERS = {
     "application/json",
 };
 
-function jsonResponse(
+function json(
   body: Record<string, unknown>,
   status = 200,
 ) {
@@ -59,48 +51,16 @@ function jsonResponse(
   );
 }
 
-function getSecretKey(): string {
-  if (
-    SUPABASE_SECRET_KEYS
-  ) {
-    try {
-      const parsed =
-        JSON.parse(
-          SUPABASE_SECRET_KEYS,
-        ) as Record<
-          string,
-          unknown
-        >;
-
-      const defaultKey =
-        parsed.default;
-
-      if (
-        typeof defaultKey ===
-          "string" &&
-        defaultKey.trim()
-      ) {
-        return defaultKey.trim();
-      }
-    } catch {
-      // Continue with fallback keys.
-    }
-  }
-
-  if (
-    SUPABASE_SECRET_KEY?.trim()
-  ) {
-    return SUPABASE_SECRET_KEY.trim();
-  }
-
-  if (
-    SUPABASE_SERVICE_ROLE_KEY?.trim()
-  ) {
-    return SUPABASE_SERVICE_ROLE_KEY.trim();
-  }
-
-  throw new Error(
-    "Supabase secret key is not configured.",
+function getAdminClient() {
+  return createClient(
+    SUPABASE_URL,
+    SUPABASE_SERVICE_ROLE_KEY,
+    {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    },
   );
 }
 
@@ -117,35 +77,20 @@ async function requireUser(
       "Bearer ",
     )
   ) {
-    throw new Error(
-      "Authentication required.",
-    );
+    return null;
   }
 
   const token =
     authorization
-      .slice("Bearer ".length)
+      .slice(7)
       .trim();
 
   if (!token) {
-    throw new Error(
-      "Authentication token is missing.",
-    );
+    return null;
   }
 
   const supabase =
-    createClient(
-      SUPABASE_URL,
-      getSecretKey(),
-      {
-        auth: {
-          autoRefreshToken:
-            false,
-          persistSession:
-            false,
-        },
-      },
-    );
+    getAdminClient();
 
   const {
     data,
@@ -159,15 +104,13 @@ async function requireUser(
     error ||
     !data.user
   ) {
-    throw new Error(
-      "Invalid or expired authentication token.",
-    );
+    return null;
   }
 
   return data.user;
 }
 
-function arrayBufferToBase64(
+function bufferToBase64(
   buffer: ArrayBuffer,
 ): string {
   const bytes =
@@ -181,20 +124,22 @@ function arrayBufferToBase64(
     0x8000;
 
   for (
-    let index = 0;
-    index < bytes.length;
-    index += chunkSize
+    let i = 0;
+    i < bytes.length;
+    i += chunkSize
   ) {
+    const chunk =
+      bytes.subarray(
+        i,
+        Math.min(
+          i + chunkSize,
+          bytes.length,
+        ),
+      );
+
     binary +=
       String.fromCharCode(
-        ...bytes.subarray(
-          index,
-          Math.min(
-            index +
-              chunkSize,
-            bytes.length,
-          ),
-        ),
+        ...chunk,
       );
   }
 
@@ -203,16 +148,6 @@ function arrayBufferToBase64(
 
 Deno.serve(
   async (req) => {
-    let user:
-      | Awaited<
-          ReturnType<
-            typeof requireUser
-          >
-        >
-      | null = null;
-
-    let generationId = "";
-
     if (
       req.method === "OPTIONS"
     ) {
@@ -228,7 +163,7 @@ Deno.serve(
     if (
       req.method !== "POST"
     ) {
-      return jsonResponse(
+      return json(
         {
           success: false,
           error:
@@ -238,11 +173,14 @@ Deno.serve(
       );
     }
 
+    let generationId = "";
+    let userId = "";
+
     try {
       if (
         !ELEVENLABS_API_KEY
       ) {
-        return jsonResponse(
+        return json(
           {
             success: false,
             error:
@@ -252,36 +190,30 @@ Deno.serve(
         );
       }
 
-      user =
+      const user =
         await requireUser(
           req,
         );
 
-      let body:
-        Record<string, unknown>;
-
-      try {
-        body =
-          (await req.json()) as Record<
-            string,
-            unknown
-          >;
-      } catch {
-        return jsonResponse(
+      if (!user) {
+        return json(
           {
             success: false,
             error:
-              "Invalid JSON request body.",
+              "Authentication required.",
           },
-          400,
+          401,
         );
       }
 
-      const prompt =
-        typeof body.prompt ===
-        "string"
-          ? body.prompt.trim()
-          : "";
+      userId =
+        user.id;
+
+      const body =
+        (await req.json()) as Record<
+          string,
+          unknown
+        >;
 
       generationId =
         typeof body.generationId ===
@@ -289,8 +221,14 @@ Deno.serve(
           ? body.generationId.trim()
           : "";
 
+      const prompt =
+        typeof body.prompt ===
+        "string"
+          ? body.prompt.trim()
+          : "";
+
       if (!generationId) {
-        return jsonResponse(
+        return json(
           {
             success: false,
             error:
@@ -301,24 +239,11 @@ Deno.serve(
       }
 
       if (!prompt) {
-        return jsonResponse(
+        return json(
           {
             success: false,
             error:
-              "Prompt is required.",
-          },
-          400,
-        );
-      }
-
-      if (
-        prompt.length > 4100
-      ) {
-        return jsonResponse(
-          {
-            success: false,
-            error:
-              "Music prompt is too long. Maximum is 4100 characters.",
+              "Music prompt is required.",
           },
           400,
         );
@@ -326,15 +251,14 @@ Deno.serve(
 
       await updateGeneration({
         generationId,
-        userId:
-          user.id,
+        userId,
         status:
           "processing",
       });
 
       const response =
         await fetch(
-          `${ELEVENLABS_MUSIC_URL}?output_format=mp3_44100_128`,
+          "https://api.elevenlabs.io/v1/music",
           {
             method:
               "POST",
@@ -343,11 +267,11 @@ Deno.serve(
                 ELEVENLABS_API_KEY,
               "Content-Type":
                 "application/json",
+              Accept:
+                "audio/mpeg",
             },
             body: JSON.stringify({
               prompt,
-              model_id:
-                "music_v1",
             }),
           },
         );
@@ -358,7 +282,7 @@ Deno.serve(
 
         throw new Error(
           errorText ||
-            `ElevenLabs request failed with status ${response.status}.`,
+            `ElevenLabs request failed: ${response.status}`,
         );
       }
 
@@ -374,18 +298,17 @@ Deno.serve(
         );
       }
 
-      const audioBase64 =
-        arrayBufferToBase64(
+      const base64 =
+        bufferToBase64(
           audioBuffer,
         );
 
       const audioUrl =
-        `data:audio/mpeg;base64,${audioBase64}`;
+        `data:audio/mpeg;base64,${base64}`;
 
       await updateGeneration({
         generationId,
-        userId:
-          user.id,
+        userId,
         status:
           "completed",
         provider:
@@ -396,21 +319,22 @@ Deno.serve(
           audioUrl,
       });
 
-      return jsonResponse({
+      return json({
         success: true,
         generationId,
         audioUrl,
+        status:
+          "completed",
       });
     } catch (error) {
       if (
         generationId &&
-        user?.id
+        userId
       ) {
         try {
           await updateGeneration({
             generationId,
-            userId:
-              user.id,
+            userId,
             status:
               "failed",
             errorMessage:
@@ -419,11 +343,11 @@ Deno.serve(
                 : "Music generation failed.",
           });
         } catch (
-          refundError
+          updateError
         ) {
           console.error(
-            "Generation update/refund failed:",
-            refundError,
+            "Failed to update generation:",
+            updateError,
           );
         }
       }
@@ -433,7 +357,7 @@ Deno.serve(
         error,
       );
 
-      return jsonResponse(
+      return json(
         {
           success: false,
           generationId:
