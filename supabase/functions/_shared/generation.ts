@@ -1,7 +1,18 @@
 import {
   createClient,
-  SupabaseClient,
-} from "npm:@supabase/supabase-js@2.57.0";
+} from "npm:@supabase/supabase-js@2";
+
+const SUPABASE_URL =
+  Deno.env.get("SUPABASE_URL") ?? "";
+
+const SUPABASE_SERVICE_ROLE_KEY =
+  Deno.env.get(
+    "SUPABASE_SERVICE_ROLE_KEY",
+  ) ??
+  Deno.env.get(
+    "SUPABASE_SECRET_KEY",
+  ) ??
+  "";
 
 export type GenerationStatus =
   | "queued"
@@ -10,33 +21,30 @@ export type GenerationStatus =
   | "failed"
   | "cancelled";
 
-export interface GenerationContext {
-  id: string;
+interface UpdateGenerationParams {
+  generationId: string;
   userId: string;
-  type: string;
   status: GenerationStatus;
-  coinCost: number;
-  metadata: Record<string, unknown>;
+  provider?: string;
+  model?: string;
+  resultUrl?: string;
+  resultText?: string;
+  errorMessage?: string;
 }
 
-export function getSupabaseAdmin(): SupabaseClient {
-  const url =
-    Deno.env.get("SUPABASE_URL") ?? "";
-
-  const key =
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ??
-    Deno.env.get("SUPABASE_SECRET_KEY") ??
-    "";
-
-  if (!url || !key) {
+function getAdminClient() {
+  if (
+    !SUPABASE_URL ||
+    !SUPABASE_SERVICE_ROLE_KEY
+  ) {
     throw new Error(
       "Supabase server configuration is missing.",
     );
   }
 
   return createClient(
-    url,
-    key,
+    SUPABASE_URL,
+    SUPABASE_SERVICE_ROLE_KEY,
     {
       auth: {
         autoRefreshToken: false,
@@ -46,101 +54,53 @@ export function getSupabaseAdmin(): SupabaseClient {
   );
 }
 
-export function getInternalKey(): string {
-  const key =
-    Deno.env.get(
-      "CREOVA_INTERNAL_KEY",
-    ) ?? "";
+export async function updateGeneration(
+  params: UpdateGenerationParams,
+) {
+  const {
+    generationId,
+    userId,
+    status,
+    provider,
+    model,
+    resultUrl,
+    resultText,
+    errorMessage,
+  } = params;
 
-  if (!key) {
-    throw new Error(
-      "CREOVA_INTERNAL_KEY is not configured.",
-    );
-  }
-
-  return key;
-}
-
-export async function getGeneration(
-  admin: SupabaseClient,
-  generationId: string,
-): Promise<GenerationContext> {
   if (!generationId.trim()) {
     throw new Error(
       "Generation ID is required.",
     );
   }
 
-  const {
-    data,
-    error,
-  } = await admin
-    .from("generation_history")
-    .select("*")
-    .eq("id", generationId)
-    .maybeSingle();
-
-  if (error) {
-    throw error;
-  }
-
-  if (!data) {
+  if (!userId.trim()) {
     throw new Error(
-      "Generation not found.",
+      "User ID is required.",
     );
   }
 
-  const metadata =
-    data.metadata &&
-    typeof data.metadata === "object" &&
-    !Array.isArray(data.metadata)
-      ? data.metadata as Record<
-          string,
-          unknown
-        >
-      : {};
+  const supabase =
+    getAdminClient();
 
-  const rawCost =
-    metadata.coinCost;
+  const { data: current, error: readError } =
+    await supabase
+      .from("generation_history")
+      .select("*")
+      .eq("id", generationId)
+      .eq("user_id", userId)
+      .maybeSingle();
 
-  const coinCost =
-    typeof rawCost === "number"
-      ? rawCost
-      : typeof rawCost === "string"
-        ? Number(rawCost)
-        : NaN;
+  if (readError) {
+    throw readError;
+  }
 
-  if (
-    !Number.isInteger(coinCost) ||
-    coinCost <= 0
-  ) {
+  if (!current) {
     throw new Error(
-      "Generation coin cost is invalid.",
+      "Generation record not found.",
     );
   }
 
-  return {
-    id: data.id,
-    userId: data.user_id,
-    type: data.type,
-    status: data.status,
-    coinCost,
-    metadata,
-  };
-}
-
-export async function updateGeneration(
-  admin: SupabaseClient,
-  generationId: string,
-  status: GenerationStatus,
-  payload: {
-    resultText?: string;
-    resultUrl?: string;
-    provider?: string;
-    model?: string;
-    errorMessage?: string;
-  } = {},
-) {
   const update: Record<
     string,
     unknown
@@ -150,63 +110,59 @@ export async function updateGeneration(
       new Date().toISOString(),
   };
 
-  if (status === "processing") {
+  if (
+    status === "processing" &&
+    !current.started_at
+  ) {
     update.started_at =
       new Date().toISOString();
   }
 
   if (
-    status === "completed" ||
-    status === "failed" ||
-    status === "cancelled"
+    (
+      status === "completed" ||
+      status === "failed" ||
+      status === "cancelled"
+    ) &&
+    !current.completed_at
   ) {
     update.completed_at =
       new Date().toISOString();
   }
 
-  if (
-    payload.resultText !== undefined
-  ) {
-    update.result_text =
-      payload.resultText;
-  }
-
-  if (
-    payload.resultUrl !== undefined
-  ) {
-    update.result_url =
-      payload.resultUrl;
-  }
-
-  if (
-    payload.provider !== undefined
-  ) {
+  if (provider !== undefined) {
     update.provider =
-      payload.provider;
+      provider;
   }
 
-  if (
-    payload.model !== undefined
-  ) {
+  if (model !== undefined) {
     update.model =
-      payload.model;
+      model;
+  }
+
+  if (resultUrl !== undefined) {
+    update.result_url =
+      resultUrl;
+  }
+
+  if (resultText !== undefined) {
+    update.result_text =
+      resultText;
   }
 
   if (
-    payload.errorMessage !== undefined
+    errorMessage !== undefined
   ) {
     update.error_message =
-      payload.errorMessage;
+      errorMessage;
   }
 
-  const {
-    data,
-    error,
-  } =
-    await admin
+  const { data, error } =
+    await supabase
       .from("generation_history")
       .update(update)
       .eq("id", generationId)
+      .eq("user_id", userId)
       .select()
       .single();
 
@@ -215,48 +171,4 @@ export async function updateGeneration(
   }
 
   return data;
-}
-
-export async function refundGeneration(
-  admin: SupabaseClient,
-  generation: GenerationContext,
-  reason: "failed" | "cancelled",
-) {
-  const {
-    data,
-    error,
-  } =
-    await admin.rpc(
-      "change_wallet_balance",
-      {
-        p_user_id:
-          generation.userId,
-        p_amount:
-          generation.coinCost,
-        p_transaction_type:
-          "credit",
-        p_reason:
-          "refund",
-        p_reference_id:
-          generation.id,
-        p_description:
-          `CREOVA ${reason} generation refund`,
-        p_metadata: {
-          generationId:
-            generation.id,
-          generationType:
-            generation.type,
-          refundReason:
-            reason,
-          amount:
-            generation.coinCost,
-        },
-      },
-    );
-
-  if (error) {
-    throw error;
-  }
-
-  return data;
-    }
+        }
