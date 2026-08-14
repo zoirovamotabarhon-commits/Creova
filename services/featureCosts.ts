@@ -27,15 +27,9 @@ export function hasEnoughCoins(
   balance: number,
   type: GenerationType
 ): boolean {
-  if (
-    !Number.isFinite(balance) ||
-    balance < 0
-  ) {
-    return false;
-  }
-
   return (
+    Number.isFinite(balance) &&
     balance >=
-    getFeatureCost(type)
+      getFeatureCost(type)
   );
 }
