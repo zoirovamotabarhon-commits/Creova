@@ -7,8 +7,7 @@ import {
 export async function createGenerationRecord(
   request: GenerationRequest
 ): Promise<GenerationResult> {
-  const prompt =
-    request.prompt.trim();
+  const prompt = request.prompt.trim();
 
   if (!prompt) {
     return {
@@ -20,8 +19,7 @@ export async function createGenerationRecord(
   const {
     data: userData,
     error: userError,
-  } =
-    await supabase.auth.getUser();
+  } = await supabase.auth.getUser();
 
   if (userError) {
     return {
@@ -33,8 +31,7 @@ export async function createGenerationRecord(
   if (!userData.user) {
     return {
       success: false,
-      error:
-        "Authentication required.",
+      error: "Authentication required.",
     };
   }
 
@@ -42,19 +39,16 @@ export async function createGenerationRecord(
     const {
       data,
       error,
-    } =
-      await supabase.functions.invoke(
-        "generation-record",
-        {
-          body: {
-            type: request.type,
-            prompt,
-            metadata:
-              request.metadata ??
-              {},
-          },
-        }
-      );
+    } = await supabase.functions.invoke(
+      "generation-record",
+      {
+        body: {
+          type: request.type,
+          prompt,
+          metadata: request.metadata ?? {},
+        },
+      }
+    );
 
     if (error) {
       return {
@@ -66,23 +60,21 @@ export async function createGenerationRecord(
     if (
       !data ||
       data.success !== true ||
-      typeof data.generationId !==
-        "string"
+      typeof data.generationId !== "string" ||
+      !data.generationId.trim()
     ) {
       return {
         success: false,
         error:
-          typeof data?.error ===
-          "string"
+          typeof data?.error === "string"
             ? data.error
-            : "Unable to create generation.",
+            : "Unable to start generation.",
       };
     }
 
     return {
       success: true,
-      generationId:
-        data.generationId,
+      generationId: data.generationId.trim(),
     };
   } catch (error) {
     return {
@@ -114,14 +106,12 @@ export async function updateGenerationRecord(
   success: boolean;
   error?: string;
 }> {
-  const cleanId =
-    generationId.trim();
+  const cleanId = generationId.trim();
 
   if (!cleanId) {
     return {
       success: false,
-      error:
-        "Generation ID is required.",
+      error: "Generation ID is required.",
     };
   }
 
@@ -129,31 +119,21 @@ export async function updateGenerationRecord(
     const {
       data,
       error,
-    } =
-      await supabase.functions.invoke(
-        "generation-update",
-        {
-          body: {
-            generationId: cleanId,
-            status: update.status,
-            resultText:
-              update.resultText ??
-              null,
-            resultUrl:
-              update.resultUrl ??
-              null,
-            provider:
-              update.provider ??
-              null,
-            model:
-              update.model ??
-              null,
-            errorMessage:
-              update.errorMessage ??
-              null,
-          },
-        }
-      );
+    } = await supabase.functions.invoke(
+      "generation-update",
+      {
+        body: {
+          generationId: cleanId,
+          status: update.status,
+          resultText: update.resultText ?? null,
+          resultUrl: update.resultUrl ?? null,
+          provider: update.provider ?? null,
+          model: update.model ?? null,
+          errorMessage:
+            update.errorMessage ?? null,
+        },
+      }
+    );
 
     if (error) {
       return {
@@ -163,11 +143,9 @@ export async function updateGenerationRecord(
     }
 
     return {
-      success:
-        data?.success === true,
+      success: data?.success === true,
       error:
-        typeof data?.error ===
-        "string"
+        typeof data?.error === "string"
           ? data.error
           : undefined,
     };
