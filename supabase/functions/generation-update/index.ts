@@ -43,31 +43,31 @@ const TERMINAL_STATUSES: GenerationStatus[] = [
 
 function json(
   body: Record<string, unknown>,
-  status = 200
+  status = 200,
 ) {
   return new Response(
     JSON.stringify(body),
     {
       status,
       headers: CORS_HEADERS,
-    }
+    },
   );
 }
 
 function validStatus(
-  value: unknown
+  value: unknown,
 ): value is GenerationStatus {
   return (
     typeof value === "string" &&
     STATUSES.includes(
-      value as GenerationStatus
+      value as GenerationStatus,
     )
   );
 }
 
 function validTransition(
   current: GenerationStatus,
-  next: GenerationStatus
+  next: GenerationStatus,
 ): boolean {
   if (current === next) {
     return true;
@@ -100,7 +100,7 @@ function validTransition(
 }
 
 function isInternalRequest(
-  req: Request
+  req: Request,
 ): boolean {
   if (!INTERNAL_KEY) {
     return false;
@@ -108,20 +108,20 @@ function isInternalRequest(
 
   return (
     req.headers.get(
-      "x-creova-internal-key"
+      "x-creova-internal-key",
     ) === INTERNAL_KEY
   );
 }
 
 async function getAuthenticatedUser(
-  req: Request
+  req: Request,
 ) {
   const authorization =
     req.headers.get("Authorization");
 
   if (
     !authorization?.startsWith(
-      "Bearer "
+      "Bearer ",
     )
   ) {
     return null;
@@ -145,7 +145,7 @@ async function getAuthenticatedUser(
           autoRefreshToken: false,
           persistSession: false,
         },
-      }
+      },
     );
 
   const {
@@ -177,7 +177,7 @@ Deno.serve(async (req) => {
         success: false,
         error: "Method not allowed.",
       },
-      405
+      405,
     );
   }
 
@@ -191,7 +191,7 @@ Deno.serve(async (req) => {
         error:
           "Supabase server configuration is missing.",
       },
-      500
+      500,
     );
   }
 
@@ -203,7 +203,7 @@ Deno.serve(async (req) => {
       internal
         ? null
         : await getAuthenticatedUser(
-            req
+            req,
           );
 
     if (!internal && !user) {
@@ -212,7 +212,7 @@ Deno.serve(async (req) => {
           success: false,
           error: "Unauthorized.",
         },
-        401
+        401,
       );
     }
 
@@ -223,7 +223,8 @@ Deno.serve(async (req) => {
       >;
 
     const generationId =
-      typeof body.generationId === "string"
+      typeof body.generationId ===
+      "string"
         ? body.generationId.trim()
         : "";
 
@@ -237,7 +238,7 @@ Deno.serve(async (req) => {
           error:
             "Generation ID is required.",
         },
-        400
+        400,
       );
     }
 
@@ -248,16 +249,14 @@ Deno.serve(async (req) => {
           error:
             "Invalid generation status.",
         },
-        400
+        400,
       );
     }
 
-    /*
-     * Terminal states may ONLY be written by
-     * trusted server-side AI functions.
-     */
     if (
-      TERMINAL_STATUSES.includes(status) &&
+      TERMINAL_STATUSES.includes(
+        status,
+      ) &&
       !internal
     ) {
       return json(
@@ -266,7 +265,7 @@ Deno.serve(async (req) => {
           error:
             "Terminal generation updates are server-only.",
         },
-        403
+        403,
       );
     }
 
@@ -279,7 +278,7 @@ Deno.serve(async (req) => {
             autoRefreshToken: false,
             persistSession: false,
           },
-        }
+        },
       );
 
     let query =
@@ -291,14 +290,15 @@ Deno.serve(async (req) => {
     if (!internal && user) {
       query = query.eq(
         "user_id",
-        user.id
+        user.id,
       );
     }
 
     const {
       data: existing,
       error: readError,
-    } = await query.maybeSingle();
+    } =
+      await query.maybeSingle();
 
     if (readError) {
       throw readError;
@@ -311,7 +311,7 @@ Deno.serve(async (req) => {
           error:
             "Generation record not found.",
         },
-        404
+        404,
       );
     }
 
@@ -325,14 +325,14 @@ Deno.serve(async (req) => {
           error:
             "Existing generation status is invalid.",
         },
-        500
+        500,
       );
     }
 
     if (
       !validTransition(
         current,
-        status
+        status,
       )
     ) {
       return json(
@@ -341,7 +341,7 @@ Deno.serve(async (req) => {
           error:
             `Invalid status transition: ${current} -> ${status}.`,
         },
-        409
+        409,
       );
     }
 
@@ -363,7 +363,9 @@ Deno.serve(async (req) => {
     }
 
     if (
-      TERMINAL_STATUSES.includes(status) &&
+      TERMINAL_STATUSES.includes(
+        status,
+      ) &&
       !existing.completed_at
     ) {
       update.completed_at =
@@ -372,7 +374,8 @@ Deno.serve(async (req) => {
 
     if (
       status === "completed" &&
-      typeof body.resultText === "string"
+      typeof body.resultText ===
+        "string"
     ) {
       update.result_text =
         body.resultText.trim();
@@ -380,21 +383,24 @@ Deno.serve(async (req) => {
 
     if (
       status === "completed" &&
-      typeof body.resultUrl === "string"
+      typeof body.resultUrl ===
+        "string"
     ) {
       update.result_url =
         body.resultUrl.trim();
     }
 
     if (
-      typeof body.provider === "string"
+      typeof body.provider ===
+      "string"
     ) {
       update.provider =
         body.provider.trim();
     }
 
     if (
-      typeof body.model === "string"
+      typeof body.model ===
+      "string"
     ) {
       update.model =
         body.model.trim();
@@ -405,7 +411,8 @@ Deno.serve(async (req) => {
         status === "failed" ||
         status === "cancelled"
       ) &&
-      typeof body.errorMessage === "string"
+      typeof body.errorMessage ===
+        "string"
     ) {
       update.error_message =
         body.errorMessage.trim();
@@ -417,15 +424,15 @@ Deno.serve(async (req) => {
       await admin
         .from("generation_history")
         .update(update)
-        .eq("id", generationId);
+        .eq(
+          "id",
+          generationId,
+        );
 
     if (updateError) {
       throw updateError;
     }
 
-    /*
-     * Refund is performed ONLY by this trusted server path.
-     */
     let refund = null;
 
     if (
@@ -434,8 +441,11 @@ Deno.serve(async (req) => {
     ) {
       const metadata =
         existing.metadata &&
-        typeof existing.metadata === "object" &&
-        !Array.isArray(existing.metadata)
+        typeof existing.metadata ===
+          "object" &&
+        !Array.isArray(
+          existing.metadata,
+        )
           ? (
               existing.metadata as Record<
                 string,
@@ -448,14 +458,18 @@ Deno.serve(async (req) => {
         metadata.coinCost;
 
       const coinCost =
-        typeof rawCost === "number"
+        typeof rawCost ===
+        "number"
           ? rawCost
-          : typeof rawCost === "string"
+          : typeof rawCost ===
+              "string"
             ? Number(rawCost)
             : NaN;
 
       if (
-        !Number.isInteger(coinCost) ||
+        !Number.isInteger(
+          coinCost,
+        ) ||
         coinCost <= 0
       ) {
         return json(
@@ -465,7 +479,7 @@ Deno.serve(async (req) => {
               "Generation cost is invalid; refund was not performed.",
             generationId,
           },
-          500
+          500,
         );
       }
 
@@ -497,12 +511,12 @@ Deno.serve(async (req) => {
               amount:
                 coinCost,
             },
-          }
+          },
         );
 
       if (error) {
         throw new Error(
-          `Refund failed: ${error.message}`
+          `Refund failed: ${error.message}`,
         );
       }
 
@@ -524,7 +538,7 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error(
       "generation-update error:",
-      error
+      error,
     );
 
     return json(
@@ -535,7 +549,7 @@ Deno.serve(async (req) => {
             ? error.message
             : "Generation update failed.",
       },
-      500
+      500,
     );
   }
 });
