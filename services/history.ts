@@ -21,14 +21,14 @@ export interface GenerationHistoryItem {
   type: GenerationType;
   prompt: string;
   status: GenerationStatus;
-  result_text?: string | null;
-  result_url?: string | null;
-  provider?: string | null;
-  model?: string | null;
-  error_message?: string | null;
+  result_text: string | null;
+  result_url: string | null;
+  provider: string | null;
+  model: string | null;
+  error_message: string | null;
   metadata: Record<string, unknown>;
-  started_at?: string | null;
-  completed_at?: string | null;
+  started_at: string | null;
+  completed_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -162,6 +162,7 @@ function normalizeItem(
 export async function getGenerationHistory(
   options?: {
     type?: GenerationType;
+    status?: GenerationStatus;
     limit?: number;
   }
 ): Promise<HistoryResponse> {
@@ -186,6 +187,13 @@ export async function getGenerationHistory(
       query = query.eq(
         "type",
         options.type
+      );
+    }
+
+    if (options?.status) {
+      query = query.eq(
+        "status",
+        options.status
       );
     }
 
@@ -283,4 +291,74 @@ export async function getGenerationById(
       error:
         error instanceof Error
           ? error.message
-          : "
+          : "Unable to load generation history item.",
+    };
+  }
+}
+
+export async function deleteGeneration(
+  id: string
+): Promise<{
+  success: boolean;
+  error?: string;
+}> {
+  const cleanId = id.trim();
+
+  if (!cleanId) {
+    return {
+      success: false,
+      error: "Generation ID is required.",
+    };
+  }
+
+  try {
+    const {
+      data: userData,
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError) {
+      return {
+        success: false,
+        error: userError.message,
+      };
+    }
+
+    if (!userData.user) {
+      return {
+        success: false,
+        error: "Authentication required.",
+      };
+    }
+
+    const {
+      error,
+    } = await supabase
+      .from("generation_history")
+      .delete()
+      .eq("id", cleanId)
+      .eq(
+        "user_id",
+        userData.user.id
+      );
+
+    if (error) {
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+
+    return {
+      success: true,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : "Unable to delete generation history item.",
+    };
+  }
+        }
