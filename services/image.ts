@@ -1,9 +1,14 @@
 import { supabase } from "./supabase";
+import {
+  createGenerationRecord,
+  updateGenerationRecord,
+} from "./generation";
 
 export interface ImageResponse {
   success: boolean;
   imageUrl?: string;
   imageBase64?: string;
+  generationId?: string;
   error?: string;
 }
 
@@ -19,7 +24,29 @@ export async function generateImage(
     };
   }
 
+  let generationId: string | undefined;
+
   try {
+    const record = await createGenerationRecord({
+      type: "image",
+      prompt: cleanPrompt,
+    });
+
+    if (!record.success || !record.generationId) {
+      return {
+        success: false,
+        error:
+          record.error ??
+          "Unable to start image generation.",
+      };
+    }
+
+    generationId = record.generationId;
+
+    await updateGenerationRecord(generationId, {
+      status: "processing",
+    });
+
     const {
       data,
       error,
@@ -33,39 +60,44 @@ export async function generateImage(
     );
 
     if (error) {
+      await updateGenerationRecord(generationId, {
+        status: "failed",
+        errorMessage: error.message,
+      });
+
       return {
         success: false,
+        generationId,
         error: error.message,
       };
     }
 
-    if (!data) {
+    if (!data || data.success !== true) {
+      const errorMessage =
+        typeof data?.error === "string"
+          ? data.error
+          : "Image generation failed.";
+
+      await updateGenerationRecord(generationId, {
+        status: "failed",
+        errorMessage,
+      });
+
       return {
         success: false,
-        error:
-          "Image server returned an empty response.",
+        generationId,
+        error: errorMessage,
       };
     }
 
-    if (data.success !== true) {
-      return {
-        success: false,
-        error:
-          typeof data.error === "string"
-            ? data.error
-            : "Image generation failed.",
-      };
-    }
+    const imageBase64 =
+      typeof data.imageBase64 === "string"
+        ? data.imageBase64.trim()
+        : "";
 
     let imageUrl =
       typeof data.imageUrl === "string"
         ? data.imageUrl.trim()
-        : "";
-
-    const imageBase64 =
-      typeof data.imageBase64 ===
-      "string"
-        ? data.imageBase64.trim()
         : "";
 
     if (!imageUrl && imageBase64) {
@@ -74,22 +106,47 @@ export async function generateImage(
     }
 
     if (!imageUrl) {
+      const errorMessage =
+        "Image server did not return an image.";
+
+      await updateGenerationRecord(generationId, {
+        status: "failed",
+        errorMessage,
+      });
+
       return {
         success: false,
-        error:
-          "Image server did not return an image.",
+        generationId,
+        error: errorMessage,
       };
     }
+
+    await updateGenerationRecord(generationId, {
+      status: "completed",
+      resultUrl: imageUrl,
+      provider: "openai",
+    });
 
     return {
       success: true,
       imageUrl,
-      imageBase64:
-        imageBase64 || undefined,
+      imageBase64: imageBase64 || undefined,
+      generationId,
     };
   } catch (error) {
+    if (generationId) {
+      await updateGenerationRecord(generationId, {
+        status: "failed",
+        errorMessage:
+          error instanceof Error
+            ? error.message
+            : "Image generation failed.",
+      });
+    }
+
     return {
       success: false,
+      generationId,
       error:
         error instanceof Error
           ? error.message
