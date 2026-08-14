@@ -1,7 +1,5 @@
+import { createGeneration } from "./generation";
 import { supabase } from "./supabase";
-import {
-  createGeneration,
-} from "./generation";
 
 export interface VoiceResponse {
   success: boolean;
@@ -12,7 +10,6 @@ export interface VoiceResponse {
 
 export async function generateVoice(
   text: string,
-  coinCost?: number,
 ): Promise<VoiceResponse> {
   const cleanText = text.trim();
 
@@ -26,7 +23,7 @@ export async function generateVoice(
   const generation =
     await createGeneration(
       "voice",
-      coinCost,
+      undefined,
       cleanText,
       {
         feature: "voice",
@@ -45,7 +42,10 @@ export async function generateVoice(
     };
   }
 
-  const { data, error } =
+  const {
+    data,
+    error,
+  } =
     await supabase.functions.invoke(
       "voice-generate",
       {
@@ -83,7 +83,6 @@ export async function generateVoice(
       generation.generationId,
     audioUrl:
       data.audioUrl ??
-      data.audio_url ??
-      undefined,
+      data.audio_url,
   };
 }
