@@ -21,16 +21,18 @@ const COSTS = {
   voice: 5,
 } as const;
 
+type GenerationType =
+  keyof typeof COSTS;
+
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods":
     "POST, OPTIONS",
-  "Content-Type": "application/json",
+  "Content-Type":
+    "application/json",
 };
-
-type GenerationType = keyof typeof COSTS;
 
 function json(
   body: Record<string, unknown>,
@@ -40,7 +42,8 @@ function json(
     JSON.stringify(body),
     {
       status,
-      headers: CORS_HEADERS,
+      headers:
+        CORS_HEADERS,
     },
   );
 }
@@ -85,212 +88,310 @@ function normalizeMetadata(
   >;
 }
 
-Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response("ok", {
-      headers: CORS_HEADERS,
-    });
-  }
-
-  if (req.method !== "POST") {
-    return json(
-      {
-        success: false,
-        error: "Method not allowed.",
-      },
-      405,
+function getAdminClient() {
+  if (
+    !SUPABASE_URL ||
+    !SERVICE_ROLE_KEY
+  ) {
+    throw new Error(
+      "Supabase server configuration is missing.",
     );
   }
 
-  try {
+  return createClient(
+    SUPABASE_URL,
+    SERVICE_ROLE_KEY,
+    {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    },
+  );
+}
+
+async function requireUser(
+  req: Request,
+) {
+  const authorization =
+    req.headers.get(
+      "Authorization",
+    );
+
+  if (
+    !authorization?.startsWith(
+      "Bearer ",
+    )
+  ) {
+    return null;
+  }
+
+  const token =
+    authorization
+      .slice("Bearer ".length)
+      .trim();
+
+  if (!token) {
+    return null;
+  }
+
+  const admin =
+    getAdminClient();
+
+  const {
+    data,
+    error,
+  } =
+    await admin.auth.getUser(
+      token,
+    );
+
+  if (
+    error ||
+    !data.user
+  ) {
+    return null;
+  }
+
+  return data.user;
+}
+
+Deno.serve(
+  async (req) => {
     if (
-      !SUPABASE_URL ||
-      !SERVICE_ROLE_KEY
+      req.method === "OPTIONS"
+    ) {
+      return new Response(
+        "ok",
+        {
+          headers:
+            CORS_HEADERS,
+        },
+      );
+    }
+
+    if (
+      req.method !== "POST"
     ) {
       return json(
         {
           success: false,
           error:
-            "Supabase server configuration is missing.",
+            "Method not allowed.",
         },
-        500,
+        405,
       );
     }
 
-    const authorization =
-      req.headers.get(
-        "Authorization",
-      );
-
-    if (
-      !authorization?.startsWith(
-        "Bearer ",
-      )
-    ) {
-      return json(
-        {
-          success: false,
-          error:
-            "Authentication required.",
-        },
-        401,
-      );
-    }
-
-    const token =
-      authorization
-        .slice("Bearer ".length)
-        .trim();
-
-    if (!token) {
-      return json(
-        {
-          success: false,
-          error:
-            "Authentication token is missing.",
-        },
-        401,
-      );
-    }
-
-    const admin =
-      createClient(
-        SUPABASE_URL,
-        SERVICE_ROLE_KEY,
-        {
-          auth: {
-            autoRefreshToken: false,
-            persistSession: false,
-          },
-        },
-      );
-
-    const {
-      data: userData,
-      error: userError,
-    } =
-      await admin.auth.getUser(
-        token,
-      );
-
-    if (
-      userError ||
-      !userData.user
-    ) {
-      return json(
-        {
-          success: false,
-          error:
-            "Invalid or expired authentication token.",
-        },
-        401,
-      );
-    }
-
-    let body: Record<
-      string,
-      unknown
-    >;
+    let generationId = "";
+    let userId = "";
 
     try {
-      body =
-        (await req.json()) as Record<
-          string,
-          unknown
-        >;
-    } catch {
-      return json(
-        {
-          success: false,
-          error:
-            "Invalid JSON request body.",
-        },
-        400,
-      );
-    }
+      const user =
+        await requireUser(
+          req,
+        );
 
-    const generationId =
-      typeof body.generationId ===
-      "string"
-        ? body.generationId.trim()
-        : "";
+      if (!user) {
+        return json(
+          {
+            success: false,
+            error:
+              "Authentication required.",
+          },
+          401,
+        );
+      }
 
-    if (
-      !isValidUuid(
-        generationId,
-      )
-    ) {
-      return json(
-        {
-          success: false,
-          error:
-            "Valid generation ID is required.",
-        },
-        400,
-      );
-    }
+      userId = user.id;
 
-    const type =
-      body.type;
+      let body: Record<
+        string,
+        unknown
+      >;
 
-    if (
-      !isGenerationType(type)
-    ) {
-      return json(
-        {
-          success: false,
-          error:
-            "Invalid generation type.",
-        },
-        400,
-      );
-    }
+      try {
+        body =
+          (await req.json()) as Record<
+            string,
+            unknown
+          >;
+      } catch {
+        return json(
+          {
+            success: false,
+            error:
+              "Invalid JSON request body.",
+          },
+          400,
+        );
+      }
 
-    const prompt =
-      typeof body.prompt ===
-      "string"
-        ? body.prompt.trim()
-        : "";
+      generationId =
+        typeof body.generationId ===
+        "string"
+          ? body.generationId.trim()
+          : "";
 
-    if (!prompt) {
-      return json(
-        {
-          success: false,
-          error:
-            "Prompt is required.",
-        },
-        400,
-      );
-    }
+      if (
+        !isValidUuid(
+          generationId,
+        )
+      ) {
+        return json(
+          {
+            success: false,
+            error:
+              "Valid generation ID is required.",
+          },
+          400,
+        );
+      }
 
-    if (
-      prompt.length > 12000
-    ) {
-      return json(
-        {
-          success: false,
-          error:
-            "Prompt is too long.",
-        },
-        400,
-      );
-    }
+      const type =
+        body.type;
 
-    const userId =
-      userData.user.id;
+      if (
+        !isGenerationType(type)
+      ) {
+        return json(
+          {
+            success: false,
+            error:
+              "Invalid generation type.",
+          },
+          400,
+        );
+      }
 
-    const cost =
-      COSTS[type];
+      const prompt =
+        typeof body.prompt ===
+        "string"
+          ? body.prompt.trim()
+          : "";
 
-    const metadata =
-      normalizeMetadata(
-        body.metadata,
-      );
+      if (!prompt) {
+        return json(
+          {
+            success: false,
+            error:
+              "Prompt is required.",
+          },
+          400,
+        );
+      }
 
-    /*
-     * Idempotency:
-     *
-     * The client generates generationId before calling
-     * this function. If the same request is retried,
-     * we must never charge the user twice.
-    
+      if (
+        prompt.length > 12000
+      ) {
+        return json(
+          {
+            success: false,
+            error:
+              "Prompt is too long.",
+          },
+          400,
+        );
+      }
+
+      const admin =
+        getAdminClient();
+
+      const {
+        data: existing,
+        error:
+          existingError,
+      } =
+        await admin
+          .from(
+            "generation_history",
+          )
+          .select("*")
+          .eq("id", generationId)
+          .maybeSingle();
+
+      if (existingError) {
+        throw existingError;
+      }
+
+      if (existing) {
+        if (
+          existing.user_id !==
+          userId
+        ) {
+          return json(
+            {
+              success: false,
+              error:
+                "Generation does not belong to the authenticated user.",
+            },
+            403,
+          );
+        }
+
+        if (
+          existing.type !== type
+        ) {
+          return json(
+            {
+              success: false,
+              error:
+                "Generation type does not match the existing record.",
+            },
+            409,
+          );
+        }
+
+        return json({
+          success: true,
+          generationId,
+          generation:
+            existing,
+          reused: true,
+        });
+      }
+
+      const cost =
+        COSTS[type];
+
+      const metadata = {
+        ...normalizeMetadata(
+          body.metadata,
+        ),
+        coinCost: cost,
+      };
+
+      const {
+        data: chargeData,
+        error:
+          chargeError,
+      } =
+        await admin.rpc(
+          "change_wallet_balance",
+          {
+            p_user_id: userId,
+            p_amount: cost,
+            p_transaction_type:
+              "debit",
+            p_reason:
+              "generation",
+            p_reference_id:
+              generationId,
+            p_description:
+              `CREOVA ${type} generation`,
+            p_metadata: {
+              source:
+                "generation-record",
+              generationType:
+                type,
+            },
+          },
+        );
+
+      if (chargeError) {
+        return json(
+          {
+            success: false,
+            error:
+              chargeError.message,
+         
