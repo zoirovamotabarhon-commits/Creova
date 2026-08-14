@@ -5,7 +5,8 @@ import {
 } from "npm:@supabase/supabase-js@2.57.0";
 
 const SUPABASE_URL =
-  Deno.env.get("SUPABASE_URL") ?? "";
+  Deno.env.get("SUPABASE_URL") ??
+  "";
 
 const SERVICE_ROLE_KEY =
   Deno.env.get(
@@ -17,7 +18,8 @@ const SERVICE_ROLE_KEY =
   "";
 
 const CORS_HEADERS = {
-  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Origin":
+    "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods":
@@ -25,6 +27,17 @@ const CORS_HEADERS = {
   "Content-Type":
     "application/json",
 };
+
+const ALLOWED_STATUSES = [
+  "queued",
+  "processing",
+  "completed",
+  "failed",
+  "cancelled",
+] as const;
+
+type GenerationStatus =
+  (typeof ALLOWED_STATUSES)[number];
 
 function json(
   body: Record<string, unknown>,
@@ -50,7 +63,8 @@ Deno.serve(async (req) => {
     return json(
       {
         success: false,
-        error: "Method not allowed.",
+        error:
+          "Method not allowed.",
       },
       405
     );
@@ -58,55 +72,79 @@ Deno.serve(async (req) => {
 
   try {
     const authorization =
-      req.headers.get("Authorization");
+      req.headers.get(
+        "Authorization"
+      );
 
     if (
       !authorization?.startsWith(
         "Bearer "
       )
     ) {
-      throw new Error(
-        "Authentication required."
+      return json(
+        {
+          success: false,
+          error:
+            "Authentication required.",
+        },
+        401
       );
     }
-
-    const token =
-      authorization
-        .replace("Bearer ", "")
-        .trim();
 
     if (
       !SUPABASE_URL ||
       !SERVICE_ROLE_KEY
     ) {
-      throw new Error(
-        "Supabase server configuration is missing."
+      return json(
+        {
+          success: false,
+          error:
+            "Supabase server configuration is missing.",
+        },
+        500
       );
     }
 
-    const admin = createClient(
-      SUPABASE_URL,
-      SERVICE_ROLE_KEY,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false,
-        },
-      }
-    );
+    const token =
+      authorization
+        .slice(
+          "Bearer ".length
+        )
+        .trim();
+
+    const admin =
+      createClient(
+        SUPABASE_URL,
+        SERVICE_ROLE_KEY,
+        {
+          auth: {
+            autoRefreshToken:
+              false,
+            persistSession:
+              false,
+          },
+        }
+      );
 
     const {
       data: userData,
       error: userError,
     } =
-      await admin.auth.getUser(token);
+      await admin.auth.getUser(
+        token
+      );
 
     if (
       userError ||
       !userData.user
     ) {
-      throw new Error(
-        "Invalid or expired authentication token."
+      return json(
+        {
+          success: false,
+          error:
+            "Invalid or expired authentication token.",
+        },
+        401
       );
     }
 
@@ -117,24 +155,15 @@ Deno.serve(async (req) => {
       >;
 
     const generationId =
-      body.generationId;
+      typeof body.generationId ===
+      "string"
+        ? body.generationId.trim()
+        : "";
 
     const status =
       body.status;
 
-    const allowedStatuses = [
-      "queued",
-      "processing",
-      "completed",
-      "failed",
-      "cancelled",
-    ];
-
-    if (
-      typeof generationId !==
-        "string" ||
-      !generationId.trim()
-    ) {
+    if (!generationId) {
       return json(
         {
           success: false,
@@ -146,8 +175,11 @@ Deno.serve(async (req) => {
     }
 
     if (
-      typeof status !== "string" ||
-      !allowedStatuses.includes(status)
+      typeof status !==
+        "string" ||
+      !ALLOWED_STATUSES.includes(
+        status as GenerationStatus
+      )
     ) {
       return json(
         {
@@ -199,14 +231,6 @@ Deno.serve(async (req) => {
     }
 
     if (
-      typeof body.errorMessage ===
-      "string"
-    ) {
-      update.error_message =
-        body.errorMessage;
-    }
-
-    if (
       typeof body.provider ===
       "string"
     ) {
@@ -222,13 +246,59 @@ Deno.serve(async (req) => {
         body.model;
     }
 
+    if (
+      typeof body.errorMessage ===
+      "string"
+    ) {
+      update.error_message =
+        body.errorMessage;
+    }
+
+    const {
+      data: existing,
+      error: existingError,
+    } =
+      await admin
+        .from(
+          "generation_history"
+        )
+        .select(
+          "id,status"
+        )
+        .eq(
+          "id",
+          generationId
+        )
+        .eq(
+          "user_id",
+          userData.user.id
+        )
+        .maybeSingle();
+
+    if (existingError) {
+      throw existingError;
+    }
+
+    if (!existing) {
+      return json(
+        {
+          success: false,
+          error:
+            "Generation record not found.",
+        },
+        404
+      );
+    }
+
     const { error } =
       await admin
-        .from("generation_history")
+        .from(
+          "generation_history"
+        )
         .update(update)
         .eq(
           "id",
-          generationId.trim()
+          generationId
         )
         .eq(
           "user_id",
