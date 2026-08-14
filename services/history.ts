@@ -283,7 +283,4 @@ export async function getGenerationById(
       error:
         error instanceof Error
           ? error.message
-          : "Unable to load generation.",
-    };
-  }
-        }
+          : "
