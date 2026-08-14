@@ -1,21 +1,25 @@
+import { supabase } from "./supabase";
 import {
   createGeneration,
 } from "./generation";
 
-export interface VoiceGenerationResult {
+export interface VoiceResponse {
   success: boolean;
   generationId?: string;
+  audioUrl?: string;
   error?: string;
 }
 
 export async function generateVoice(
-  prompt: string,
-  coinCost = 3,
-): Promise<VoiceGenerationResult> {
-  if (!prompt.trim()) {
+  text: string,
+  coinCost?: number,
+): Promise<VoiceResponse> {
+  const cleanText = text.trim();
+
+  if (!cleanText) {
     return {
       success: false,
-      error: "Voice prompt is required.",
+      error: "Voice text is required.",
     };
   }
 
@@ -23,7 +27,7 @@ export async function generateVoice(
     await createGeneration(
       "voice",
       coinCost,
-      prompt,
+      cleanText,
       {
         feature: "voice",
       },
@@ -41,9 +45,45 @@ export async function generateVoice(
     };
   }
 
+  const { data, error } =
+    await supabase.functions.invoke(
+      "voice-generate",
+      {
+        body: {
+          generationId:
+            generation.generationId,
+          text: cleanText,
+        },
+      },
+    );
+
+  if (error) {
+    return {
+      success: false,
+      generationId:
+        generation.generationId,
+      error: error.message,
+    };
+  }
+
+  if (!data?.success) {
+    return {
+      success: false,
+      generationId:
+        generation.generationId,
+      error:
+        data?.error ??
+        "Voice generation failed.",
+    };
+  }
+
   return {
     success: true,
     generationId:
       generation.generationId,
+    audioUrl:
+      data.audioUrl ??
+      data.audio_url ??
+      undefined,
   };
 }
