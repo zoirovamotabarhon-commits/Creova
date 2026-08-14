@@ -5,16 +5,11 @@ import {
 } from "npm:@supabase/supabase-js@2.57.0";
 
 const SUPABASE_URL =
-  Deno.env.get("SUPABASE_URL") ??
-  "";
+  Deno.env.get("SUPABASE_URL") ?? "";
 
 const SERVICE_ROLE_KEY =
-  Deno.env.get(
-    "SUPABASE_SERVICE_ROLE_KEY"
-  ) ??
-  Deno.env.get(
-    "SUPABASE_SECRET_KEY"
-  ) ??
+  Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ??
+  Deno.env.get("SUPABASE_SECRET_KEY") ??
   "";
 
 const COSTS = {
@@ -26,18 +21,13 @@ const COSTS = {
   voice: 5,
 } as const;
 
-type GenerationType =
-  keyof typeof COSTS;
-
 const CORS_HEADERS = {
-  "Access-Control-Allow-Origin":
-    "*",
+  "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods":
     "POST, OPTIONS",
-  "Content-Type":
-    "application/json",
+  "Content-Type": "application/json",
 };
 
 function json(
@@ -53,72 +43,6 @@ function json(
   );
 }
 
-async function getUser(
-  req: Request
-) {
-  const authorization =
-    req.headers.get(
-      "Authorization"
-    );
-
-  if (
-    !authorization?.startsWith(
-      "Bearer "
-    )
-  ) {
-    return null;
-  }
-
-  const token =
-    authorization
-      .slice(
-        "Bearer ".length
-      )
-      .trim();
-
-  if (
-    !SUPABASE_URL ||
-    !SERVICE_ROLE_KEY ||
-    !token
-  ) {
-    return null;
-  }
-
-  const admin =
-    createClient(
-      SUPABASE_URL,
-      SERVICE_ROLE_KEY,
-      {
-        auth: {
-          autoRefreshToken:
-            false,
-          persistSession:
-            false,
-        },
-      }
-    );
-
-  const {
-    data,
-    error,
-  } =
-    await admin.auth.getUser(
-      token
-    );
-
-  if (
-    error ||
-    !data.user
-  ) {
-    return null;
-  }
-
-  return {
-    user: data.user,
-    admin,
-  };
-}
-
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", {
@@ -130,32 +54,80 @@ Deno.serve(async (req) => {
     return json(
       {
         success: false,
-        error:
-          "Method not allowed.",
+        error: "Method not allowed.",
       },
       405
     );
   }
 
   try {
-    const auth =
-      await getUser(req);
+    const authorization =
+      req.headers.get("Authorization");
 
-    if (!auth) {
+    if (
+      !authorization?.startsWith(
+        "Bearer "
+      )
+    ) {
       return json(
         {
           success: false,
-          error:
-            "Authentication required.",
+          error: "Authentication required.",
         },
         401
       );
     }
 
+    if (
+      !SUPABASE_URL ||
+      !SERVICE_ROLE_KEY
+    ) {
+      return json(
+        {
+          success: false,
+          error:
+            "Supabase server configuration is missing.",
+        },
+        500
+      );
+    }
+
+    const token =
+      authorization
+        .slice("Bearer ".length)
+        .trim();
+
+    const admin =
+      createClient(
+        SUPABASE_URL,
+        SERVICE_ROLE_KEY,
+        {
+          auth: {
+            autoRefreshToken: false,
+            persistSession: false,
+          },
+        }
+      );
+
     const {
-      user,
-      admin,
-    } = auth;
+      data: userData,
+      error: userError,
+    } =
+      await admin.auth.getUser(token);
+
+    if (
+      userError ||
+      !userData.user
+    ) {
+      return json(
+        {
+          success: false,
+          error:
+            "Invalid or expired authentication token.",
+        },
+        401
+      );
+    }
 
     const body =
       (await req.json()) as Record<
@@ -163,18 +135,15 @@ Deno.serve(async (req) => {
         unknown
       >;
 
-    const type =
-      body.type;
+    const type = body.type;
 
     const prompt =
-      typeof body.prompt ===
-      "string"
+      typeof body.prompt === "string"
         ? body.prompt.trim()
         : "";
 
     if (
-      typeof type !==
-        "string" ||
+      typeof type !== "string" ||
       !Object.prototype.hasOwnProperty.call(
         COSTS,
         type
@@ -194,55 +163,44 @@ Deno.serve(async (req) => {
       return json(
         {
           success: false,
-          error:
-            "Prompt is required.",
+          error: "Prompt is required.",
         },
         400
       );
     }
 
-    if (
-      prompt.length > 12000
-    ) {
+    if (prompt.length > 12000) {
       return json(
         {
           success: false,
-          error:
-            "Prompt is too long.",
+          error: "Prompt is too long.",
         },
         400
       );
     }
 
-    const generationType =
-      type as GenerationType;
-
     const cost =
-      COSTS[generationType];
+      COSTS[
+        type as keyof typeof COSTS
+      ];
 
     const metadata =
       body.metadata &&
-      typeof body.metadata ===
-        "object" &&
-      !Array.isArray(
-        body.metadata
-      )
+      typeof body.metadata === "object" &&
+      !Array.isArray(body.metadata)
         ? body.metadata
         : {};
 
-    /*
-     * Create history record first.
-     */
     const {
-      data: generation,
-      error:
-        generationError,
+      data,
+      error,
     } =
       await admin
         .from("generation_history")
         .insert({
-          user_id: user.id,
-          type: generationType,
+          user_id:
+            userData.user.id,
+          type,
           prompt,
           status: "queued",
           metadata: {
@@ -253,16 +211,10 @@ Deno.serve(async (req) => {
         .select("id")
         .single();
 
-    if (generationError) {
-      throw generationError;
+    if (error) {
+      throw error;
     }
 
-    const generationId =
-      generation.id;
-
-    /*
-     * Charge coins using the trusted RPC.
-     */
     const {
       data: chargeData,
       error: chargeError,
@@ -270,19 +222,18 @@ Deno.serve(async (req) => {
       await admin.rpc(
         "change_wallet_balance",
         {
-          p_user_id: user.id,
+          p_user_id:
+            userData.user.id,
           p_amount: cost,
           p_transaction_type:
             "debit",
-          p_reason:
-            "generation",
-          p_reference_id:
-            generationId,
+          p_reason: "generation",
+          p_reference_id: data.id,
           p_description:
-            `CREOVA ${generationType} generation`,
+            `CREOVA ${type} generation`,
           p_metadata: {
-            generationId,
-            generationType,
+            generationId: data.id,
+            generationType: type,
             cost,
           },
         }
@@ -290,49 +241,36 @@ Deno.serve(async (req) => {
 
     if (chargeError) {
       await admin
-        .from(
-          "generation_history"
-        )
+        .from("generation_history")
         .delete()
-        .eq(
-          "id",
-          generationId
-        )
+        .eq("id", data.id)
         .eq(
           "user_id",
-          user.id
+          userData.user.id
         );
 
       return json(
         {
           success: false,
-          error:
-            chargeError.message,
+          error: chargeError.message,
         },
         400
       );
     }
 
     const charge =
-      Array.isArray(
-        chargeData
-      )
+      Array.isArray(chargeData)
         ? chargeData[0]
         : chargeData;
 
     if (!charge) {
       await admin
-        .from(
-          "generation_history"
-        )
+        .from("generation_history")
         .delete()
-        .eq(
-          "id",
-          generationId
-        )
+        .eq("id", data.id)
         .eq(
           "user_id",
-          user.id
+          userData.user.id
         );
 
       return json(
@@ -347,12 +285,11 @@ Deno.serve(async (req) => {
 
     return json({
       success: true,
-      generationId,
+      generationId: data.id,
       cost,
-      newBalance:
-        Number(
-          charge.new_balance
-        ),
+      newBalance: Number(
+        charge.new_balance
+      ),
     });
   } catch (error) {
     return json(
@@ -361,7 +298,7 @@ Deno.serve(async (req) => {
         error:
           error instanceof Error
             ? error.message
-            : "Generation record failed.",
+            : "Generation creation failed.",
       },
       500
     );
