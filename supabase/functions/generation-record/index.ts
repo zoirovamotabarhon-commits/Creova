@@ -5,7 +5,8 @@ import {
 } from "npm:@supabase/supabase-js@2.57.0";
 
 const SUPABASE_URL =
-  Deno.env.get("SUPABASE_URL") ?? "";
+  Deno.env.get("SUPABASE_URL") ??
+  "";
 
 const SERVICE_ROLE_KEY =
   Deno.env.get(
@@ -16,8 +17,21 @@ const SERVICE_ROLE_KEY =
   ) ??
   "";
 
+const COSTS = {
+  chat: 1,
+  code: 2,
+  image: 5,
+  video: 15,
+  music: 10,
+  voice: 5,
+} as const;
+
+type GenerationType =
+  keyof typeof COSTS;
+
 const CORS_HEADERS = {
-  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Origin":
+    "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods":
@@ -39,6 +53,72 @@ function json(
   );
 }
 
+async function getUser(
+  req: Request
+) {
+  const authorization =
+    req.headers.get(
+      "Authorization"
+    );
+
+  if (
+    !authorization?.startsWith(
+      "Bearer "
+    )
+  ) {
+    return null;
+  }
+
+  const token =
+    authorization
+      .slice(
+        "Bearer ".length
+      )
+      .trim();
+
+  if (
+    !SUPABASE_URL ||
+    !SERVICE_ROLE_KEY ||
+    !token
+  ) {
+    return null;
+  }
+
+  const admin =
+    createClient(
+      SUPABASE_URL,
+      SERVICE_ROLE_KEY,
+      {
+        auth: {
+          autoRefreshToken:
+            false,
+          persistSession:
+            false,
+        },
+      }
+    );
+
+  const {
+    data,
+    error,
+  } =
+    await admin.auth.getUser(
+      token
+    );
+
+  if (
+    error ||
+    !data.user
+  ) {
+    return null;
+  }
+
+  return {
+    user: data.user,
+    admin,
+  };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", {
@@ -50,65 +130,32 @@ Deno.serve(async (req) => {
     return json(
       {
         success: false,
-        error: "Method not allowed.",
+        error:
+          "Method not allowed.",
       },
       405
     );
   }
 
   try {
-    const authorization =
-      req.headers.get("Authorization");
+    const auth =
+      await getUser(req);
 
-    if (
-      !authorization?.startsWith(
-        "Bearer "
-      )
-    ) {
-      throw new Error(
-        "Authentication required."
-      );
-    }
-
-    if (
-      !SUPABASE_URL ||
-      !SERVICE_ROLE_KEY
-    ) {
-      throw new Error(
-        "Supabase server configuration is missing."
-      );
-    }
-
-    const token =
-      authorization
-        .replace("Bearer ", "")
-        .trim();
-
-    const admin = createClient(
-      SUPABASE_URL,
-      SERVICE_ROLE_KEY,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false,
+    if (!auth) {
+      return json(
+        {
+          success: false,
+          error:
+            "Authentication required.",
         },
-      }
-    );
+        401
+      );
+    }
 
     const {
-      data: userData,
-      error: userError,
-    } =
-      await admin.auth.getUser(token);
-
-    if (
-      userError ||
-      !userData.user
-    ) {
-      throw new Error(
-        "Invalid or expired authentication token."
-      );
-    }
+      user,
+      admin,
+    } = auth;
 
     const body =
       (await req.json()) as Record<
@@ -116,27 +163,22 @@ Deno.serve(async (req) => {
         unknown
       >;
 
-    const type = body.type;
-    const prompt = body.prompt;
-    const metadata =
-      body.metadata &&
-      typeof body.metadata ===
-        "object"
-        ? body.metadata
-        : {};
+    const type =
+      body.type;
 
-    const allowedTypes = [
-      "chat",
-      "code",
-      "image",
-      "video",
-      "music",
-      "voice",
-    ];
+    const prompt =
+      typeof body.prompt ===
+      "string"
+        ? body.prompt.trim()
+        : "";
 
     if (
-      typeof type !== "string" ||
-      !allowedTypes.includes(type)
+      typeof type !==
+        "string" ||
+      !Object.prototype.hasOwnProperty.call(
+        COSTS,
+        type
+      )
     ) {
       return json(
         {
@@ -148,41 +190,169 @@ Deno.serve(async (req) => {
       );
     }
 
-    if (
-      typeof prompt !== "string" ||
-      !prompt.trim()
-    ) {
+    if (!prompt) {
       return json(
         {
           success: false,
-          error: "Prompt is required.",
+          error:
+            "Prompt is required.",
         },
         400
       );
     }
 
-    const { data, error } =
+    if (
+      prompt.length > 12000
+    ) {
+      return json(
+        {
+          success: false,
+          error:
+            "Prompt is too long.",
+        },
+        400
+      );
+    }
+
+    const generationType =
+      type as GenerationType;
+
+    const cost =
+      COSTS[generationType];
+
+    const metadata =
+      body.metadata &&
+      typeof body.metadata ===
+        "object" &&
+      !Array.isArray(
+        body.metadata
+      )
+        ? body.metadata
+        : {};
+
+    /*
+     * Create history record first.
+     */
+    const {
+      data: generation,
+      error:
+        generationError,
+    } =
       await admin
         .from("generation_history")
         .insert({
-          user_id:
-            userData.user.id,
-          type,
-          prompt:
-            prompt.trim(),
+          user_id: user.id,
+          type: generationType,
+          prompt,
           status: "queued",
-          metadata,
+          metadata: {
+            ...metadata,
+            coinCost: cost,
+          },
         })
         .select("id")
         .single();
 
-    if (error) {
-      throw error;
+    if (generationError) {
+      throw generationError;
+    }
+
+    const generationId =
+      generation.id;
+
+    /*
+     * Charge coins using the trusted RPC.
+     */
+    const {
+      data: chargeData,
+      error: chargeError,
+    } =
+      await admin.rpc(
+        "change_wallet_balance",
+        {
+          p_user_id: user.id,
+          p_amount: cost,
+          p_transaction_type:
+            "debit",
+          p_reason:
+            "generation",
+          p_reference_id:
+            generationId,
+          p_description:
+            `CREOVA ${generationType} generation`,
+          p_metadata: {
+            generationId,
+            generationType,
+            cost,
+          },
+        }
+      );
+
+    if (chargeError) {
+      await admin
+        .from(
+          "generation_history"
+        )
+        .delete()
+        .eq(
+          "id",
+          generationId
+        )
+        .eq(
+          "user_id",
+          user.id
+        );
+
+      return json(
+        {
+          success: false,
+          error:
+            chargeError.message,
+        },
+        400
+      );
+    }
+
+    const charge =
+      Array.isArray(
+        chargeData
+      )
+        ? chargeData[0]
+        : chargeData;
+
+    if (!charge) {
+      await admin
+        .from(
+          "generation_history"
+        )
+        .delete()
+        .eq(
+          "id",
+          generationId
+        )
+        .eq(
+          "user_id",
+          user.id
+        );
+
+      return json(
+        {
+          success: false,
+          error:
+            "Coin charge returned no result.",
+        },
+        500
+      );
     }
 
     return json({
       success: true,
-      generationId: data.id,
+      generationId,
+      cost,
+      newBalance:
+        Number(
+          charge.new_balance
+        ),
     });
   } catch (error) {
     return json(
