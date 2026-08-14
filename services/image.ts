@@ -1,10 +1,10 @@
-import {
-  createGeneration,
-} from "./generation";
+import { createGeneration } from "./generation";
+import { supabase } from "./supabase";
 
 export interface ImageGenerationResult {
   success: boolean;
   generationId?: string;
+  imageUrl?: string;
   error?: string;
 }
 
@@ -13,7 +13,6 @@ export type ImageResponse =
 
 export async function generateImage(
   prompt: string,
-  coinCost?: number,
 ): Promise<ImageGenerationResult> {
   const cleanPrompt = prompt.trim();
 
@@ -27,7 +26,7 @@ export async function generateImage(
   const generation =
     await createGeneration(
       "image",
-      coinCost,
+      undefined,
       cleanPrompt,
       {
         feature: "image",
@@ -46,9 +45,47 @@ export async function generateImage(
     };
   }
 
+  const {
+    data,
+    error,
+  } =
+    await supabase.functions.invoke(
+      "image-generate",
+      {
+        body: {
+          generationId:
+            generation.generationId,
+          prompt: cleanPrompt,
+        },
+      },
+    );
+
+  if (error) {
+    return {
+      success: false,
+      generationId:
+        generation.generationId,
+      error: error.message,
+    };
+  }
+
+  if (!data?.success) {
+    return {
+      success: false,
+      generationId:
+        generation.generationId,
+      error:
+        data?.error ??
+        "Image generation failed.",
+    };
+  }
+
   return {
     success: true,
     generationId:
       generation.generationId,
+    imageUrl:
+      data.imageUrl ??
+      data.image_url,
   };
 }
