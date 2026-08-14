@@ -1,32 +1,36 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+
+import { updateGeneration } from "../_shared/generation.ts";
+
 import OpenAI from "npm:openai@6.49.0";
+
 import {
   createClient,
 } from "npm:@supabase/supabase-js@2.57.0";
 
 const OPENAI_API_KEY =
   Deno.env.get(
-    "OPENAI_API_KEY"
+    "OPENAI_API_KEY",
   ) ?? "";
 
 const SUPABASE_URL =
   Deno.env.get(
-    "SUPABASE_URL"
+    "SUPABASE_URL",
   ) ?? "";
 
 const SUPABASE_SECRET_KEYS =
   Deno.env.get(
-    "SUPABASE_SECRET_KEYS"
+    "SUPABASE_SECRET_KEYS",
   );
 
 const SUPABASE_SECRET_KEY =
   Deno.env.get(
-    "SUPABASE_SECRET_KEY"
+    "SUPABASE_SECRET_KEY",
   );
 
 const SUPABASE_SERVICE_ROLE_KEY =
   Deno.env.get(
-    "SUPABASE_SERVICE_ROLE_KEY"
+    "SUPABASE_SERVICE_ROLE_KEY",
   );
 
 const CORS_HEADERS = {
@@ -42,7 +46,7 @@ const CORS_HEADERS = {
 
 function jsonResponse(
   body: Record<string, unknown>,
-  status = 200
+  status = 200,
 ) {
   return new Response(
     JSON.stringify(body),
@@ -50,7 +54,7 @@ function jsonResponse(
       status,
       headers:
         CORS_HEADERS,
-    }
+    },
   );
 }
 
@@ -61,7 +65,7 @@ function getSecretKey(): string {
     try {
       const parsed =
         JSON.parse(
-          SUPABASE_SECRET_KEYS
+          SUPABASE_SECRET_KEYS,
         ) as Record<
           string,
           unknown
@@ -78,7 +82,7 @@ function getSecretKey(): string {
         return defaultKey.trim();
       }
     } catch {
-      // Fall through to legacy keys.
+      // Continue with fallback keys.
     }
   }
 
@@ -95,25 +99,25 @@ function getSecretKey(): string {
   }
 
   throw new Error(
-    "Supabase secret key is not configured."
+    "Supabase secret key is not configured.",
   );
 }
 
 async function requireUser(
-  req: Request
+  req: Request,
 ) {
   const authorization =
     req.headers.get(
-      "Authorization"
+      "Authorization",
     );
 
   if (
     !authorization?.startsWith(
-      "Bearer "
+      "Bearer ",
     )
   ) {
     throw new Error(
-      "Authentication required."
+      "Authentication required.",
     );
   }
 
@@ -124,7 +128,7 @@ async function requireUser(
 
   if (!token) {
     throw new Error(
-      "Authentication token is missing."
+      "Authentication token is missing.",
     );
   }
 
@@ -139,7 +143,7 @@ async function requireUser(
           persistSession:
             false,
         },
-      }
+      },
     );
 
   const {
@@ -147,7 +151,7 @@ async function requireUser(
     error,
   } =
     await supabase.auth.getUser(
-      token
+      token,
     );
 
   if (
@@ -155,7 +159,7 @@ async function requireUser(
     !data.user
   ) {
     throw new Error(
-      "Invalid or expired authentication token."
+      "Invalid or expired authentication token.",
     );
   }
 
@@ -170,6 +174,16 @@ const openai =
 
 Deno.serve(
   async (req) => {
+    let user:
+      | Awaited<
+          ReturnType<
+            typeof requireUser
+          >
+        >
+      | null = null;
+
+    let generationId = "";
+
     if (
       req.method === "OPTIONS"
     ) {
@@ -178,7 +192,7 @@ Deno.serve(
         {
           headers:
             CORS_HEADERS,
-        }
+        },
       );
     }
 
@@ -191,7 +205,7 @@ Deno.serve(
           error:
             "Method not allowed.",
         },
-        405
+        405,
       );
     }
 
@@ -203,11 +217,14 @@ Deno.serve(
             error:
               "OPENAI_API_KEY is not configured.",
           },
-          500
+          500,
         );
       }
 
-      await requireUser(req);
+      user =
+        await requireUser(
+          req,
+        );
 
       let body:
         Record<string, unknown>;
@@ -225,7 +242,7 @@ Deno.serve(
             error:
               "Invalid JSON request body.",
           },
-          400
+          400,
         );
       }
 
@@ -235,6 +252,23 @@ Deno.serve(
           ? body.prompt.trim()
           : "";
 
+      generationId =
+        typeof body.generationId ===
+        "string"
+          ? body.generationId.trim()
+          : "";
+
+      if (!generationId) {
+        return jsonResponse(
+          {
+            success: false,
+            error:
+              "Generation ID is required.",
+          },
+          400,
+        );
+      }
+
       if (!prompt) {
         return jsonResponse(
           {
@@ -242,9 +276,30 @@ Deno.serve(
             error:
               "Prompt is required.",
           },
-          400
+          400,
         );
       }
+
+      if (
+        prompt.length > 12000
+      ) {
+        return jsonResponse(
+          {
+            success: false,
+            error:
+              "Prompt is too long.",
+          },
+          400,
+        );
+      }
+
+      await updateGeneration({
+        generationId,
+        userId:
+          user.id,
+        status:
+          "processing",
+      });
 
       const response =
         await openai.images.generate(
@@ -254,7 +309,7 @@ Deno.serve(
             prompt,
             size:
               "1024x1024",
-          }
+          },
         );
 
       const image =
@@ -262,7 +317,7 @@ Deno.serve(
 
       if (!image) {
         throw new Error(
-          "Image generation returned no image."
+          "Image generation returned no image.",
         );
       }
 
@@ -282,12 +337,28 @@ Deno.serve(
         !imageUrl
       ) {
         throw new Error(
-          "Image data was not returned."
+          "Image data was not returned.",
         );
       }
 
+      await updateGeneration({
+        generationId,
+        userId:
+          user.id,
+        status:
+          "completed",
+        provider:
+          "openai",
+        model:
+          "gpt-image-2",
+        resultUrl:
+          imageUrl ||
+          `data:image/png;base64,${imageBase64}`,
+      });
+
       return jsonResponse({
         success: true,
+        generationId,
         imageUrl:
           imageUrl ||
           `data:image/png;base64,${imageBase64}`,
@@ -296,21 +367,50 @@ Deno.serve(
           undefined,
       });
     } catch (error) {
+      if (
+        generationId &&
+        user?.id
+      ) {
+        try {
+          await updateGeneration({
+            generationId,
+            userId:
+              user.id,
+            status:
+              "failed",
+            errorMessage:
+              error instanceof Error
+                ? error.message
+                : "Image generation failed.",
+          });
+        } catch (
+          refundError
+        ) {
+          console.error(
+            "Generation update/refund failed:",
+            refundError,
+          );
+        }
+      }
+
       console.error(
         "image-generate error:",
-        error
+        error,
       );
 
       return jsonResponse(
         {
           success: false,
+          generationId:
+            generationId ||
+            undefined,
           error:
             error instanceof Error
               ? error.message
               : "Image generation failed.",
         },
-        500
+        500,
       );
     }
-  }
+  },
 );
