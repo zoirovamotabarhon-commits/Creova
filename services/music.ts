@@ -8,11 +8,16 @@ export interface MusicGenerationResult {
   error?: string;
 }
 
+export type MusicResponse =
+  MusicGenerationResult;
+
 export async function generateMusic(
   prompt: string,
-  coinCost = 8,
+  coinCost?: number,
 ): Promise<MusicGenerationResult> {
-  if (!prompt.trim()) {
+  const cleanPrompt = prompt.trim();
+
+  if (!cleanPrompt) {
     return {
       success: false,
       error: "Music prompt is required.",
@@ -23,7 +28,7 @@ export async function generateMusic(
     await createGeneration(
       "music",
       coinCost,
-      prompt,
+      cleanPrompt,
       {
         feature: "music",
       },
