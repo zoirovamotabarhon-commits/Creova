@@ -1,8 +1,13 @@
 import { generateText } from "./openai";
+import {
+  createGenerationRecord,
+  updateGenerationRecord,
+} from "./generation";
 
 export interface CodeResponse {
   success: boolean;
   code?: string;
+  generationId?: string;
   error?: string;
 }
 
@@ -13,15 +18,12 @@ Generate production-quality code based on the user's request.
 
 Rules:
 - Return only the code.
-- Do not add explanations before or after the code.
-- Use TypeScript/TSX for React Native or Expo requests.
+- Do not add explanations.
+- Use TypeScript/TSX for Expo and React Native.
 - Keep the code complete and runnable.
-- Do not use fake API keys or secrets.
-- Never expose private credentials.
-- Do not invent unavailable project files.
-- Respect existing project service contracts.
-- Preserve existing imports and project architecture when possible.
-- If the user asks to replace a file, return the complete file.
+- Never expose credentials or secrets.
+- Respect the existing project architecture.
+- Preserve existing service contracts when possible.
 `.trim();
 
 export async function generateCode(
@@ -36,53 +38,96 @@ export async function generateCode(
     };
   }
 
+  let generationId: string | undefined;
+
   try {
-    const result =
-      await generateText(
-        [
-          {
-            role: "user",
-            content: cleanPrompt,
-          },
-        ],
+    const record = await createGenerationRecord({
+      type: "code",
+      prompt: cleanPrompt,
+    });
+
+    if (!record.success || !record.generationId) {
+      return {
+        success: false,
+        error:
+          record.error ??
+          "Unable to start code generation.",
+      };
+    }
+
+    generationId = record.generationId;
+
+    await updateGenerationRecord(generationId, {
+      status: "processing",
+    });
+
+    const result = await generateText(
+      [
         {
-          systemPrompt:
-            CODE_SYSTEM_PROMPT,
-        }
-      );
+          role: "user",
+          content: cleanPrompt,
+        },
+      ],
+      {
+        systemPrompt: CODE_SYSTEM_PROMPT,
+      }
+    );
 
     if (!result.success) {
+      await updateGenerationRecord(generationId, {
+        status: "failed",
+        errorMessage:
+          result.error ?? "Code generation failed.",
+      });
+
       return {
         success: false,
+        generationId,
         error:
-          result.error ||
-          "Code generation failed.",
+          result.error ?? "Code generation failed.",
       };
     }
 
-    const code =
-      result.text?.trim() || "";
+    const code = result.text?.trim() ?? "";
 
     if (!code) {
+      await updateGenerationRecord(generationId, {
+        status: "failed",
+        errorMessage: "AI returned empty code.",
+      });
+
       return {
         success: false,
-        error:
-          "AI server returned empty code.",
+        generationId,
+        error: "AI server returned empty code.",
       };
     }
+
+    await updateGenerationRecord(generationId, {
+      status: "completed",
+      resultText: code,
+      provider: "openai",
+    });
 
     return {
       success: true,
       code,
+      generationId,
     };
   } catch (error) {
-    console.error(
-      "generateCode error:",
-      error
-    );
+    if (generationId) {
+      await updateGenerationRecord(generationId, {
+        status: "failed",
+        errorMessage:
+          error instanceof Error
+            ? error.message
+            : "Code generation failed.",
+      });
+    }
 
     return {
       success: false,
+      generationId,
       error:
         error instanceof Error
           ? error.message
