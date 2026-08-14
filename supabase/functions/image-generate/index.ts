@@ -1,12 +1,14 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 
-import { updateGeneration } from "../_shared/generation.ts";
-
-import OpenAI from "npm:openai@6.49.0";
-
 import {
   createClient,
-} from "npm:@supabase/supabase-js@2.57.0";
+} from "npm:@supabase/supabase-js@2";
+
+import OpenAI from "npm:openai@6";
+
+import {
+  updateGeneration,
+} from "../_shared/generation.ts";
 
 const OPENAI_API_KEY =
   Deno.env.get(
@@ -18,24 +20,17 @@ const SUPABASE_URL =
     "SUPABASE_URL",
   ) ?? "";
 
-const SUPABASE_SECRET_KEYS =
-  Deno.env.get(
-    "SUPABASE_SECRET_KEYS",
-  );
-
-const SUPABASE_SECRET_KEY =
-  Deno.env.get(
-    "SUPABASE_SECRET_KEY",
-  );
-
 const SUPABASE_SERVICE_ROLE_KEY =
   Deno.env.get(
     "SUPABASE_SERVICE_ROLE_KEY",
-  );
+  ) ??
+  Deno.env.get(
+    "SUPABASE_SECRET_KEY",
+  ) ??
+  "";
 
 const CORS_HEADERS = {
-  "Access-Control-Allow-Origin":
-    "*",
+  "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods":
@@ -44,7 +39,7 @@ const CORS_HEADERS = {
     "application/json",
 };
 
-function jsonResponse(
+function json(
   body: Record<string, unknown>,
   status = 200,
 ) {
@@ -58,48 +53,16 @@ function jsonResponse(
   );
 }
 
-function getSecretKey(): string {
-  if (
-    SUPABASE_SECRET_KEYS
-  ) {
-    try {
-      const parsed =
-        JSON.parse(
-          SUPABASE_SECRET_KEYS,
-        ) as Record<
-          string,
-          unknown
-        >;
-
-      const defaultKey =
-        parsed.default;
-
-      if (
-        typeof defaultKey ===
-          "string" &&
-        defaultKey.trim()
-      ) {
-        return defaultKey.trim();
-      }
-    } catch {
-      // Continue with fallback keys.
-    }
-  }
-
-  if (
-    SUPABASE_SECRET_KEY?.trim()
-  ) {
-    return SUPABASE_SECRET_KEY.trim();
-  }
-
-  if (
-    SUPABASE_SERVICE_ROLE_KEY?.trim()
-  ) {
-    return SUPABASE_SERVICE_ROLE_KEY.trim();
-  }
-
-  throw new Error(
-    "Supabase secret key is not configured.",
+function getAdminClient() {
+  return createClient(
+    SUPABASE_URL,
+    SUPABASE_SERVICE_ROLE_KEY,
+    {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    },
   );
 }
 
@@ -116,35 +79,20 @@ async function requireUser(
       "Bearer ",
     )
   ) {
-    throw new Error(
-      "Authentication required.",
-    );
+    return null;
   }
 
   const token =
     authorization
-      .slice("Bearer ".length)
+      .slice(7)
       .trim();
 
   if (!token) {
-    throw new Error(
-      "Authentication token is missing.",
-    );
+    return null;
   }
 
   const supabase =
-    createClient(
-      SUPABASE_URL,
-      getSecretKey(),
-      {
-        auth: {
-          autoRefreshToken:
-            false,
-          persistSession:
-            false,
-        },
-      },
-    );
+    getAdminClient();
 
   const {
     data,
@@ -158,9 +106,7 @@ async function requireUser(
     error ||
     !data.user
   ) {
-    throw new Error(
-      "Invalid or expired authentication token.",
-    );
+    return null;
   }
 
   return data.user;
@@ -174,16 +120,6 @@ const openai =
 
 Deno.serve(
   async (req) => {
-    let user:
-      | Awaited<
-          ReturnType<
-            typeof requireUser
-          >
-        >
-      | null = null;
-
-    let generationId = "";
-
     if (
       req.method === "OPTIONS"
     ) {
@@ -199,7 +135,7 @@ Deno.serve(
     if (
       req.method !== "POST"
     ) {
-      return jsonResponse(
+      return json(
         {
           success: false,
           error:
@@ -209,9 +145,12 @@ Deno.serve(
       );
     }
 
+    let generationId = "";
+    let userId = "";
+
     try {
       if (!OPENAI_API_KEY) {
-        return jsonResponse(
+        return json(
           {
             success: false,
             error:
@@ -221,36 +160,30 @@ Deno.serve(
         );
       }
 
-      user =
+      const user =
         await requireUser(
           req,
         );
 
-      let body:
-        Record<string, unknown>;
-
-      try {
-        body =
-          (await req.json()) as Record<
-            string,
-            unknown
-          >;
-      } catch {
-        return jsonResponse(
+      if (!user) {
+        return json(
           {
             success: false,
             error:
-              "Invalid JSON request body.",
+              "Authentication required.",
           },
-          400,
+          401,
         );
       }
 
-      const prompt =
-        typeof body.prompt ===
-        "string"
-          ? body.prompt.trim()
-          : "";
+      userId =
+        user.id;
+
+      const body =
+        (await req.json()) as Record<
+          string,
+          unknown
+        >;
 
       generationId =
         typeof body.generationId ===
@@ -258,8 +191,14 @@ Deno.serve(
           ? body.generationId.trim()
           : "";
 
+      const prompt =
+        typeof body.prompt ===
+        "string"
+          ? body.prompt.trim()
+          : "";
+
       if (!generationId) {
-        return jsonResponse(
+        return json(
           {
             success: false,
             error:
@@ -270,24 +209,11 @@ Deno.serve(
       }
 
       if (!prompt) {
-        return jsonResponse(
+        return json(
           {
             success: false,
             error:
-              "Prompt is required.",
-          },
-          400,
-        );
-      }
-
-      if (
-        prompt.length > 12000
-      ) {
-        return jsonResponse(
-          {
-            success: false,
-            error:
-              "Prompt is too long.",
+              "Image prompt is required.",
           },
           400,
         );
@@ -295,17 +221,16 @@ Deno.serve(
 
       await updateGeneration({
         generationId,
-        userId:
-          user.id,
+        userId,
         status:
           "processing",
       });
 
-      const response =
+      const result =
         await openai.images.generate(
           {
             model:
-              "gpt-image-2",
+              "gpt-image-1",
             prompt,
             size:
               "1024x1024",
@@ -313,69 +238,55 @@ Deno.serve(
         );
 
       const image =
-        response.data?.[0];
+        result.data?.[0];
 
       if (!image) {
         throw new Error(
-          "Image generation returned no image.",
+          "OpenAI returned no image.",
         );
       }
 
       const imageBase64 =
-        image.b64_json?.trim() ??
-        "";
+        image.b64_json;
 
-      const imageUrl =
-        "url" in image &&
-        typeof image.url ===
-          "string"
-          ? image.url.trim()
-          : "";
-
-      if (
-        !imageBase64 &&
-        !imageUrl
-      ) {
+      if (!imageBase64) {
         throw new Error(
-          "Image data was not returned.",
+          "OpenAI did not return image data.",
         );
       }
 
+      const resultUrl =
+        `data:image/png;base64,${imageBase64}`;
+
       await updateGeneration({
         generationId,
-        userId:
-          user.id,
+        userId,
         status:
           "completed",
         provider:
           "openai",
         model:
-          "gpt-image-2",
-        resultUrl:
-          imageUrl ||
-          `data:image/png;base64,${imageBase64}`,
+          "gpt-image-1",
+        resultUrl,
       });
 
-      return jsonResponse({
+      return json({
         success: true,
         generationId,
         imageUrl:
-          imageUrl ||
-          `data:image/png;base64,${imageBase64}`,
-        imageBase64:
-          imageBase64 ||
-          undefined,
+          resultUrl,
+        status:
+          "completed",
       });
     } catch (error) {
       if (
         generationId &&
-        user?.id
+        userId
       ) {
         try {
           await updateGeneration({
             generationId,
-            userId:
-              user.id,
+            userId,
             status:
               "failed",
             errorMessage:
@@ -384,11 +295,11 @@ Deno.serve(
                 : "Image generation failed.",
           });
         } catch (
-          refundError
+          updateError
         ) {
           console.error(
-            "Generation update/refund failed:",
-            refundError,
+            "Failed to update generation:",
+            updateError,
           );
         }
       }
@@ -398,7 +309,7 @@ Deno.serve(
         error,
       );
 
-      return jsonResponse(
+      return json(
         {
           success: false,
           generationId:
