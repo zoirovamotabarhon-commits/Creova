@@ -8,11 +8,16 @@ export interface ImageGenerationResult {
   error?: string;
 }
 
+export type ImageResponse =
+  ImageGenerationResult;
+
 export async function generateImage(
   prompt: string,
-  coinCost = 5,
+  coinCost?: number,
 ): Promise<ImageGenerationResult> {
-  if (!prompt.trim()) {
+  const cleanPrompt = prompt.trim();
+
+  if (!cleanPrompt) {
     return {
       success: false,
       error: "Image prompt is required.",
@@ -23,7 +28,7 @@ export async function generateImage(
     await createGeneration(
       "image",
       coinCost,
-      prompt,
+      cleanPrompt,
       {
         feature: "image",
       },
