@@ -11,14 +11,25 @@ export interface CoinOperationResponse {
 
 export async function chargeCoins(
   amount: number,
-  reason = "generation",
-  referenceId?: string,
+  referenceId: string,
   description?: string
 ): Promise<CoinOperationResponse> {
-  if (!Number.isInteger(amount) || amount <= 0) {
+  if (
+    !Number.isInteger(amount) ||
+    amount <= 0
+  ) {
     return {
       success: false,
-      error: "Amount must be a positive integer.",
+      error:
+        "Amount must be a positive integer.",
+    };
+  }
+
+  if (!referenceId.trim()) {
+    return {
+      success: false,
+      error:
+        "Reference ID is required.",
     };
   }
 
@@ -26,7 +37,8 @@ export async function chargeCoins(
     const {
       data: sessionData,
       error: sessionError,
-    } = await supabase.auth.getSession();
+    } =
+      await supabase.auth.getSession();
 
     if (sessionError) {
       return {
@@ -38,22 +50,26 @@ export async function chargeCoins(
     if (!sessionData.session) {
       return {
         success: false,
-        error: "Authentication required.",
+        error:
+          "Authentication required.",
       };
     }
 
-    const { data, error } =
+    const {
+      data,
+      error,
+    } =
       await supabase.functions.invoke(
         "coin-operation",
         {
           body: {
             operation: "charge",
             amount,
-            reason,
             referenceId:
-              referenceId ?? null,
+              referenceId.trim(),
             description:
-              description ?? null,
+              description ??
+              "CREOVA generation",
           },
         }
       );
@@ -71,30 +87,37 @@ export async function chargeCoins(
     ) {
       return {
         success: false,
-        error: "Invalid coin operation response.",
+        error:
+          "Invalid coin operation response.",
       };
     }
 
     return {
-      success: data.success === true,
+      success:
+        data.success === true,
       transactionId:
-        typeof data.transactionId === "string"
+        typeof data.transactionId ===
+        "string"
           ? data.transactionId
           : undefined,
       walletId:
-        typeof data.walletId === "string"
+        typeof data.walletId ===
+        "string"
           ? data.walletId
           : undefined,
       previousBalance:
-        typeof data.previousBalance === "number"
+        typeof data.previousBalance ===
+        "number"
           ? data.previousBalance
           : undefined,
       newBalance:
-        typeof data.newBalance === "number"
+        typeof data.newBalance ===
+        "number"
           ? data.newBalance
           : undefined,
       error:
-        typeof data.error === "string"
+        typeof data.error ===
+        "string"
           ? data.error
           : undefined,
     };
