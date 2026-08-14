@@ -9,49 +9,45 @@ export interface CoinOperationResponse {
   error?: string;
 }
 
-async function callOperation(
-  operation: "charge" | "credit",
+export async function chargeCoins(
   amount: number,
-  reason: string,
+  reason = "generation",
   referenceId?: string,
   description?: string
 ): Promise<CoinOperationResponse> {
-  if (
-    !Number.isInteger(amount) ||
-    amount <= 0
-  ) {
+  if (!Number.isInteger(amount) || amount <= 0) {
     return {
       success: false,
       error: "Amount must be a positive integer.",
     };
   }
 
-  const {
-    data: sessionData,
-    error: sessionError,
-  } = await supabase.auth.getSession();
-
-  if (sessionError) {
-    return {
-      success: false,
-      error: sessionError.message,
-    };
-  }
-
-  if (!sessionData.session) {
-    return {
-      success: false,
-      error: "Authentication required.",
-    };
-  }
-
   try {
+    const {
+      data: sessionData,
+      error: sessionError,
+    } = await supabase.auth.getSession();
+
+    if (sessionError) {
+      return {
+        success: false,
+        error: sessionError.message,
+      };
+    }
+
+    if (!sessionData.session) {
+      return {
+        success: false,
+        error: "Authentication required.",
+      };
+    }
+
     const { data, error } =
       await supabase.functions.invoke(
         "coin-operation",
         {
           body: {
-            operation,
+            operation: "charge",
             amount,
             reason,
             referenceId:
@@ -108,37 +104,7 @@ async function callOperation(
       error:
         error instanceof Error
           ? error.message
-          : "Coin operation failed.",
+          : "Coin charge failed.",
     };
   }
 }
-
-export function chargeCoins(
-  amount: number,
-  reason = "generation",
-  referenceId?: string,
-  description?: string
-) {
-  return callOperation(
-    "charge",
-    amount,
-    reason,
-    referenceId,
-    description
-  );
-}
-
-export function creditCoins(
-  amount: number,
-  reason = "bonus",
-  referenceId?: string,
-  description?: string
-) {
-  return callOperation(
-    "credit",
-    amount,
-    reason,
-    referenceId,
-    description
-  );
-      }
