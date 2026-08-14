@@ -12,24 +12,21 @@ export interface CoinOperationResponse {
 export async function chargeCoins(
   amount: number,
   referenceId: string,
-  description?: string
+  description = "CREOVA generation"
 ): Promise<CoinOperationResponse> {
-  if (
-    !Number.isInteger(amount) ||
-    amount <= 0
-  ) {
+  if (!Number.isInteger(amount) || amount <= 0) {
     return {
       success: false,
-      error:
-        "Amount must be a positive integer.",
+      error: "Amount must be a positive integer.",
     };
   }
 
-  if (!referenceId.trim()) {
+  const cleanReferenceId = referenceId.trim();
+
+  if (!cleanReferenceId) {
     return {
       success: false,
-      error:
-        "Reference ID is required.",
+      error: "Reference ID is required.",
     };
   }
 
@@ -37,8 +34,7 @@ export async function chargeCoins(
     const {
       data: sessionData,
       error: sessionError,
-    } =
-      await supabase.auth.getSession();
+    } = await supabase.auth.getSession();
 
     if (sessionError) {
       return {
@@ -50,29 +46,24 @@ export async function chargeCoins(
     if (!sessionData.session) {
       return {
         success: false,
-        error:
-          "Authentication required.",
+        error: "Authentication required.",
       };
     }
 
     const {
       data,
       error,
-    } =
-      await supabase.functions.invoke(
-        "coin-operation",
-        {
-          body: {
-            operation: "charge",
-            amount,
-            referenceId:
-              referenceId.trim(),
-            description:
-              description ??
-              "CREOVA generation",
-          },
-        }
-      );
+    } = await supabase.functions.invoke(
+      "coin-operation",
+      {
+        body: {
+          operation: "charge",
+          amount,
+          referenceId: cleanReferenceId,
+          description,
+        },
+      }
+    );
 
     if (error) {
       return {
@@ -81,43 +72,33 @@ export async function chargeCoins(
       };
     }
 
-    if (
-      !data ||
-      typeof data !== "object"
-    ) {
+    if (!data || typeof data !== "object") {
       return {
         success: false,
-        error:
-          "Invalid coin operation response.",
+        error: "Invalid coin operation response.",
       };
     }
 
     return {
-      success:
-        data.success === true,
+      success: data.success === true,
       transactionId:
-        typeof data.transactionId ===
-        "string"
+        typeof data.transactionId === "string"
           ? data.transactionId
           : undefined,
       walletId:
-        typeof data.walletId ===
-        "string"
+        typeof data.walletId === "string"
           ? data.walletId
           : undefined,
       previousBalance:
-        typeof data.previousBalance ===
-        "number"
+        typeof data.previousBalance === "number"
           ? data.previousBalance
           : undefined,
       newBalance:
-        typeof data.newBalance ===
-        "number"
+        typeof data.newBalance === "number"
           ? data.newBalance
           : undefined,
       error:
-        typeof data.error ===
-        "string"
+        typeof data.error === "string"
           ? data.error
           : undefined,
     };
