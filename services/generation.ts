@@ -1,161 +1,153 @@
 import { supabase } from "./supabase";
-import {
-  GenerationRequest,
-  GenerationResult,
-} from "./generationTypes";
 
-export async function createGenerationRecord(
-  request: GenerationRequest
-): Promise<GenerationResult> {
-  const prompt = request.prompt.trim();
+export type GenerationType =
+  | "chat"
+  | "code"
+  | "image"
+  | "music"
+  | "video"
+  | "voice";
 
-  if (!prompt) {
+export type GenerationStatus =
+  | "queued"
+  | "processing"
+  | "completed"
+  | "failed"
+  | "cancelled";
+
+export interface GenerationRecord {
+  id: string;
+  userId: string;
+  type: GenerationType;
+  status: GenerationStatus;
+  coinCost: number;
+  prompt?: string;
+  metadata?: Record<string, unknown>;
+  resultText?: string | null;
+  resultUrl?: string | null;
+  provider?: string | null;
+  model?: string | null;
+  errorMessage?: string | null;
+  createdAt?: string;
+  startedAt?: string | null;
+  completedAt?: string | null;
+}
+
+export interface GenerationResult<T = unknown> {
+  success: boolean;
+  generationId?: string;
+  data?: T;
+  error?: string;
+}
+
+export async function createGeneration(
+  type: GenerationType,
+  coinCost: number,
+  prompt?: string,
+  metadata: Record<string, unknown> = {},
+): Promise<GenerationResult<GenerationRecord>> {
+  if (!Number.isInteger(coinCost) || coinCost <= 0) {
     return {
       success: false,
-      error: "Prompt is required.",
+      error: "Invalid generation coin cost.",
     };
   }
 
   const {
-    data: userData,
-    error: userError,
+    data: { user },
   } = await supabase.auth.getUser();
 
-  if (userError) {
-    return {
-      success: false,
-      error: userError.message,
-    };
-  }
-
-  if (!userData.user) {
+  if (!user) {
     return {
       success: false,
       error: "Authentication required.",
     };
   }
 
-  try {
-    const {
-      data,
-      error,
-    } = await supabase.functions.invoke(
-      "generation-record",
-      {
-        body: {
-          type: request.type,
-          prompt,
-          metadata: request.metadata ?? {},
+  const { data, error } = await supabase.functions.invoke(
+    "generation-record",
+    {
+      body: {
+        type,
+        coinCost,
+        prompt,
+        metadata: {
+          ...metadata,
+          coinCost,
         },
-      }
-    );
+      },
+    },
+  );
 
-    if (error) {
-      return {
-        success: false,
-        error: error.message,
-      };
-    }
-
-    if (
-      !data ||
-      data.success !== true ||
-      typeof data.generationId !== "string" ||
-      !data.generationId.trim()
-    ) {
-      return {
-        success: false,
-        error:
-          typeof data?.error === "string"
-            ? data.error
-            : "Unable to start generation.",
-      };
-    }
-
-    return {
-      success: true,
-      generationId: data.generationId.trim(),
-    };
-  } catch (error) {
+  if (error) {
     return {
       success: false,
-      error:
-        error instanceof Error
-          ? error.message
-          : "Generation creation failed.",
+      error: error.message,
     };
   }
+
+  if (!data?.success || !data?.generationId) {
+    return {
+      success: false,
+      error: data?.error ?? "Generation could not be created.",
+    };
+  }
+
+  return {
+    success: true,
+    generationId: data.generationId,
+    data: data.generation,
+  };
 }
 
-export async function updateGenerationRecord(
+export async function getGeneration(
   generationId: string,
-  update: {
-    status:
-      | "queued"
-      | "processing"
-      | "completed"
-      | "failed"
-      | "cancelled";
-    resultText?: string;
-    resultUrl?: string;
-    provider?: string;
-    model?: string;
-    errorMessage?: string;
-  }
-): Promise<{
-  success: boolean;
-  error?: string;
-}> {
-  const cleanId = generationId.trim();
-
-  if (!cleanId) {
+): Promise<GenerationResult<GenerationRecord>> {
+  if (!generationId.trim()) {
     return {
       success: false,
       error: "Generation ID is required.",
     };
   }
 
-  try {
-    const {
-      data,
-      error,
-    } = await supabase.functions.invoke(
-      "generation-update",
-      {
-        body: {
-          generationId: cleanId,
-          status: update.status,
-          resultText: update.resultText ?? null,
-          resultUrl: update.resultUrl ?? null,
-          provider: update.provider ?? null,
-          model: update.model ?? null,
-          errorMessage:
-            update.errorMessage ?? null,
-        },
-      }
-    );
+  const { data, error } = await supabase
+    .from("generation_history")
+    .select("*")
+    .eq("id", generationId)
+    .maybeSingle();
 
-    if (error) {
-      return {
-        success: false,
-        error: error.message,
-      };
-    }
-
-    return {
-      success: data?.success === true,
-      error:
-        typeof data?.error === "string"
-          ? data.error
-          : undefined,
-    };
-  } catch (error) {
+  if (error) {
     return {
       success: false,
-      error:
-        error instanceof Error
-          ? error.message
-          : "Generation update failed.",
+      error: error.message,
     };
   }
-}
+
+  if (!data) {
+    return {
+      success: false,
+      error: "Generation not found.",
+    };
+  }
+
+  return {
+    success: true,
+    data: {
+      id: data.id,
+      userId: data.user_id,
+      type: data.type,
+      status: data.status,
+      coinCost: Number(data.metadata?.coinCost ?? 0),
+      prompt: data.prompt,
+      metadata: data.metadata ?? {},
+      resultText: data.result_text,
+      resultUrl: data.result_url,
+      provider: data.provider,
+      model: data.model,
+      errorMessage: data.error_message,
+      createdAt: data.created_at,
+      startedAt: data.started_at,
+      completedAt: data.completed_at,
+    },
+  };
+  }
