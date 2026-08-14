@@ -7,6 +7,7 @@ import {
 export interface VideoResponse {
   success: boolean;
   generationId?: string;
+  videoId?: string;
   videoUrl?: string;
   status?: string;
   progress?: number;
@@ -33,7 +34,6 @@ function normalizeProgress(
 
 export async function generateVideo(
   prompt: string,
-  coinCost?: number,
 ): Promise<VideoResponse> {
   const cleanPrompt = prompt.trim();
 
@@ -47,7 +47,7 @@ export async function generateVideo(
   const generation =
     await createGeneration(
       "video",
-      coinCost,
+      undefined,
       cleanPrompt,
       {
         feature: "video",
@@ -66,11 +66,15 @@ export async function generateVideo(
     };
   }
 
-  const { data, error } =
+  const {
+    data,
+    error,
+  } =
     await supabase.functions.invoke(
       "video-generate",
       {
         body: {
+          action: "create",
           generationId:
             generation.generationId,
           prompt: cleanPrompt,
@@ -87,7 +91,10 @@ export async function generateVideo(
     };
   }
 
-  if (!data?.success) {
+  if (
+    !data?.success ||
+    !data.videoId
+  ) {
     return {
       success: false,
       generationId:
@@ -102,10 +109,10 @@ export async function generateVideo(
     success: true,
     generationId:
       generation.generationId,
+    videoId:
+      data.videoId,
     videoUrl:
-      data.videoUrl ??
-      data.video_url ??
-      undefined,
+      data.videoUrl,
     status:
       data.status ??
       "queued",
@@ -118,6 +125,7 @@ export async function generateVideo(
 
 export async function getVideoStatus(
   generationId: string,
+  videoId?: string,
 ): Promise<VideoResponse> {
   const generation =
     await getGeneration(
@@ -137,27 +145,70 @@ export async function getVideoStatus(
     };
   }
 
-  const data =
-    generation.data;
+  const metadata =
+    generation.data.metadata ??
+    {};
+
+  const currentVideoId =
+    videoId ??
+    (
+      typeof metadata.videoId ===
+      "string"
+        ? metadata.videoId
+        : undefined
+    );
+
+  if (!currentVideoId) {
+    return {
+      success: false,
+      generationId,
+      error:
+        "Video ID is missing.",
+    };
+  }
+
+  const {
+    data,
+    error,
+  } =
+    await supabase.functions.invoke(
+      "video-generate",
+      {
+        body: {
+          action: "status",
+          generationId,
+          videoId:
+            currentVideoId,
+        },
+      },
+    );
+
+  if (error) {
+    return {
+      success: false,
+      generationId,
+      videoId:
+        currentVideoId,
+      error: error.message,
+    };
+  }
 
   return {
-    success: true,
-    generationId:
-      data.id,
+    success:
+      Boolean(data?.success),
+    generationId,
+    videoId:
+      currentVideoId,
     videoUrl:
-      data.resultUrl ??
-      undefined,
+      data?.videoUrl,
     status:
-      data.status,
+      data?.status ??
+      generation.data.status,
     progress:
-      data.status === "completed"
-        ? 100
-        : data.status ===
-            "processing"
-          ? 50
-          : 0,
+      normalizeProgress(
+        data?.progress,
+      ),
     error:
-      data.errorMessage ??
-      undefined,
+      data?.error,
   };
-}
+      }
