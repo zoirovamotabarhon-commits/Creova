@@ -216,11 +216,6 @@ export async function getGenerationHistory(
       data: normalized,
     };
   } catch (error) {
-    console.error(
-      "getGenerationHistory error:",
-      error
-    );
-
     return {
       success: false,
       error:
@@ -263,7 +258,8 @@ export async function getGenerationById(
     if (!data) {
       return {
         success: false,
-        error: "Generation history item not found.",
+        error:
+          "Generation history item not found.",
       };
     }
 
@@ -282,11 +278,6 @@ export async function getGenerationById(
       data: item,
     };
   } catch (error) {
-    console.error(
-      "getGenerationById error:",
-      error
-    );
-
     return {
       success: false,
       error:
@@ -295,53 +286,4 @@ export async function getGenerationById(
           : "Unable to load generation.",
     };
   }
-}
-
-export async function deleteGeneration(
-  id: string
-): Promise<{
-  success: boolean;
-  error?: string;
-}> {
-  const cleanId = id.trim();
-
-  if (!cleanId) {
-    return {
-      success: false,
-      error: "Generation ID is required.",
-    };
-  }
-
-  try {
-    const {
-      error,
-    } = await supabase
-      .from("generation_history")
-      .delete()
-      .eq("id", cleanId);
-
-    if (error) {
-      return {
-        success: false,
-        error: error.message,
-      };
-    }
-
-    return {
-      success: true,
-    };
-  } catch (error) {
-    console.error(
-      "deleteGeneration error:",
-      error
-    );
-
-    return {
-      success: false,
-      error:
-        error instanceof Error
-          ? error.message
-          : "Unable to delete generation.",
-    };
-  }
-  }
+        }
