@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import { getFeatureCost } from "./featureCosts";
 
 export type GenerationType =
   | "chat"
@@ -42,14 +43,16 @@ export interface GenerationResult<T = unknown> {
 
 export async function createGeneration(
   type: GenerationType,
-  coinCost: number,
+  _coinCost?: number,
   prompt?: string,
   metadata: Record<string, unknown> = {},
 ): Promise<GenerationResult<GenerationRecord>> {
-  if (!Number.isInteger(coinCost) || coinCost <= 0) {
+  const cleanPrompt = prompt?.trim() ?? "";
+
+  if (!cleanPrompt) {
     return {
       success: false,
-      error: "Invalid generation coin cost.",
+      error: "Prompt is required.",
     };
   }
 
@@ -64,20 +67,24 @@ export async function createGeneration(
     };
   }
 
-  const { data, error } = await supabase.functions.invoke(
-    "generation-record",
-    {
-      body: {
-        type,
-        coinCost,
-        prompt,
-        metadata: {
-          ...metadata,
-          coinCost,
+  const generationId = crypto.randomUUID();
+  const coinCost = getFeatureCost(type);
+
+  const { data, error } =
+    await supabase.functions.invoke(
+      "generation-record",
+      {
+        body: {
+          generationId,
+          type,
+          prompt: cleanPrompt,
+          metadata: {
+            ...metadata,
+            coinCost,
+          },
         },
       },
-    },
-  );
+    );
 
   if (error) {
     return {
@@ -86,10 +93,12 @@ export async function createGeneration(
     };
   }
 
-  if (!data?.success || !data?.generationId) {
+  if (!data?.success || !data.generationId) {
     return {
       success: false,
-      error: data?.error ?? "Generation could not be created.",
+      error:
+        data?.error ??
+        "Generation could not be created.",
     };
   }
 
@@ -103,7 +112,9 @@ export async function createGeneration(
 export async function getGeneration(
   generationId: string,
 ): Promise<GenerationResult<GenerationRecord>> {
-  if (!generationId.trim()) {
+  const id = generationId.trim();
+
+  if (!id) {
     return {
       success: false,
       error: "Generation ID is required.",
@@ -113,7 +124,7 @@ export async function getGeneration(
   const { data, error } = await supabase
     .from("generation_history")
     .select("*")
-    .eq("id", generationId)
+    .eq("id", id)
     .maybeSingle();
 
   if (error) {
@@ -130,6 +141,13 @@ export async function getGeneration(
     };
   }
 
+  const metadata =
+    data.metadata &&
+    typeof data.metadata === "object" &&
+    !Array.isArray(data.metadata)
+      ? (data.metadata as Record<string, unknown>)
+      : {};
+
   return {
     success: true,
     data: {
@@ -137,9 +155,14 @@ export async function getGeneration(
       userId: data.user_id,
       type: data.type,
       status: data.status,
-      coinCost: Number(data.metadata?.coinCost ?? 0),
+      coinCost: Number(
+        metadata.coinCost ??
+          getFeatureCost(
+            data.type as GenerationType,
+          ),
+      ),
       prompt: data.prompt,
-      metadata: data.metadata ?? {},
+      metadata,
       resultText: data.result_text,
       resultUrl: data.result_url,
       provider: data.provider,
