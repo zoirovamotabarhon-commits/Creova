@@ -360,4 +360,613 @@ async function storeVideo(
   return data.signedUrl;
 }
 
-async
+async function saveVideoMetadata(
+  generationId: string,
+  userId: string,
+  videoId: string,
+) {
+  const admin =
+    getAdminClient();
+
+  const {
+    data: generation,
+    error,
+  } =
+    await admin
+      .from(
+        "generation_history",
+      )
+      .select("metadata")
+      .eq(
+        "id",
+        generationId,
+      )
+      .eq(
+        "user_id",
+        userId,
+      )
+      .single();
+
+  if (error) {
+    throw new Error(
+      error.message,
+    );
+  }
+
+  const metadata =
+    generation?.metadata &&
+    typeof generation.metadata ===
+      "object" &&
+    !Array.isArray(
+      generation.metadata,
+    )
+      ? generation.metadata as Record<
+          string,
+          unknown
+        >
+      : {};
+
+  const {
+    error: updateError,
+  } =
+    await admin
+      .from(
+        "generation_history",
+      )
+      .update({
+        metadata: {
+          ...metadata,
+          videoId,
+        },
+      })
+      .eq(
+        "id",
+        generationId,
+      )
+      .eq(
+        "user_id",
+        userId,
+      );
+
+  if (updateError) {
+    throw new Error(
+      updateError.message,
+    );
+  }
+}
+
+Deno.serve(
+  async (req) => {
+    if (
+      req.method ===
+      "OPTIONS"
+    ) {
+      return new Response(
+        "ok",
+        {
+          headers:
+            CORS_HEADERS,
+        },
+      );
+    }
+
+    if (
+      req.method !== "POST"
+    ) {
+      return json(
+        {
+          success: false,
+          error:
+            "Method not allowed.",
+        },
+        405,
+      );
+    }
+
+    let generationId =
+      "";
+    let userId =
+      "";
+
+    try {
+      const user =
+        await requireUser(
+          req,
+        );
+
+      if (!user) {
+        return json(
+          {
+            success: false,
+            error:
+              "Authentication required.",
+          },
+          401,
+        );
+      }
+
+      userId =
+        user.id;
+
+      let body: JsonObject;
+
+      try {
+        body =
+          (await req.json()) as JsonObject;
+      } catch {
+        return json(
+          {
+            success: false,
+            error:
+              "Invalid JSON request body.",
+          },
+          400,
+        );
+      }
+
+      const action =
+        typeof body.action ===
+        "string"
+          ? body.action.trim()
+          : "";
+
+      generationId =
+        typeof body.generationId ===
+        "string"
+          ? body.generationId.trim()
+          : "";
+
+      if (!generationId) {
+        return json(
+          {
+            success: false,
+            error:
+              "Generation ID is required.",
+          },
+          400,
+        );
+      }
+
+      if (
+        action === "create"
+      ) {
+        const prompt =
+          typeof body.prompt ===
+          "string"
+            ? body.prompt.trim()
+            : "";
+
+        if (!prompt) {
+          return json(
+            {
+              success: false,
+              error:
+                "Video prompt is required.",
+            },
+            400,
+          );
+        }
+
+        const generation =
+          await getAdminClient()
+            .from(
+              "generation_history",
+            )
+            .select("id, user_id, type, status")
+            .eq(
+              "id",
+              generationId,
+            )
+            .eq(
+              "user_id",
+              userId,
+            )
+            .maybeSingle();
+
+        if (
+          generation.error
+        ) {
+          throw new Error(
+            generation.error.message,
+          );
+        }
+
+        if (
+          !generation.data
+        ) {
+          return json(
+            {
+              success: false,
+              error:
+                "Generation not found.",
+            },
+            404,
+          );
+        }
+
+        if (
+          generation.data.type !==
+          "video"
+        ) {
+          return json(
+            {
+              success: false,
+              error:
+                "Generation type must be video.",
+            },
+            409,
+          );
+        }
+
+        await updateGeneration({
+          generationId,
+          userId,
+          status:
+            "processing",
+        });
+
+        const form =
+          new FormData();
+
+        form.append(
+          "model",
+          "sora-2",
+        );
+
+        form.append(
+          "prompt",
+          prompt,
+        );
+
+        const response =
+          await openAI(
+            "/videos",
+            {
+              method:
+                "POST",
+              body:
+                form,
+            },
+          );
+
+        const data =
+          await readJson(
+            response,
+          );
+
+        if (
+          !response.ok
+        ) {
+          throw new Error(
+            getApiError(
+              data,
+              "Video generation failed.",
+            ),
+          );
+        }
+
+        const videoId =
+          typeof data.id ===
+          "string"
+            ? data.id
+            : "";
+
+        if (!videoId) {
+          throw new Error(
+            "OpenAI did not return a video ID.",
+          );
+        }
+
+        await saveVideoMetadata(
+          generationId,
+          userId,
+          videoId,
+        );
+
+        return json({
+          success: true,
+          generationId,
+          videoId,
+          status:
+            typeof data.status ===
+            "string"
+              ? data.status
+              : "queued",
+          progress:
+            typeof data.progress ===
+            "number"
+              ? Math.max(
+                  0,
+                  Math.min(
+                    100,
+                    data.progress,
+                  ),
+                )
+              : 0,
+        });
+      }
+
+      if (
+        action === "status"
+      ) {
+        const videoId =
+          typeof body.videoId ===
+          "string"
+            ? body.videoId.trim()
+            : "";
+
+        if (!videoId) {
+          return json(
+            {
+              success: false,
+              error:
+                "Video ID is required.",
+            },
+            400,
+          );
+        }
+
+        const generation =
+          await getAdminClient()
+            .from(
+              "generation_history",
+            )
+            .select(
+              "id, user_id, type, metadata",
+            )
+            .eq(
+              "id",
+              generationId,
+            )
+            .eq(
+              "user_id",
+              userId,
+            )
+            .maybeSingle();
+
+        if (
+          generation.error
+        ) {
+          throw new Error(
+            generation.error.message,
+          );
+        }
+
+        if (
+          !generation.data
+        ) {
+          return json(
+            {
+              success: false,
+              error:
+                "Generation not found.",
+            },
+            404,
+          );
+        }
+
+        const metadata =
+          generation.data
+            .metadata;
+
+        if (
+          metadata &&
+          typeof metadata ===
+            "object" &&
+          !Array.isArray(
+            metadata,
+          )
+        ) {
+          const storedVideoId =
+            (
+              metadata as Record<
+                string,
+                unknown
+              >
+            ).videoId;
+
+          if (
+            typeof storedVideoId ===
+              "string" &&
+            storedVideoId !==
+              videoId
+          ) {
+            return json(
+              {
+                success: false,
+                error:
+                  "Video ID does not match the generation.",
+              },
+              403,
+            );
+          }
+        }
+
+        const response =
+          await openAI(
+            `/videos/${encodeURIComponent(
+              videoId,
+            )}`,
+            {
+              method:
+                "GET",
+            },
+          );
+
+        const data =
+          await readJson(
+            response,
+          );
+
+        if (
+          !response.ok
+        ) {
+          throw new Error(
+            getApiError(
+              data,
+              "Unable to retrieve video status.",
+            ),
+          );
+        }
+
+        const status =
+          typeof data.status ===
+          "string"
+            ? data.status
+            : "queued";
+
+        const progress =
+          typeof data.progress ===
+          "number"
+            ? Math.max(
+                0,
+                Math.min(
+                  100,
+                  data.progress,
+                ),
+              )
+            : status ===
+              "completed"
+            ? 100
+            : 0;
+
+        if (
+          status ===
+          "completed"
+        ) {
+          const videoUrl =
+            await storeVideo(
+              videoId,
+            );
+
+          await updateGeneration({
+            generationId,
+            userId,
+            status:
+              "completed",
+            provider:
+              "openai",
+            model:
+              "sora-2",
+            resultUrl:
+              videoUrl,
+          });
+
+          return json({
+            success: true,
+            generationId,
+            videoId,
+            videoUrl,
+            status:
+              "completed",
+            progress: 100,
+          });
+        }
+
+        if (
+          status ===
+            "failed" ||
+          status ===
+            "cancelled"
+        ) {
+          const errorMessage =
+            getApiError(
+              data,
+              `Video generation ${status}.`,
+            );
+
+          await updateGeneration({
+            generationId,
+            userId,
+            status:
+              "failed",
+            provider:
+              "openai",
+            model:
+              "sora-2",
+            errorMessage,
+          });
+
+          return json(
+            {
+              success: false,
+              generationId,
+              videoId,
+              status,
+              progress,
+              error:
+                errorMessage,
+            },
+            200,
+          );
+        }
+
+        return json({
+          success: true,
+          generationId,
+          videoId,
+          status,
+          progress,
+        });
+      }
+
+      return json(
+        {
+          success: false,
+          error:
+            "Unknown action. Use 'create' or 'status'.",
+        },
+        400,
+      );
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Video generation failed.";
+
+      if (
+        generationId &&
+        userId
+      ) {
+        try {
+          await updateGeneration({
+            generationId,
+            userId,
+            status:
+              "failed",
+            provider:
+              "openai",
+            model:
+              "sora-2",
+            errorMessage:
+              message,
+          });
+        } catch (
+          updateError
+        ) {
+          console.error(
+            "Failed to mark video generation as failed:",
+            updateError,
+          );
+        }
+      }
+
+      console.error(
+        "video-generate error:",
+        error,
+      );
+
+      return json(
+        {
+          success: false,
+          generationId:
+            generationId ||
+            undefined,
+          error:
+            message,
+        },
+        500,
+      );
+    }
+  },
+);
