@@ -41,6 +41,23 @@ export interface GenerationResult<T = unknown> {
   error?: string;
 }
 
+interface DatabaseGenerationRecord {
+  id: string;
+  user_id: string;
+  type: GenerationType;
+  status: GenerationStatus;
+  prompt: string;
+  metadata: Record<string, unknown>;
+  result_text: string | null;
+  result_url: string | null;
+  provider: string | null;
+  model: string | null;
+  error_message: string | null;
+  created_at: string;
+  started_at: string | null;
+  completed_at: string | null;
+}
+
 function createGenerationId(): string {
   const cryptoObject =
     globalThis.crypto;
@@ -102,6 +119,145 @@ function createGenerationId(): string {
   ].join("-");
 }
 
+function isGenerationType(
+  value: unknown,
+): value is GenerationType {
+  return (
+    value === "chat" ||
+    value === "code" ||
+    value === "image" ||
+    value === "video" ||
+    value === "music" ||
+    value === "voice"
+  );
+}
+
+function isGenerationStatus(
+  value: unknown,
+): value is GenerationStatus {
+  return (
+    value === "queued" ||
+    value === "processing" ||
+    value === "completed" ||
+    value === "failed" ||
+    value === "cancelled"
+  );
+}
+
+function normalizeMetadata(
+  value: unknown,
+): Record<string, unknown> {
+  if (
+    !value ||
+    typeof value !== "object" ||
+    Array.isArray(value)
+  ) {
+    return {};
+  }
+
+  return value as Record<
+    string,
+    unknown
+  >;
+}
+
+function normalizeGeneration(
+  value: unknown,
+): GenerationRecord | null {
+  if (
+    !value ||
+    typeof value !== "object"
+  ) {
+    return null;
+  }
+
+  const row =
+    value as Record<
+      string,
+      unknown
+    >;
+
+  if (
+    typeof row.id !== "string" ||
+    typeof row.user_id !== "string" ||
+    !isGenerationType(row.type) ||
+    !isGenerationStatus(row.status)
+  ) {
+    return null;
+  }
+
+  const coinCost =
+    Number(
+      normalizeMetadata(
+        row.metadata,
+      ).coinCost,
+    );
+
+  return {
+    id: row.id,
+    userId: row.user_id,
+    type: row.type,
+    status: row.status,
+    coinCost:
+      Number.isFinite(
+        coinCost,
+      )
+        ? coinCost
+        : getFeatureCost(
+            row.type,
+          ),
+    prompt:
+      typeof row.prompt ===
+      "string"
+        ? row.prompt
+        : undefined,
+    metadata:
+      normalizeMetadata(
+        row.metadata,
+      ),
+    resultText:
+      typeof row.result_text ===
+      "string"
+        ? row.result_text
+        : null,
+    resultUrl:
+      typeof row.result_url ===
+      "string"
+        ? row.result_url
+        : null,
+    provider:
+      typeof row.provider ===
+      "string"
+        ? row.provider
+        : null,
+    model:
+      typeof row.model ===
+      "string"
+        ? row.model
+        : null,
+    errorMessage:
+      typeof row.error_message ===
+      "string"
+        ? row.error_message
+        : null,
+    createdAt:
+      typeof row.created_at ===
+      "string"
+        ? row.created_at
+        : undefined,
+    startedAt:
+      typeof row.started_at ===
+      "string"
+        ? row.started_at
+        : null,
+    completedAt:
+      typeof row.completed_at ===
+      "string"
+        ? row.completed_at
+        : null,
+  };
+}
+
 export async function createGeneration(
   type: GenerationType,
   _coinCost?: number,
@@ -113,6 +269,14 @@ export async function createGeneration(
 ): Promise<
   GenerationResult<GenerationRecord>
 > {
+  if (!isGenerationType(type)) {
+    return {
+      success: false,
+      error:
+        "Invalid generation type.",
+    };
+  }
+
   const cleanPrompt =
     prompt?.trim() ?? "";
 
@@ -144,4 +308,52 @@ export async function createGeneration(
     return {
       success: false,
       error:
-        "
+        "Authentication required.",
+    };
+  }
+
+  const generationId =
+    createGenerationId();
+
+  const {
+    data,
+    error,
+  } =
+    await supabase.functions.invoke(
+      "generation-record",
+      {
+        body: {
+          generationId,
+          type,
+          prompt:
+            cleanPrompt.slice(
+              0,
+              12000,
+            ),
+          metadata: {
+            ...metadata,
+            feature: type,
+            coinCost:
+              getFeatureCost(
+                type,
+              ),
+          },
+        },
+      },
+    );
+
+  if (error) {
+    return {
+      success: false,
+      generationId,
+      error: error.message,
+    };
+  }
+
+  if (
+    !data?.success ||
+    !data?.generation
+  ) {
+    return {
+      success: false,
+      generationId
