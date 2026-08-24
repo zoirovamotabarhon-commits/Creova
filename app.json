@@ -10,7 +10,8 @@
       "**/*"
     ],
     "plugins": [
-      "expo-router"
+      "expo-router",
+      "expo-asset"
     ],
     "android": {
       "package": "com.creova.app"
@@ -20,6 +21,13 @@
     },
     "web": {
       "bundler": "metro"
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "9b34cd93-25ff-4c14-818b-c1ebb9d88683"
+      }
+    },
+    "owner": "zoirovolim89s-team"
   }
 }
