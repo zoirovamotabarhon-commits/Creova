@@ -1,22 +1,17 @@
 {
   "cli": {
-    "version": ">= 7.0.0"
+    "appVersionSource": "remote"
   },
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal",
-      "node": "22.13.0"
+      "distribution": "internal"
     },
     "preview": {
-      "distribution": "internal",
-      "node": "22.13.0",
-      "android": {
-        "buildType": "app-bundle"
-      }
+      "distribution": "internal"
     },
     "production": {
-      "node": "22.13.0"
+      "node": "20.18.0"
     }
   },
   "submit": {
