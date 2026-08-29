@@ -1,0 +1,43 @@
+export type SubscriptionPlanId =
+  | "free"
+  | "premium"
+  | "pro";
+
+export type SubscriptionStatus =
+  | "active"
+  | "trialing"
+  | "past_due"
+  | "cancelled"
+  | "expired";
+
+export interface Subscription {
+  id: string;
+  user_id: string;
+  plan: SubscriptionPlanId;
+  status: SubscriptionStatus;
+  provider?: string | null;
+  provider_subscription_id?: string | null;
+  started_at: string;
+  current_period_start?: string | null;
+  current_period_end?: string | null;
+  cancelled_at?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SubscriptionResponse {
+  success: boolean;
+  data?: Subscription;
+  error?: string;
+}
+
+export interface CheckoutSession {
+  checkoutUrl: string;
+  sessionId: string;
+}
+
+export interface CheckoutResponse {
+  success: boolean;
+  data?: CheckoutSession;
+  error?: string;
+  }
