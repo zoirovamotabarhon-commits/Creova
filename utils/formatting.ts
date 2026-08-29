@@ -4,12 +4,12 @@ export function formatCoins(amount: number): string {
 
 export function formatCurrency(
   amount: number,
-  currency = "UZS"
+  currency = "USD"
 ): string {
-  return new Intl.NumberFormat("uz-UZ", {
+  return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency,
-    maximumFractionDigits: 0,
+    maximumFractionDigits: 2,
   }).format(amount);
 }
 
