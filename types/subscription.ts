@@ -1,4 +1,4 @@
-export type SubscriptionPlanId =
+export type SubscriptionPlan =
   | "free"
   | "premium"
   | "pro";
@@ -13,14 +13,29 @@ export type SubscriptionStatus =
 export interface Subscription {
   id: string;
   user_id: string;
-  plan: SubscriptionPlanId;
+
+  plan: SubscriptionPlan;
   status: SubscriptionStatus;
-  provider?: string | null;
-  provider_subscription_id?: string | null;
+
+  provider: string | null;
+  provider_subscription_id:
+    | string
+    | null;
+
   started_at: string;
-  current_period_start?: string | null;
-  current_period_end?: string | null;
-  cancelled_at?: string | null;
+
+  current_period_start:
+    | string
+    | null;
+
+  current_period_end:
+    | string
+    | null;
+
+  cancelled_at:
+    | string
+    | null;
+
   created_at: string;
   updated_at: string;
 }
@@ -31,13 +46,16 @@ export interface SubscriptionResponse {
   error?: string;
 }
 
-export interface CheckoutSession {
-  checkoutUrl: string;
-  sessionId: string;
-}
+export interface SubscriptionEntitlements {
+  plan: SubscriptionPlan;
 
-export interface CheckoutResponse {
-  success: boolean;
-  data?: CheckoutSession;
-  error?: string;
-  }
+  premium: boolean;
+  pro: boolean;
+
+  removeAds: boolean;
+  prioritySupport: boolean;
+
+  monthlyAiLimit: number;
+  monthlyProjectLimit: number;
+  storageLimitMb: number;
+}
