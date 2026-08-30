@@ -1,3 +1,12 @@
+/**
+ * CREOVA
+ * Subscription product catalog.
+ *
+ * Product identifiers are kept in one place so
+ * payment providers can later map their real
+ * store product IDs without changing UI code.
+ */
+
 import {
   PLANS,
   type SubscriptionPlanId,
@@ -9,6 +18,7 @@ export type BillingPeriod =
 
 export interface SubscriptionProduct {
   id: SubscriptionPlanId;
+
   name: string;
 
   monthlyPrice: number;
@@ -28,10 +38,12 @@ export interface SubscriptionProduct {
 export function getProduct(
   planId: SubscriptionPlanId,
 ): SubscriptionProduct {
-  const plan = PLANS[planId];
+  const plan =
+    PLANS[planId];
 
   return {
     id: plan.id,
+
     name: plan.name,
 
     monthlyPrice:
@@ -55,9 +67,12 @@ export function getProduct(
   };
 }
 
-export function getProducts(): SubscriptionProduct[] {
+export function getProducts():
+  SubscriptionProduct[] {
   return (
-    Object.keys(PLANS) as SubscriptionPlanId[]
+    Object.keys(
+      PLANS,
+    ) as SubscriptionPlanId[]
   ).map(getProduct);
 }
 
@@ -70,4 +85,4 @@ export function getProductId(
   }
 
   return `creova_${planId}_${period}`;
-                    }
+}
