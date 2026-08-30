@@ -1,3 +1,8 @@
+/**
+ * CREOVA
+ * Public payment/subscription service API.
+ */
+
 export {
   getSubscription,
   getSubscriptionPlan,
