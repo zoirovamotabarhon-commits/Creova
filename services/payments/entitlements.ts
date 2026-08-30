@@ -1,3 +1,12 @@
+/**
+ * CREOVA
+ * Subscription entitlement calculation.
+ *
+ * The client never grants Premium access by itself.
+ * It only derives UI entitlements from the subscription
+ * returned by the trusted backend.
+ */
+
 import {
   getPlan,
 } from "../../constants/plans";
@@ -7,6 +16,18 @@ import type {
   SubscriptionEntitlements,
 } from "../../types/subscription";
 
+function isActiveSubscription(
+  subscription:
+    | Subscription
+    | null
+    | undefined,
+): boolean {
+  return (
+    subscription?.status === "active" ||
+    subscription?.status === "trialing"
+  );
+}
+
 export function getEntitlements(
   subscription:
     | Subscription
@@ -14,8 +35,9 @@ export function getEntitlements(
     | undefined,
 ): SubscriptionEntitlements {
   const active =
-    subscription?.status === "active" ||
-    subscription?.status === "trialing";
+    isActiveSubscription(
+      subscription,
+    );
 
   const planId =
     active && subscription
@@ -25,15 +47,19 @@ export function getEntitlements(
   const plan =
     getPlan(planId);
 
+  const premium =
+    plan.id === "premium" ||
+    plan.id === "pro";
+
+  const pro =
+    plan.id === "pro";
+
   return {
     plan: plan.id,
 
-    premium:
-      plan.id === "premium" ||
-      plan.id === "pro",
+    premium,
 
-    pro:
-      plan.id === "pro",
+    pro,
 
     removeAds:
       !plan.ads,
