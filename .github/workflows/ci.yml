@@ -21,11 +21,10 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm install --legacy-peer-deps
+        run: npm install --legacy-peer-deps --include=dev
 
       - name: Run linter
-        run: npm run lint || true
+        run: npx eslint . || true
 
       - name: Run unit tests
-        run: npm test -- --passWithNoTests
-
+        run: npx jest --config jest/config.js --passWithNoTests
