@@ -1,25 +1,60 @@
-import { I18nManager } from "react-native";
+/**
+ * CREOVA
+ * Right-to-left language support.
+ */
+
+import {
+  I18nManager,
+} from "react-native";
+
+import type {
+  SupportedLanguageCode,
+} from "./languages";
 
 export const RTL_LANGUAGES = [
   "ar",
   "fa",
   "he",
   "ur",
-];
+] as const;
+
+export type RtlLanguageCode =
+  (typeof RTL_LANGUAGES)[number];
 
 export function isRtlLanguage(
-  languageCode: string
+  languageCode: string,
 ): boolean {
-  return RTL_LANGUAGES.includes(languageCode);
+  return (
+    RTL_LANGUAGES as readonly string[]
+  ).includes(languageCode);
 }
 
+/**
+ * Applies the required RTL layout direction.
+ *
+ * React Native may require an application restart
+ * after changing the global direction.
+ */
 export function applyRtlLayout(
-  languageCode: string
-): void {
-  const shouldBeRtl = isRtlLanguage(languageCode);
+  languageCode: SupportedLanguageCode,
+): boolean {
+  const shouldBeRtl =
+    isRtlLanguage(languageCode);
 
-  if (I18nManager.isRTL !== shouldBeRtl) {
-    I18nManager.allowRTL(shouldBeRtl);
-    I18nManager.forceRTL(shouldBeRtl);
+  if (
+    I18nManager.isRTL ===
+    shouldBeRtl
+  ) {
+    return false;
   }
+
+  I18nManager.allowRTL(
+    shouldBeRtl,
+  );
+
+  I18nManager.forceRTL(
+    shouldBeRtl,
+  );
+
+  return true;
 }
