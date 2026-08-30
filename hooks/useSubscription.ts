@@ -1,73 +1,37 @@
-import {
-  useCallback,
-  useEffect,
-  useState,
-} from "react";
+import { useEffect } from "react";
 
 import {
-  getSubscription,
-  Subscription,
-} from "../services/subscription";
+  clearSubscription,
+  isCurrentUserPremium,
+  refreshSubscription,
+  useSubscriptionStore,
+} from "../store/subscriptionStore";
 
 export function useSubscription() {
-  const [
-    subscription,
-    setSubscription,
-  ] = useState<
-    Subscription | null
-  >(null);
-
-  const [
-    loading,
-    setLoading,
-  ] = useState(true);
-
-  const [
-    error,
-    setError,
-  ] = useState<string | null>(null);
-
-  const refresh =
-    useCallback(async () => {
-      setLoading(true);
-      setError(null);
-
-      const result =
-        await getSubscription();
-
-      if (!result.success) {
-        setError(
-          result.error ??
-            "Unable to load subscription."
-        );
-        setSubscription(null);
-        setLoading(false);
-        return;
-      }
-
-      setSubscription(
-        result.data ?? null
-      );
-
-      setLoading(false);
-    }, []);
+  const state =
+    useSubscriptionStore();
 
   useEffect(() => {
-    void refresh();
-  }, [refresh]);
+    void refreshSubscription();
+  }, []);
 
   return {
-    subscription,
-    loading,
-    error,
-    refresh,
+    subscription:
+      state.subscription,
+
+    loading:
+      state.loading,
+
+    error:
+      state.error,
+
+    refresh:
+      refreshSubscription,
+
+    clear:
+      clearSubscription,
+
     isPremium:
-      subscription?.status ===
-        "active" &&
-      (
-        subscription.plan ===
-          "premium" ||
-        subscription.plan === "pro"
-      ),
+      isCurrentUserPremium(),
   };
-    }
+}
