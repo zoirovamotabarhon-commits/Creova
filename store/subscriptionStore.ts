@@ -10,6 +10,10 @@ import {
   getSubscription,
 } from "../services/payments/subscriptions";
 
+import {
+  getEntitlements,
+} from "../services/payments/entitlements";
+
 export interface SubscriptionStoreState {
   subscription:
     | Subscription
@@ -19,12 +23,14 @@ export interface SubscriptionStoreState {
   error: string | null;
 }
 
-let state:
-  SubscriptionStoreState = {
-    subscription: null,
-    loading: false,
-    error: null,
-  };
+const INITIAL_STATE: SubscriptionStoreState = {
+  subscription: null,
+  loading: false,
+  error: null,
+};
+
+let state: SubscriptionStoreState =
+  INITIAL_STATE;
 
 const listeners =
   new Set<() => void>();
@@ -88,14 +94,17 @@ export async function refreshSubscription(): Promise<void> {
               result.error ??
               "Unable to load subscription.",
           };
-        } else {
-          state = {
-            subscription:
-              result.data ?? null,
-            loading: false,
-            error: null,
-          };
+
+          emit();
+          return;
         }
+
+        state = {
+          subscription:
+            result.data ?? null,
+          loading: false,
+          error: null,
+        };
 
         emit();
       } catch (error) {
@@ -119,31 +128,29 @@ export async function refreshSubscription(): Promise<void> {
 
 export function clearSubscription(): void {
   state = {
-    subscription: null,
-    loading: false,
-    error: null,
+    ...INITIAL_STATE,
   };
 
   emit();
 }
 
-export function isCurrentUserPremium(): boolean {
-  const subscription =
-    state.subscription;
+export function getSubscriptionState(): SubscriptionStoreState {
+  return state;
+}
 
-  if (!subscription) {
-    return false;
-  }
+export function getCurrentSubscription():
+  | Subscription
+  | null {
+  return state.subscription;
+}
 
-  const active =
-    subscription.status === "active" ||
-    subscription.status === "trialing";
-
-  return (
-    active &&
-    (
-      subscription.plan === "premium" ||
-      subscription.plan === "pro"
-    )
+export function getCurrentEntitlements() {
+  return getEntitlements(
+    state.subscription,
   );
-  }
+}
+
+export function isCurrentUserPremium(): boolean {
+  return getCurrentEntitlements()
+    .premium;
+}
