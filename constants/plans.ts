@@ -5,11 +5,13 @@ export type SubscriptionPlanId =
 
 export interface SubscriptionPlan {
   id: SubscriptionPlanId;
+
   name: string;
 
   monthlyPrice: number;
   yearlyPrice: number;
-  currency: string;
+
+  currency: "USD";
 
   monthlyAiLimit: number;
   monthlyProjectLimit: number;
@@ -20,9 +22,11 @@ export interface SubscriptionPlan {
   prioritySupport: boolean;
 }
 
-export const PLANS: Record<
-  SubscriptionPlanId,
-  SubscriptionPlan
+export const PLANS: Readonly<
+  Record<
+    SubscriptionPlanId,
+    SubscriptionPlan
+  >
 > = {
   free: {
     id: "free",
@@ -30,6 +34,7 @@ export const PLANS: Record<
 
     monthlyPrice: 0,
     yearlyPrice: 0,
+
     currency: "USD",
 
     monthlyAiLimit: 10,
@@ -47,6 +52,7 @@ export const PLANS: Record<
 
     monthlyPrice: 9.99,
     yearlyPrice: 79.99,
+
     currency: "USD",
 
     monthlyAiLimit: 500,
@@ -64,6 +70,7 @@ export const PLANS: Record<
 
     monthlyPrice: 19.99,
     yearlyPrice: 159.99,
+
     currency: "USD",
 
     monthlyAiLimit: 2000,
@@ -76,8 +83,8 @@ export const PLANS: Record<
   },
 };
 
-export const DEFAULT_PLAN: SubscriptionPlanId =
-  "free";
+export const DEFAULT_PLAN:
+  SubscriptionPlanId = "free";
 
 export function getPlan(
   planId:
@@ -86,8 +93,9 @@ export function getPlan(
     | undefined,
 ): SubscriptionPlan {
   return (
-    PLANS[planId ?? DEFAULT_PLAN] ??
-    PLANS[DEFAULT_PLAN]
+    PLANS[
+      planId ?? DEFAULT_PLAN
+    ] ?? PLANS[DEFAULT_PLAN]
   );
 }
 
@@ -110,4 +118,4 @@ export function isPremiumOrHigher(
     | undefined,
 ): boolean {
   return isPaidPlan(planId);
-    }
+}
