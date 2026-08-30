@@ -1,9 +1,18 @@
+/**
+ * CREOVA
+ * Shared translation schema.
+ *
+ * This schema describes the translation keys
+ * currently used by the application.
+ */
+
 export interface TranslationSchema {
   common: {
     appName: string;
     error: string;
     success: string;
   };
+
   aiVideo: {
     title: string;
     subtitle: string;
@@ -28,6 +37,7 @@ export interface TranslationSchema {
     noUrlYet: string;
     idLabel: string;
   };
+
   aiVoice: {
     title: string;
     subtitle: string;
@@ -46,6 +56,7 @@ export interface TranslationSchema {
     audioErrorTitle: string;
     audioErrorMessage: string;
   };
+
   profile: {
     title: string;
     nameLabel: string;
@@ -57,4 +68,4 @@ export interface TranslationSchema {
     updateFailed: string;
     updateSuccess: string;
   };
-  }
+}
