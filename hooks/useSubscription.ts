@@ -1,8 +1,10 @@
-import { useEffect } from "react";
+import {
+  useEffect,
+} from "react";
 
 import {
   clearSubscription,
-  isCurrentUserPremium,
+  getCurrentEntitlements,
   refreshSubscription,
   useSubscriptionStore,
 } from "../store/subscriptionStore";
@@ -14,6 +16,9 @@ export function useSubscription() {
   useEffect(() => {
     void refreshSubscription();
   }, []);
+
+  const entitlements =
+    getCurrentEntitlements();
 
   return {
     subscription:
@@ -32,6 +37,26 @@ export function useSubscription() {
       clearSubscription,
 
     isPremium:
-      isCurrentUserPremium(),
+      entitlements.premium,
+
+    isPro:
+      entitlements.pro,
+
+    removeAds:
+      entitlements.removeAds,
+
+    prioritySupport:
+      entitlements.prioritySupport,
+
+    monthlyAiLimit:
+      entitlements.monthlyAiLimit,
+
+    monthlyProjectLimit:
+      entitlements.monthlyProjectLimit,
+
+    storageLimitMb:
+      entitlements.storageLimitMb,
+
+    entitlements,
   };
 }
