@@ -1,33 +1,61 @@
 {
   "common": {
     "generate": "Generate",
+    "analyze": "Analyze",
+    "apply": "Apply",
     "cancel": "Cancel",
     "save": "Save",
     "loading": "Loading...",
-    "error": "An error occurred"
+    "error": "An error occurred",
+    "success": "Success",
+    "retry": "Retry",
+    "delete": "Delete"
+  },
+  "navigation": {
+    "home": "Home",
+    "code_studio": "Code Studio",
+    "vision_studio": "Vision Studio",
+    "chat": "AI Chat",
+    "settings": "Settings"
   },
   "dashboard": {
-    "title": "Creova AI Control Panel",
-    "developer_studio": "AI Code Studio",
-    "developer_desc": "Write, edit, and refactor code using autonomous AI agents.",
-    "vision_studio": "AI Vision Studio",
-    "vision_desc": "Analyze designs, screenshots, and generate code from visuals."
+    "welcome": "Creova AI Platform",
+    "subtitle": "Select an autonomous AI agent workspace to begin",
+    "code_title": "AI Code Studio",
+    "code_desc": "Refactor, debug, generate code, and view real-time diffs with Developer Agent.",
+    "vision_title": "AI Vision Studio",
+    "vision_desc": "Analyze screenshots, design mockups, and convert UI into native components.",
+    "chat_title": "AI General Assistant",
+    "chat_desc": "General reasoning, thought-partnering, and architecture discussion."
   },
   "code": {
     "title": "AI Code Studio",
-    "file_explorer": "Project Explorer",
     "workspace_editor": "Workspace Editor",
     "proposed_changes": "Proposed AI Changes",
     "apply_changes": "Apply Changes",
-    "terminal_title": "Execution Console",
-    "terminal_empty": "Console ready. Waiting for execution logs...",
+    "prompt_placeholder": "Ask AI to write or refactor code...",
+    "file_explorer": "Project Explorer",
     "no_files": "No files found in workspace",
-    "prompt_placeholder": "Ask AI to write or refactor code..."
+    "terminal_title": "Execution Console",
+    "terminal_empty": "Console ready. Waiting for execution logs..."
   },
   "vision": {
     "title": "AI Vision Studio",
-    "upload_image": "Upload UI Design / Screenshot",
-    "analyze_button": "Analyze Visual",
-    "analysis_result": "Analysis & Generated Layout"
+    "image_url_label": "Image URL or Source",
+    "url_placeholder": "Paste image URL here...",
+    "results_label": "Analysis Results",
+    "ai_label": "Vision AI",
+    "prompt_placeholder": "Describe or ask about the image..."
+  },
+  "chat": {
+    "you": "You",
+    "ai": "Assistant",
+    "placeholder": "Type your message..."
+  },
+  "settings": {
+    "title": "Settings",
+    "language": "Language",
+    "theme": "Theme",
+    "api_key": "Supabase & AI Configuration"
   }
 }
