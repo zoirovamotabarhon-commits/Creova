@@ -1,7 +1,7 @@
-import { IntentDetector } from './IntentDetector';
 import { AgentManager } from '../agents/AgentManager';
 import { AgentContext } from '../agents/AgentContext';
-import { AIResponse } from '../ai/AIProvider';
+import { IntentDetector, UserIntent } from './IntentDetector';
+import { AIProvider } from '../ai/AIProvider';
 
 export class AIRouter {
   private agentManager: AgentManager;
@@ -10,24 +10,35 @@ export class AIRouter {
     this.agentManager = AgentManager.getInstance();
   }
 
-  public async routeAndExecute(
-    input: string,
-    context: AgentContext
-  ): Promise<AIResponse> {
-    const intent = IntentDetector.detectIntent(input);
+  /**
+   * Routes incoming user prompt to appropriate agent based on detected intent.
+   */
+  public async routeRequest(
+    prompt: string,
+    context: AgentContext,
+    provider: AIProvider
+  ): Promise<string> {
+    const intent: UserIntent = IntentDetector.detectIntent(prompt);
 
-    let agentId = 'chat-agent';
-    if (intent === 'code') {
-      agentId = 'developer-agent';
+    let agentId: string;
+
+    switch (intent) {
+      case 'VISUAL':
+        agentId = 'vision-agent';
+        break;
+      case 'CODE':
+      case 'DEFAULT':
+      default:
+        agentId = 'developer-agent';
+        break;
     }
 
-    const agent = this.agentManager.getAgent(agentId) || this.agentManager.getAgent('developer-agent');
+    const targetAgent = this.agentManager.getAgent(agentId);
 
-    if (!agent) {
-      throw new Error(`No suitable agent found for intent: ${intent}`);
+    if (!targetAgent) {
+      throw new Error(`Agent with ID "${agentId}" was not found in registry.`);
     }
 
-    return await agent.process(input, context);
+    return await targetAgent.execute(prompt, context, provider);
   }
 }
-
