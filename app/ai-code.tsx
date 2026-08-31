@@ -12,22 +12,39 @@ import { useTranslation } from 'react-i18next';
 import { useAI } from '../hooks/useAI';
 import { CodeEditor } from '../components/developer/CodeEditor';
 import { DiffViewer } from '../components/developer/DiffViewer';
+import { FileTree, FileItem } from '../components/developer/FileTree';
 
 export default function AICodeScreen() {
   const { t } = useTranslation();
   const [prompt, setPrompt] = useState<string>('');
+  const [activeFilePath, setActiveFilePath] = useState<string>('src/App.tsx');
+  
+  // Workspace mock files (Integrated with Supabase Project Tool)
+  const [workspaceFiles] = useState<FileItem[]>([
+    { path: 'src/App.tsx', name: 'App.tsx' },
+    { path: 'src/components/Header.tsx', name: 'Header.tsx' },
+    { path: 'src/services/api.ts', name: 'api.ts' },
+    { path: 'package.json', name: 'package.json' },
+  ]);
+
   const [code, setCode] = useState<string>(
-    '// Welcome to Creova AI Code Editor\nfunction greet() {\n  console.log("Hello, World!");\n}'
+    '// src/App.tsx\nimport React from "react";\n\nexport default function App() {\n  return <div>Hello Creova AI</div>;\n}'
   );
   const [showDiff, setShowDiff] = useState<boolean>(false);
   const [modifiedCode, setModifiedCode] = useState<string>('');
 
-  const { messages, loading, error, sendMessage } = useAI();
+  const { loading, error, sendMessage } = useAI();
+
+  const handleSelectFile = (path: string) => {
+    setActiveFilePath(path);
+    setCode(`// Content loaded from ${path}\n// Ready for AI modification...`);
+    setShowDiff(false);
+  };
 
   const handleGenerateCode = async () => {
     if (!prompt.trim()) return;
 
-    const fullPrompt = `Here is my current code:\n\`\`\`typescript\n${code}\n\`\`\`\nTask: ${prompt}`;
+    const fullPrompt = `Active File: ${activeFilePath}\n\`\`\`typescript\n${code}\n\`\`\`\nTask: ${prompt}`;
     const response = await sendMessage(fullPrompt);
 
     if (response?.content) {
@@ -41,8 +58,16 @@ export default function AICodeScreen() {
       <Text style={styles.title}>{t('code.title', 'AI Code Studio')}</Text>
 
       <ScrollView style={styles.scrollArea}>
+        {/* Project File Explorer */}
+        <FileTree
+          files={workspaceFiles}
+          activeFilePath={activeFilePath}
+          onSelectFile={handleSelectFile}
+        />
+
+        {/* Main Code Editor */}
         <Text style={styles.sectionLabel}>
-          {t('code.workspace_editor', 'Workspace Editor')}
+          {t('code.workspace_editor', 'Workspace Editor')} ({activeFilePath})
         </Text>
         <CodeEditor
           value={code}
@@ -50,6 +75,7 @@ export default function AICodeScreen() {
           language="typescript"
         />
 
+        {/* Diff Preview */}
         {showDiff && (
           <View style={styles.diffContainer}>
             <Text style={styles.sectionLabel}>
@@ -73,6 +99,7 @@ export default function AICodeScreen() {
         {error && <Text style={styles.errorText}>{error}</Text>}
       </ScrollView>
 
+      {/* Input Prompt Section */}
       <View style={styles.inputContainer}>
         <TextInput
           style={styles.input}
@@ -111,7 +138,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     color: '#fff',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   scrollArea: {
     flex: 1,
@@ -173,3 +200,4 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
 });
+
