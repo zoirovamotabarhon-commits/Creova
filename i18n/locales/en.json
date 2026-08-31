@@ -1,56 +1,33 @@
 {
-  "common": { "appName": "CREOVA", "error": "Error", "success": "Success" },
-  "aiVideo": {
-    "title": "🎬 AI Video",
-    "subtitle": "Generate videos with CREOVA AI",
-    "promptPlaceholder": "e.g. A futuristic city at sunset",
-    "generateButton": "Generate video",
-    "emptyPromptTitle": "CREOVA",
-    "emptyPromptMessage": "Enter a prompt for the video.",
-    "statusTitle": "Video status",
-    "progressLabel": "Progress",
-    "videoErrorTitle": "Video error",
-    "videoStatusError": "Failed to fetch video status.",
-    "videoReadyTitle": "CREOVA",
-    "videoReadyMessage": "Video is ready.",
-    "videoReadyNoUrl": "Video is ready, but the MP4 URL was not received.",
-    "videoFailedTitle": "Video generation failed",
-    "videoFailedStatus": "Video status: {{status}}",
-    "videoTooLongTitle": "CREOVA",
-    "videoTooLongMessage": "Video generation is taking too long. Please check again later.",
-    "videoCheckError": "Error checking video status.",
-    "generationFailed": "Video generation failed.",
-    "unexpectedError": "An unexpected error occurred while generating the video.",
-    "noUrlYet": "MP4 URL was not received.",
-    "idLabel": "ID: {{id}}"
+  "common": {
+    "generate": "Generate",
+    "cancel": "Cancel",
+    "save": "Save",
+    "loading": "Loading...",
+    "error": "An error occurred"
   },
-  "aiVoice": {
-    "title": "🎤 AI Voice",
-    "subtitle": "Turn text into speech with CREOVA AI",
-    "textPlaceholder": "e.g. Hello, CREOVA!",
-    "generateButton": "Generate voice",
-    "emptyTextMessage": "Enter text for the voice.",
-    "generationFailedTitle": "Voice generation failed",
-    "generationFailedMessage": "An error occurred while generating the voice.",
-    "noAudioMessage": "Audio file was not received.",
-    "readyMessage": "Voice is ready.",
-    "unexpectedError": "An unexpected error occurred while generating the voice.",
-    "resultTitle": "🔊 Voice ready",
-    "resultText": "Text was successfully converted to speech.",
-    "play": "▶️ Play",
-    "pause": "⏸ Pause",
-    "audioErrorTitle": "Audio error",
-    "audioErrorMessage": "An error occurred while playing the audio."
+  "dashboard": {
+    "title": "Creova AI Control Panel",
+    "developer_studio": "AI Code Studio",
+    "developer_desc": "Write, edit, and refactor code using autonomous AI agents.",
+    "vision_studio": "AI Vision Studio",
+    "vision_desc": "Analyze designs, screenshots, and generate code from visuals."
   },
-  "profile": {
-    "title": "Profile",
-    "nameLabel": "Name",
-    "namePlaceholder": "Enter your name",
-    "emailLabel": "Email",
-    "saveButton": "Save",
-    "nameRequired": "Name is required.",
-    "loadFailed": "Failed to load profile.",
-    "updateFailed": "Failed to update profile.",
-    "updateSuccess": "Profile updated successfully."
+  "code": {
+    "title": "AI Code Studio",
+    "file_explorer": "Project Explorer",
+    "workspace_editor": "Workspace Editor",
+    "proposed_changes": "Proposed AI Changes",
+    "apply_changes": "Apply Changes",
+    "terminal_title": "Execution Console",
+    "terminal_empty": "Console ready. Waiting for execution logs...",
+    "no_files": "No files found in workspace",
+    "prompt_placeholder": "Ask AI to write or refactor code..."
+  },
+  "vision": {
+    "title": "AI Vision Studio",
+    "upload_image": "Upload UI Design / Screenshot",
+    "analyze_button": "Analyze Visual",
+    "analysis_result": "Analysis & Generated Layout"
   }
 }
