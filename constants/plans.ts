@@ -1,3 +1,11 @@
+/**
+ * CREOVA
+ * Subscription plan catalog.
+ *
+ * Business values are kept language-neutral.
+ * User-facing names are represented by translation keys.
+ */
+
 export type SubscriptionPlanId =
   | "free"
   | "premium"
@@ -7,6 +15,8 @@ export interface SubscriptionPlan {
   id: SubscriptionPlanId;
 
   name: string;
+
+  translationKey: string;
 
   monthlyPrice: number;
   yearlyPrice: number;
@@ -31,6 +41,8 @@ export const PLANS: Readonly<
   free: {
     id: "free",
     name: "Free",
+    translationKey:
+      "premium.plans.free",
 
     monthlyPrice: 0,
     yearlyPrice: 0,
@@ -49,6 +61,8 @@ export const PLANS: Readonly<
   premium: {
     id: "premium",
     name: "Premium",
+    translationKey:
+      "premium.plans.premium",
 
     monthlyPrice: 9.99,
     yearlyPrice: 79.99,
@@ -67,6 +81,8 @@ export const PLANS: Readonly<
   pro: {
     id: "pro",
     name: "Pro",
+    translationKey:
+      "premium.plans.pro",
 
     monthlyPrice: 19.99,
     yearlyPrice: 159.99,
@@ -84,7 +100,8 @@ export const PLANS: Readonly<
 };
 
 export const DEFAULT_PLAN:
-  SubscriptionPlanId = "free";
+  SubscriptionPlanId =
+    "free";
 
 export function getPlan(
   planId:
