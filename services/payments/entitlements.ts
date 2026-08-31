@@ -2,9 +2,9 @@
  * CREOVA
  * Subscription entitlement calculation.
  *
- * The client never grants Premium access by itself.
- * It only derives UI entitlements from the subscription
- * returned by the trusted backend.
+ * This module derives UI permissions from the subscription
+ * returned by Supabase. It does not grant or create
+ * subscription access.
  */
 
 import {
@@ -22,5 +22,68 @@ function isActiveSubscription(
     | null
     | undefined,
 ): boolean {
+  if (!subscription) {
+    return false;
+  }
+
   return (
-    subscription?.status 
+    subscription.status ===
+      "active" ||
+    subscription.status ===
+      "trialing"
+  );
+}
+
+export function getEntitlements(
+  subscription:
+    | Subscription
+    | null
+    | undefined,
+): SubscriptionEntitlements {
+  const planId =
+    subscription?.plan ??
+    "free";
+
+  const plan =
+    getPlan(planId);
+
+  const active =
+    isActiveSubscription(
+      subscription,
+    );
+
+  const paid =
+    planId === "premium" ||
+    planId === "pro";
+
+  const premium =
+    active && paid;
+
+  const pro =
+    active &&
+    planId === "pro";
+
+  return {
+    plan: plan.id,
+
+    premium,
+    pro,
+
+    removeAds:
+      premium &&
+      !plan.ads,
+
+    prioritySupport:
+      premium &&
+      plan.prioritySupport,
+
+    monthlyAiLimit:
+      plan.monthlyAiLimit,
+
+    monthlyProjectLimit:
+      plan.monthlyProjectLimit,
+
+    storageLimitMb:
+      plan.storageLimitMb,
+  };
+}
