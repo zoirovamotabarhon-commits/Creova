@@ -1,13 +1,36 @@
-import i18n from "i18next";
-import { initReactI18next } from "react-i18next";
-import * as Localization from "expo-localization";
+/**
+ * CREOVA
+ * Global internationalization entry point.
+ */
 
-import { LANGUAGES } from "./languages";
+import AsyncStorage from
+  "@react-native-async-storage/async-storage";
+
+import * as Localization from
+  "expo-localization";
+
+import i18n from "i18next";
+
+import {
+  initReactI18next,
+} from "react-i18next";
+
+import {
+  LANGUAGES,
+  isSupportedLanguage,
+  type SupportedLanguageCode,
+} from "./languages";
+
 import {
   DEFAULT_LANGUAGE,
   FALLBACK_LANGUAGE,
+  LANGUAGE_STORAGE_KEY,
   I18N_COMPATIBILITY,
 } from "./config";
+
+import {
+  applyRtlLayout,
+} from "./rtl";
 
 import en from "./locales/en.json";
 import uz from "./locales/uz.json";
@@ -34,6 +57,7 @@ import fi from "./locales/fi.json";
 import pl from "./locales/pl.json";
 import cs from "./locales/cs.json";
 import sk from "./locales/sk.json";
+import sl from "./locales/sl.json";
 import hu from "./locales/hu.json";
 import ro from "./locales/ro.json";
 import bg from "./locales/bg.json";
@@ -41,7 +65,6 @@ import uk from "./locales/uk.json";
 import el from "./locales/el.json";
 import hr from "./locales/hr.json";
 import sr from "./locales/sr.json";
-import sl from "./locales/sl.json";
 import lt from "./locales/lt.json";
 import lv from "./locales/lv.json";
 import et from "./locales/et.json";
@@ -84,6 +107,7 @@ const resources = {
   pl: { translation: pl },
   cs: { translation: cs },
   sk: { translation: sk },
+  sl: { translation: sl },
   hu: { translation: hu },
   ro: { translation: ro },
   bg: { translation: bg },
@@ -91,7 +115,6 @@ const resources = {
   el: { translation: el },
   hr: { translation: hr },
   sr: { translation: sr },
-  sl: { translation: sl },
   lt: { translation: lt },
   lv: { translation: lv },
   et: { translation: et },
@@ -107,33 +130,243 @@ const resources = {
   th: { translation: th },
   vi: { translation: vi },
   sw: { translation: sw },
-};
+} as const;
 
-const SUPPORTED_CODES = Object.keys(resources);
+const LOADED_LANGUAGE_CODES =
+  Object.keys(
+    resources,
+  ) as SupportedLanguageCode[];
 
-function resolveDeviceLanguage(): string {
-  const deviceLanguageCode =
-    Localization.getLocales()[0]?.languageCode ??
-    DEFAULT_LANGUAGE;
+function normalizeLanguageCode(
+  value:
+    | string
+    | null
+    | undefined,
+): SupportedLanguageCode {
+  if (!value) {
+    return DEFAULT_LANGUAGE;
+  }
 
-  return SUPPORTED_CODES.includes(
-    deviceLanguageCode
-  )
-    ? deviceLanguageCode
-    : DEFAULT_LANGUAGE;
+  const normalized =
+    value.trim().toLowerCase();
+
+  if (
+    isSupportedLanguage(
+      normalized,
+    ) &&
+    LOADED_LANGUAGE_CODES.includes(
+      normalized,
+    )
+  ) {
+    return normalized;
+  }
+
+  const baseCode =
+    normalized.split("-")[0];
+
+  if (
+    isSupportedLanguage(
+      baseCode,
+    ) &&
+    LOADED_LANGUAGE_CODES.includes(
+      baseCode,
+    )
+  ) {
+    return baseCode;
+  }
+
+  return DEFAULT_LANGUAGE;
 }
 
-void i18n
-  .use(initReactI18next)
-  .init({
-    resources,
-    lng: resolveDeviceLanguage(),
-    fallbackLng: FALLBACK_LANGUAGE,
-    compatibilityJSON: I18N_COMPATIBILITY,
-    interpolation: {
-      escapeValue: false,
-    },
-  });
+function getDeviceLanguage():
+  SupportedLanguageCode {
+  try {
+    const locale =
+      Localization.getLocales()[0];
 
-export { LANGUAGES };
+    return normalizeLanguageCode(
+      locale?.languageCode,
+    );
+  } catch {
+    return DEFAULT_LANGUAGE;
+  }
+}
+
+async function getInitialLanguage():
+  Promise<SupportedLanguageCode> {
+  try {
+    const savedLanguage =
+      await AsyncStorage.getItem(
+        LANGUAGE_STORAGE_KEY,
+      );
+
+    if (savedLanguage) {
+      const normalized =
+        normalizeLanguageCode(
+          savedLanguage,
+        );
+
+      if (
+        normalized ===
+        savedLanguage
+      ) {
+        return normalized;
+      }
+    }
+  } catch (error) {
+    console.warn(
+      "CREOVA: unable to read saved language.",
+      error,
+    );
+  }
+
+  return getDeviceLanguage();
+}
+
+export async function initializeI18n():
+  Promise<void> {
+  if (i18n.isInitialized) {
+    return;
+  }
+
+  await i18n
+    .use(initReactI18next)
+    .init({
+      resources,
+
+      lng:
+        DEFAULT_LANGUAGE,
+
+      fallbackLng:
+        FALLBACK_LANGUAGE,
+
+      compatibilityJSON:
+        I18N_COMPATIBILITY,
+
+      interpolation: {
+        escapeValue: false,
+      },
+
+      returnNull: false,
+
+      returnEmptyString: false,
+
+      react: {
+        useSuspense: false,
+      },
+    });
+
+  const initialLanguage =
+    await getInitialLanguage();
+
+  await i18n.changeLanguage(
+    initialLanguage,
+  );
+
+  applyRtlLayout(
+    initialLanguage,
+  );
+}
+
+export async function setLanguage(
+  languageCode: SupportedLanguageCode,
+): Promise<boolean> {
+  if (
+    !isSupportedLanguage(
+      languageCode,
+    )
+  ) {
+    return false;
+  }
+
+  if (
+    !LOADED_LANGUAGE_CODES.includes(
+      languageCode,
+    )
+  ) {
+    return false;
+  }
+
+  try {
+    await i18n.changeLanguage(
+      languageCode,
+    );
+
+    await AsyncStorage.setItem(
+      LANGUAGE_STORAGE_KEY,
+      languageCode,
+    );
+
+    applyRtlLayout(
+      languageCode,
+    );
+
+    return true;
+  } catch (error) {
+    console.error(
+      "CREOVA: language change failed.",
+      error,
+    );
+
+    return false;
+  }
+}
+
+export function getCurrentLanguage():
+  SupportedLanguageCode {
+  return normalizeLanguageCode(
+    i18n.language,
+  );
+}
+
+export async function getStoredLanguage():
+  Promise<
+    SupportedLanguageCode | null
+  > {
+  try {
+    const saved =
+      await AsyncStorage.getItem(
+        LANGUAGE_STORAGE_KEY,
+      );
+
+    if (!saved) {
+      return null;
+    }
+
+    const normalized =
+      normalizeLanguageCode(saved);
+
+    return normalized === saved
+      ? normalized
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+export function isLanguageLoaded(
+  languageCode: SupportedLanguageCode,
+): boolean {
+  return LOADED_LANGUAGE_CODES.includes(
+    languageCode,
+  );
+}
+
+export {
+  LANGUAGES,
+  DEFAULT_LANGUAGE,
+  FALLBACK_LANGUAGE,
+  LANGUAGE_STORAGE_KEY,
+};
+
+export type {
+  SupportedLanguageCode,
+} from "./languages";
+
+export {
+  RTL_LANGUAGES,
+  isRtlLanguage,
+  getLanguageDirection,
+} from "./rtl";
+
 export default i18n;
