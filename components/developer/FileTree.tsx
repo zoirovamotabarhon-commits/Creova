@@ -102,7 +102,7 @@ const styles = StyleSheet.create({
   fileName: {
     color: '#cccccc',
     fontSize: 13,
-    fontFamily: 'Platform',
+    fontFamily: 'monospace',
   },
   activeFileName: {
     color: '#38bdf8',
