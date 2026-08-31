@@ -100,7 +100,7 @@ const styles = StyleSheet.create({
   emptyLog: {
     color: '#484f58',
     fontSize: 12,
-    fontFamily: 'Platform',
+    fontFamily: 'monospace',
   },
   logRow: {
     flexDirection: 'row',
@@ -109,17 +109,16 @@ const styles = StyleSheet.create({
   timestamp: {
     color: '#484f58',
     fontSize: 11,
-    fontFamily: 'Platform',
+    fontFamily: 'monospace',
     marginRight: 8,
   },
   logMessage: {
     color: '#c9d1d9',
     fontSize: 12,
-    fontFamily: 'Platform',
+    fontFamily: 'monospace',
     flex: 1,
   },
   errorText: { color: '#f85149' },
   successText: { color: '#3fb950' },
   warningText: { color: '#d29922' },
 });
-
