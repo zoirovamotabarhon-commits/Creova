@@ -8,8 +8,10 @@ export const ROUTES = {
 
   LOGIN: "/login",
   REGISTER: "/register",
-  FORGOT_PASSWORD: "/forgot-password",
-  RESET_PASSWORD: "/reset-password",
+  FORGOT_PASSWORD:
+    "/forgot-password",
+  RESET_PASSWORD:
+    "/reset-password",
 
   DASHBOARD: "/dashboard",
 
@@ -24,9 +26,12 @@ export const ROUTES = {
   SETTINGS: "/settings",
 
   PREMIUM: "/premium",
-  PREMIUM_PLANS: "/premium/plans",
-  PREMIUM_CHECKOUT: "/premium/checkout",
-  PREMIUM_SUCCESS: "/premium/success",
+  PREMIUM_PLANS:
+    "/premium/plans",
+  PREMIUM_CHECKOUT:
+    "/premium/checkout",
+  PREMIUM_SUCCESS:
+    "/premium/success",
 } as const;
 
 export type AppRoute =
@@ -38,16 +43,22 @@ export const PUBLIC_ROUTES = [
   ROUTES.FORGOT_PASSWORD,
 ] as const;
 
+export const RESET_PASSWORD_ROUTE =
+  ROUTES.RESET_PASSWORD;
+
 export const PROTECTED_ROUTES = [
   ROUTES.DASHBOARD,
+
   ROUTES.AI_CHAT,
   ROUTES.AI_IMAGE,
   ROUTES.AI_VIDEO,
   ROUTES.AI_MUSIC,
   ROUTES.AI_VOICE,
   ROUTES.AI_CODE,
+
   ROUTES.PROFILE,
   ROUTES.SETTINGS,
+
   ROUTES.PREMIUM,
   ROUTES.PREMIUM_PLANS,
   ROUTES.PREMIUM_CHECKOUT,
