@@ -2,6 +2,7 @@ import { Agent } from '../Agent';
 import { AgentContext } from '../AgentContext';
 import { AIResponse, AIMessage } from '../../ai/AIProvider';
 import { FileTool } from '../../tools/code/FileTool';
+import { ProjectTool } from '../../tools/code/ProjectTool';
 
 export class DeveloperAgent extends Agent {
   readonly id = 'developer-agent';
@@ -11,8 +12,9 @@ export class DeveloperAgent extends Agent {
 
   constructor() {
     super();
-    // Registering developer specific tools
+    // Registering developer specific tools including ProjectTool
     this.registerTool(new FileTool());
+    this.registerTool(new ProjectTool());
   }
 
   async process(input: string, context: AgentContext): Promise<AIResponse> {
@@ -27,4 +29,3 @@ export class DeveloperAgent extends Agent {
     });
   }
 }
-
