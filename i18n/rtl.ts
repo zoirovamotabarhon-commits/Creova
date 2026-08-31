@@ -29,12 +29,14 @@ export function isRtlLanguage(
   ).includes(languageCode);
 }
 
-/**
- * Applies the required RTL layout direction.
- *
- * React Native may require an application restart
- * after changing the global direction.
- */
+export function getLanguageDirection(
+  languageCode: SupportedLanguageCode,
+): "ltr" | "rtl" {
+  return isRtlLanguage(languageCode)
+    ? "rtl"
+    : "ltr";
+}
+
 export function applyRtlLayout(
   languageCode: SupportedLanguageCode,
 ): boolean {
