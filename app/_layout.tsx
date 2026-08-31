@@ -1,8 +1,11 @@
+import "../i18n";
+
 import {
   Redirect,
   Stack,
   usePathname,
 } from "expo-router";
+
 import {
   ActivityIndicator,
   StyleSheet,
@@ -19,39 +22,16 @@ import {
   useTheme,
 } from "../hooks/useTheme";
 
-const PUBLIC_ROUTES = [
-  "/login",
-  "/register",
-  "/forgot-password",
-];
-
-const RESET_PASSWORD_ROUTE =
-  "/reset-password";
-
-const PROTECTED_ROUTES = [
-  "/dashboard",
-  "/ai-chat",
-  "/ai-image",
-  "/ai-video",
-  "/ai-music",
-  "/ai-voice",
-  "/ai-code",
-  "/profile",
-  "/settings",
-];
-
-function matchesPath(
-  pathname: string,
-  route: string
-) {
-  return (
-    pathname === route ||
-    pathname.startsWith(`${route}/`)
-  );
-}
+import {
+  PUBLIC_ROUTES,
+  PROTECTED_ROUTES,
+  RESET_PASSWORD_ROUTE,
+  matchesRoute,
+} from "../constants/routes";
 
 function AppShell() {
-  const pathname = usePathname();
+  const pathname =
+    usePathname();
 
   const {
     isAuthenticated,
@@ -85,39 +65,39 @@ function AppShell() {
     );
   }
 
-  if (pathname === "/") {
-    return (
-      <Redirect
-        href={
-          isAuthenticated
-            ? "/dashboard"
-            : "/login"
-        }
-      />
-    );
-  }
-
   const onPublicRoute =
-    PUBLIC_ROUTES.some((route) =>
-      matchesPath(pathname, route)
-    );
-
-  const onResetPasswordRoute =
-    matchesPath(
-      pathname,
-      RESET_PASSWORD_ROUTE
+    PUBLIC_ROUTES.some(
+      (route) =>
+        matchesRoute(
+          pathname,
+          route,
+        ),
     );
 
   const onProtectedRoute =
-    PROTECTED_ROUTES.some((route) =>
-      matchesPath(pathname, route)
+    PROTECTED_ROUTES.some(
+      (route) =>
+        matchesRoute(
+          pathname,
+          route,
+        ),
+    );
+
+  const onResetPasswordRoute =
+    matchesRoute(
+      pathname,
+      RESET_PASSWORD_ROUTE,
     );
 
   if (
     !isAuthenticated &&
     onProtectedRoute
   ) {
-    return <Redirect href="/login" />;
+    return (
+      <Redirect
+        href="/login"
+      />
+    );
   }
 
   if (
@@ -126,7 +106,9 @@ function AppShell() {
     !onResetPasswordRoute
   ) {
     return (
-      <Redirect href="/dashboard" />
+      <Redirect
+        href="/dashboard"
+      />
     );
   }
 
@@ -134,6 +116,7 @@ function AppShell() {
     <Stack
       screenOptions={{
         headerShown: false,
+
         contentStyle: {
           backgroundColor:
             colors.background,
@@ -153,10 +136,12 @@ export default function RootLayout() {
   );
 }
 
-const styles = StyleSheet.create({
-  loadingContainer: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-});
+const styles =
+  StyleSheet.create({
+    loadingContainer: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent:
+        "center",
+    },
+  });
