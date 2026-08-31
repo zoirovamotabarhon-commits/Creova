@@ -8,11 +8,13 @@ import {
   ScrollView,
   ActivityIndicator,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useAI } from '../hooks/useAI';
 import { CodeEditor } from '../components/developer/CodeEditor';
 import { DiffViewer } from '../components/developer/DiffViewer';
 
 export default function AICodeScreen() {
+  const { t } = useTranslation();
   const [prompt, setPrompt] = useState<string>('');
   const [code, setCode] = useState<string>(
     '// Welcome to Creova AI Code Editor\nfunction greet() {\n  console.log("Hello, World!");\n}'
@@ -29,7 +31,6 @@ export default function AICodeScreen() {
     const response = await sendMessage(fullPrompt);
 
     if (response?.content) {
-      // For demonstration, set response to diff viewer
       setModifiedCode(response.content);
       setShowDiff(true);
     }
@@ -37,21 +38,23 @@ export default function AICodeScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>AI Code Assistant</Text>
+      <Text style={styles.title}>{t('code.title', 'AI Code Studio')}</Text>
 
       <ScrollView style={styles.scrollArea}>
-        {/* Main Code Editor */}
-        <Text style={styles.sectionLabel}>Workspace Editor</Text>
+        <Text style={styles.sectionLabel}>
+          {t('code.workspace_editor', 'Workspace Editor')}
+        </Text>
         <CodeEditor
           value={code}
           onChangeText={setCode}
           language="typescript"
         />
 
-        {/* Diff Viewer Section (Shows when AI returns changes) */}
         {showDiff && (
           <View style={styles.diffContainer}>
-            <Text style={styles.sectionLabel}>Proposed AI Changes</Text>
+            <Text style={styles.sectionLabel}>
+              {t('code.proposed_changes', 'Proposed AI Changes')}
+            </Text>
             <DiffViewer originalCode={code} modifiedCode={modifiedCode} />
             <TouchableOpacity
               style={styles.applyButton}
@@ -60,20 +63,20 @@ export default function AICodeScreen() {
                 setShowDiff(false);
               }}
             >
-              <Text style={styles.applyButtonText}>Apply Changes</Text>
+              <Text style={styles.applyButtonText}>
+                {t('code.apply_changes', 'Apply Changes')}
+              </Text>
             </TouchableOpacity>
           </View>
         )}
 
-        {/* Error Feedback */}
         {error && <Text style={styles.errorText}>{error}</Text>}
       </ScrollView>
 
-      {/* Input Prompt Controls */}
       <View style={styles.inputContainer}>
         <TextInput
           style={styles.input}
-          placeholder="Ask AI to write or refactor code..."
+          placeholder={t('code.prompt_placeholder', 'Ask AI to write or refactor code...')}
           placeholderTextColor="#666"
           value={prompt}
           onChangeText={setPrompt}
@@ -87,7 +90,9 @@ export default function AICodeScreen() {
           {loading ? (
             <ActivityIndicator color="#fff" size="small" />
           ) : (
-            <Text style={styles.sendButtonText}>Generate</Text>
+            <Text style={styles.sendButtonText}>
+              {t('common.generate', 'Generate')}
+            </Text>
           )}
         </TouchableOpacity>
       </View>
