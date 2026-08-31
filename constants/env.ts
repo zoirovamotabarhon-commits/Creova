@@ -2,56 +2,64 @@
  * CREOVA
  * Centralized runtime environment configuration.
  *
- * Public Expo environment variables are safe to expose to the
- * mobile application. Private API keys, service-role keys and
- * provider secrets must NEVER be placed here.
+ * Only public Expo variables belong here.
+ * Service-role keys, private provider keys and secrets
+ * must never be exposed to the mobile application.
  */
 
-const getEnvironmentVariable = (
+function readPublicEnvironmentVariable(
   name: string,
-): string => {
+): string {
   const value = process.env[name];
 
   return typeof value === "string"
     ? value.trim()
     : "";
-};
+}
 
 export const ENV = {
-  SUPABASE_URL:
-    getEnvironmentVariable(
+  supabaseUrl:
+    readPublicEnvironmentVariable(
       "EXPO_PUBLIC_SUPABASE_URL",
     ),
 
-  SUPABASE_PUBLISHABLE_KEY:
-    getEnvironmentVariable(
+  supabasePublishableKey:
+    readPublicEnvironmentVariable(
       "EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
     ),
 } as const;
 
-export function isEnvironmentConfigured(): boolean {
+export function isEnvironmentConfigured():
+  boolean {
   return (
-    ENV.SUPABASE_URL.length > 0 &&
-    ENV.SUPABASE_PUBLISHABLE_KEY.length > 0
+    ENV.supabaseUrl.length > 0 &&
+    ENV.supabasePublishableKey.length > 0
   );
 }
 
-export function validateEnvironment(): void {
+export function getMissingEnvironmentVariables():
+  string[] {
   const missing: string[] = [];
 
-  if (!ENV.SUPABASE_URL) {
+  if (!ENV.supabaseUrl) {
     missing.push(
       "EXPO_PUBLIC_SUPABASE_URL",
     );
   }
 
-  if (
-    !ENV.SUPABASE_PUBLISHABLE_KEY
-  ) {
+  if (!ENV.supabasePublishableKey) {
     missing.push(
       "EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
     );
   }
+
+  return missing;
+}
+
+export function validateEnvironment():
+  void {
+  const missing =
+    getMissingEnvironmentVariables();
 
   if (missing.length > 0) {
     throw new Error(
