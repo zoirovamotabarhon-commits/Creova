@@ -1,147 +1,54 @@
-import "../i18n";
-
-import {
-  Redirect,
-  Stack,
-  usePathname,
-} from "expo-router";
-
-import {
-  ActivityIndicator,
-  StyleSheet,
-  View,
-} from "react-native";
-
-import {
-  AuthProvider,
-  useAuthContext,
-} from "../providers/AuthProvider";
-
-import {
-  ThemeProvider,
-  useTheme,
-} from "../hooks/useTheme";
-
-import {
-  PUBLIC_ROUTES,
-  PROTECTED_ROUTES,
-  RESET_PASSWORD_ROUTE,
-  matchesRoute,
-} from "../constants/routes";
-
-function AppShell() {
-  const pathname =
-    usePathname();
-
-  const {
-    isAuthenticated,
-    loading: authLoading,
-  } = useAuthContext();
-
-  const {
-    colors,
-    loading: themeLoading,
-  } = useTheme();
-
-  if (
-    authLoading ||
-    themeLoading
-  ) {
-    return (
-      <View
-        style={[
-          styles.loadingContainer,
-          {
-            backgroundColor:
-              colors.background,
-          },
-        ]}
-      >
-        <ActivityIndicator
-          size="large"
-          color={colors.primary}
-        />
-      </View>
-    );
-  }
-
-  const onPublicRoute =
-    PUBLIC_ROUTES.some(
-      (route) =>
-        matchesRoute(
-          pathname,
-          route,
-        ),
-    );
-
-  const onProtectedRoute =
-    PROTECTED_ROUTES.some(
-      (route) =>
-        matchesRoute(
-          pathname,
-          route,
-        ),
-    );
-
-  const onResetPasswordRoute =
-    matchesRoute(
-      pathname,
-      RESET_PASSWORD_ROUTE,
-    );
-
-  if (
-    !isAuthenticated &&
-    onProtectedRoute
-  ) {
-    return (
-      <Redirect
-        href="/login"
-      />
-    );
-  }
-
-  if (
-    isAuthenticated &&
-    onPublicRoute &&
-    !onResetPasswordRoute
-  ) {
-    return (
-      <Redirect
-        href="/dashboard"
-      />
-    );
-  }
-
-  return (
-    <Stack
-      screenOptions={{
-        headerShown: false,
-
-        contentStyle: {
-          backgroundColor:
-            colors.background,
-        },
-      }}
-    />
-  );
-}
+import React from 'react';
+import { Stack } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 
 export default function RootLayout() {
   return (
-    <AuthProvider>
-      <ThemeProvider>
-        <AppShell />
-      </ThemeProvider>
-    </AuthProvider>
+    <>
+      <StatusBar style="light" />
+      <Stack
+        screenOptions={{
+          headerStyle: {
+            backgroundColor: '#121212',
+          },
+          headerTintColor: '#ffffff',
+          headerTitleStyle: {
+            fontWeight: 'bold',
+          },
+          contentStyle: {
+            backgroundColor: '#121212',
+          },
+        }}
+      >
+        <Stack.Screen
+          name="index"
+          options={{
+            title: 'Creova AI Dashboard',
+            headerShown: true,
+          }}
+        />
+        <Stack.Screen
+          name="ai-chat"
+          options={{
+            title: 'AI Chat',
+            headerBackTitle: 'Back',
+          }}
+        />
+        <Stack.Screen
+          name="ai-code"
+          options={{
+            title: 'Code Studio',
+            headerBackTitle: 'Back',
+          }}
+        />
+        <Stack.Screen
+          name="ai-vision"
+          options={{
+            title: 'Vision Studio',
+            headerBackTitle: 'Back',
+          }}
+        />
+      </Stack>
+    </>
   );
 }
-
-const styles =
-  StyleSheet.create({
-    loadingContainer: {
-      flex: 1,
-      alignItems: "center",
-      justifyContent:
-        "center",
-    },
-  });
