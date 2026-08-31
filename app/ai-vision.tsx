@@ -9,9 +9,11 @@ import {
   Image,
   ActivityIndicator,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useAI } from '../hooks/useAI';
 
 export default function AIVisionScreen() {
+  const { t } = useTranslation();
   const [imageUrl, setImageUrl] = useState<string>('');
   const [prompt, setPrompt] = useState<string>('');
   const { messages, loading, error, sendMessage } = useAI();
@@ -29,21 +31,21 @@ export default function AIVisionScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>AI Vision Assistant</Text>
+      <Text style={styles.title}>{t('vision.title', 'AI Vision Studio')}</Text>
 
       <ScrollView style={styles.scrollArea}>
-        {/* Image Input Section */}
-        <Text style={styles.sectionLabel}>Image URL or Source</Text>
+        <Text style={styles.sectionLabel}>
+          {t('vision.image_url_label', 'Image URL or Source')}
+        </Text>
         <TextInput
           style={styles.input}
-          placeholder="Paste image URL here..."
+          placeholder={t('vision.url_placeholder', 'Paste image URL here...')}
           placeholderTextColor="#666"
           value={imageUrl}
           onChangeText={setImageUrl}
           autoCapitalize="none"
         />
 
-        {/* Image Preview */}
         {imageUrl.trim() ? (
           <View style={styles.previewContainer}>
             <Image
@@ -54,8 +56,9 @@ export default function AIVisionScreen() {
           </View>
         ) : null}
 
-        {/* Conversation / Results History */}
-        <Text style={styles.sectionLabel}>Analysis Results</Text>
+        <Text style={styles.sectionLabel}>
+          {t('vision.results_label', 'Analysis Results')}
+        </Text>
         {messages.map((msg, index) => (
           <View
             key={index}
@@ -65,7 +68,9 @@ export default function AIVisionScreen() {
             ]}
           >
             <Text style={styles.roleLabel}>
-              {msg.role === 'user' ? 'You' : 'Vision AI'}
+              {msg.role === 'user'
+                ? t('chat.you', 'You')
+                : t('vision.ai_label', 'Vision AI')}
             </Text>
             <Text style={styles.messageText}>{msg.content}</Text>
           </View>
@@ -74,11 +79,10 @@ export default function AIVisionScreen() {
         {error && <Text style={styles.errorText}>{error}</Text>}
       </ScrollView>
 
-      {/* Input Prompt Section */}
       <View style={styles.inputContainer}>
         <TextInput
           style={styles.promptInput}
-          placeholder="Describe or ask about the image..."
+          placeholder={t('vision.prompt_placeholder', 'Describe or ask about the image...')}
           placeholderTextColor="#666"
           value={prompt}
           onChangeText={setPrompt}
@@ -92,7 +96,9 @@ export default function AIVisionScreen() {
           {loading ? (
             <ActivityIndicator color="#fff" size="small" />
           ) : (
-            <Text style={styles.sendButtonText}>Analyze</Text>
+            <Text style={styles.sendButtonText}>
+              {t('common.analyze', 'Analyze')}
+            </Text>
           )}
         </TouchableOpacity>
       </View>
@@ -207,4 +213,3 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
 });
-
