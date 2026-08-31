@@ -10,17 +10,20 @@ import {
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useAI } from '../hooks/useAI';
+import { useSupabaseRealtime } from '../hooks/useSupabaseRealtime';
 import { CodeEditor } from '../components/developer/CodeEditor';
 import { DiffViewer } from '../components/developer/DiffViewer';
 import { FileTree, FileItem } from '../components/developer/FileTree';
+import { TerminalView, TerminalLog } from '../components/developer/TerminalView';
 
 export default function AICodeScreen() {
   const { t } = useTranslation();
   const [prompt, setPrompt] = useState<string>('');
   const [activeFilePath, setActiveFilePath] = useState<string>('src/App.tsx');
-  
-  // Workspace mock files (Integrated with Supabase Project Tool)
-  const [workspaceFiles] = useState<FileItem[]>([
+  const [projectId] = useState<string>('default-project-id');
+
+  // Workspace mock files
+  const [workspaceFiles, setWorkspaceFiles] = useState<FileItem[]>([
     { path: 'src/App.tsx', name: 'App.tsx' },
     { path: 'src/components/Header.tsx', name: 'Header.tsx' },
     { path: 'src/services/api.ts', name: 'api.ts' },
@@ -33,16 +36,56 @@ export default function AICodeScreen() {
   const [showDiff, setShowDiff] = useState<boolean>(false);
   const [modifiedCode, setModifiedCode] = useState<string>('');
 
-  const { loading, error, sendMessage } = useAI();
+  // Terminal logs state
+  const [logs, setLogs] = useState<TerminalLog[]>([
+    {
+      id: '1',
+      type: 'info',
+      message: 'Developer Agent workspace initialized.',
+      timestamp: new Date().toLocaleTimeString(),
+    },
+  ]);
+
+  const { loading, error, sendMessage } = useAI({ projectId });
+
+  const addLog = (message: string, type: 'info' | 'success' | 'warning' | 'error' = 'info') => {
+    setLogs((prev) => [
+      ...prev,
+      {
+        id: Date.now().toString(),
+        type,
+        message,
+        timestamp: new Date().toLocaleTimeString(),
+      },
+    ]);
+  };
+
+  // Attach Realtime listener to sync changes live
+  useSupabaseRealtime({
+    projectId,
+    onFileUpdated: (payload) => {
+      addLog(`Realtime update received for: ${payload.path}`, 'warning');
+      if (payload.path === activeFilePath) {
+        setCode(payload.content);
+      }
+    },
+    onFileInserted: (payload) => {
+      addLog(`New file detected: ${payload.path}`, 'info');
+      setWorkspaceFiles((prev) => [...prev, { path: payload.path, name: payload.path }]);
+    },
+  });
 
   const handleSelectFile = (path: string) => {
     setActiveFilePath(path);
     setCode(`// Content loaded from ${path}\n// Ready for AI modification...`);
     setShowDiff(false);
+    addLog(`Opened file: ${path}`, 'info');
   };
 
   const handleGenerateCode = async () => {
     if (!prompt.trim()) return;
+
+    addLog(`Sending request to Developer Agent...`, 'info');
 
     const fullPrompt = `Active File: ${activeFilePath}\n\`\`\`typescript\n${code}\n\`\`\`\nTask: ${prompt}`;
     const response = await sendMessage(fullPrompt);
@@ -50,7 +93,16 @@ export default function AICodeScreen() {
     if (response?.content) {
       setModifiedCode(response.content);
       setShowDiff(true);
+      addLog(`Code proposal generated successfully.`, 'success');
+    } else if (error) {
+      addLog(`Execution failed: ${error}`, 'error');
     }
+  };
+
+  const handleApplyChanges = () => {
+    setCode(modifiedCode);
+    setShowDiff(false);
+    addLog(`Applied AI changes to ${activeFilePath}`, 'success');
   };
 
   return (
@@ -84,10 +136,7 @@ export default function AICodeScreen() {
             <DiffViewer originalCode={code} modifiedCode={modifiedCode} />
             <TouchableOpacity
               style={styles.applyButton}
-              onPress={() => {
-                setCode(modifiedCode);
-                setShowDiff(false);
-              }}
+              onPress={handleApplyChanges}
             >
               <Text style={styles.applyButtonText}>
                 {t('code.apply_changes', 'Apply Changes')}
@@ -95,6 +144,9 @@ export default function AICodeScreen() {
             </TouchableOpacity>
           </View>
         )}
+
+        {/* Console / Terminal Output */}
+        <TerminalView logs={logs} />
 
         {error && <Text style={styles.errorText}>{error}</Text>}
       </ScrollView>
@@ -200,4 +252,3 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
 });
-
