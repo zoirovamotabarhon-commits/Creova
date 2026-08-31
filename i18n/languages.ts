@@ -1,6 +1,9 @@
 /**
  * CREOVA
  * Supported application languages.
+ *
+ * The language registry is the single source of truth
+ * for user-selectable application languages.
  */
 
 export interface LanguageOption {
@@ -134,6 +137,11 @@ export const LANGUAGES = [
     code: "sk",
     name: "Slovak",
     nativeName: "Slovenčina",
+  },
+  {
+    code: "sl",
+    name: "Slovenian",
+    nativeName: "Slovenščina",
   },
   {
     code: "hu",
@@ -272,4 +280,4 @@ export function getLanguage(
         language.code === code,
     ) ?? LANGUAGES[0]
   );
-      }
+    }
