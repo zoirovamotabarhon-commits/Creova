@@ -1,49 +1,49 @@
-jest.mock("../../services/payments/subscriptions", () => ({
-  getSubscription: jest.fn(),
-}));
-
-jest.mock("../../services/payments/entitlements", () => ({
-  getEntitlements: jest.fn(() => ({
-    premium: false,
-  })),
-}));
-
-import {
-  clearSubscription,
-  getCurrentSubscription,
-  getSubscriptionState,
-  isCurrentUserPremium,
-} from "../../store/subscriptionStore";
+import { useSubscriptionStore } from "../../store/subscriptionStore";
 
 describe("subscriptionStore", () => {
   beforeEach(() => {
-    clearSubscription();
+    useSubscriptionStore.setState({
+      currentSubscription: null,
+      loading: false,
+      error: null,
+    });
+
     jest.clearAllMocks();
   });
 
   it("returns the initial subscription state", () => {
-    const state = getSubscriptionState();
+    const state = useSubscriptionStore.getState();
 
-    expect(state.subscription).toBeNull();
+    expect(state).toBeDefined();
+    expect(state.currentSubscription).toBeNull();
     expect(state.loading).toBe(false);
     expect(state.error).toBeNull();
   });
 
   it("clears the subscription state", () => {
-    const state = getSubscriptionState();
+    const { clearSubscription } =
+      useSubscriptionStore.getState();
 
-    expect(state).toEqual({
-      subscription: null,
-      loading: false,
-      error: null,
-    });
+    clearSubscription();
+
+    const state = useSubscriptionStore.getState();
+
+    expect(state.currentSubscription).toBeNull();
+    expect(state.loading).toBe(false);
+    expect(state.error).toBeNull();
   });
 
   it("returns null when there is no current subscription", () => {
+    const { getCurrentSubscription } =
+      useSubscriptionStore.getState();
+
     expect(getCurrentSubscription()).toBeNull();
   });
 
   it("returns false when the current user is not premium", () => {
+    const { isCurrentUserPremium } =
+      useSubscriptionStore.getState();
+
     expect(isCurrentUserPremium()).toBe(false);
   });
 });
