@@ -1,21 +1,16 @@
 import {
-  describe,
-  expect,
-  it,
-  vi,
-} from "vitest";
-
-import {
-  getSubscriptionState,
   clearSubscription,
   getCurrentSubscription,
+  getSubscriptionState,
   isCurrentUserPremium,
 } from "../../store/subscriptionStore";
 
 describe("subscriptionStore", () => {
-  it("returns the initial subscription state", () => {
+  beforeEach(() => {
     clearSubscription();
+  });
 
+  it("returns the initial subscription state", () => {
     const state = getSubscriptionState();
 
     expect(state.subscription).toBeNull();
@@ -24,8 +19,6 @@ describe("subscriptionStore", () => {
   });
 
   it("clears the subscription state", () => {
-    clearSubscription();
-
     const state = getSubscriptionState();
 
     expect(state).toEqual({
@@ -36,14 +29,10 @@ describe("subscriptionStore", () => {
   });
 
   it("returns null when there is no current subscription", () => {
-    clearSubscription();
-
     expect(getCurrentSubscription()).toBeNull();
   });
 
   it("returns false when the current user is not premium", () => {
-    clearSubscription();
-
     expect(isCurrentUserPremium()).toBe(false);
   });
 });
