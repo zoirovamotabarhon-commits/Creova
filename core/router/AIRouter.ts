@@ -1,7 +1,7 @@
 import { AgentManager } from '../agents/AgentManager';
 import { AgentContext } from '../agents/AgentContext';
 import { IntentDetector, UserIntent } from './IntentDetector';
-import { AIProvider } from '../ai/AIProvider';
+import { AIResponse } from '../ai/AIProvider';
 
 export class AIRouter {
   private agentManager: AgentManager;
@@ -11,23 +11,25 @@ export class AIRouter {
   }
 
   /**
-   * Routes incoming user prompt to appropriate agent based on detected intent.
+   * Routes incoming user prompt to appropriate agent based on detected intent,
+   * then executes it and returns the AI response.
    */
-  public async routeRequest(
+  public async routeAndExecute(
     prompt: string,
-    context: AgentContext,
-    provider: AIProvider
-  ): Promise<string> {
+    context: AgentContext
+  ): Promise<AIResponse> {
     const intent: UserIntent = IntentDetector.detectIntent(prompt);
 
     let agentId: string;
 
     switch (intent) {
-      case 'VISUAL':
+      case 'vision':
         agentId = 'vision-agent';
         break;
-      case 'CODE':
-      case 'DEFAULT':
+      case 'code':
+      case 'chat':
+      case 'media':
+      case 'unknown':
       default:
         agentId = 'developer-agent';
         break;
@@ -39,6 +41,6 @@ export class AIRouter {
       throw new Error(`Agent with ID "${agentId}" was not found in registry.`);
     }
 
-    return await targetAgent.execute(prompt, context, provider);
+    return await targetAgent.process(prompt, context);
   }
 }
