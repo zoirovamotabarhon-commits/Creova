@@ -4,11 +4,15 @@ export const validateEmail = (email: string): boolean => {
   );
 };
 
+export const isValidEmail = validateEmail;
+
 export const validatePassword = (
   password: string
 ): boolean => {
   return password.length >= 8;
 };
+
+export const isValidPassword = validatePassword;
 
 export const validatePasswordMatch = (
   password: string,
