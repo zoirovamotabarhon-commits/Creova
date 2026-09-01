@@ -1,3 +1,13 @@
+jest.mock("../../services/payments/subscriptions", () => ({
+  getSubscription: jest.fn(),
+}));
+
+jest.mock("../../services/payments/entitlements", () => ({
+  getEntitlements: jest.fn(() => ({
+    premium: false,
+  })),
+}));
+
 import {
   clearSubscription,
   getCurrentSubscription,
@@ -8,6 +18,7 @@ import {
 describe("subscriptionStore", () => {
   beforeEach(() => {
     clearSubscription();
+    jest.clearAllMocks();
   });
 
   it("returns the initial subscription state", () => {
