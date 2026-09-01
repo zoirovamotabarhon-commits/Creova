@@ -8,52 +8,58 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { Audio, AVPlaybackStatus } from "expo-av";
+import {
+  createAudioPlayer,
+  setAudioModeAsync,
+  type AudioPlayer,
+  type AudioStatus,
+} from "expo-audio";
+import { useTranslation } from "react-i18next";
 
 import { generateMusic } from "../services/music";
 
 export default function AIMusicScreen() {
+  const { t } = useTranslation();
+
   const [prompt, setPrompt] = useState("");
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [playing, setPlaying] = useState(false);
 
-  const soundRef = useRef<Audio.Sound | null>(null);
+  const playerRef = useRef<AudioPlayer | null>(null);
 
-  const unloadSound = async () => {
-    const sound = soundRef.current;
-
-    if (!sound) {
-      return;
-    }
-
-    try {
-      await sound.unloadAsync();
-    } catch (error) {
-      console.warn("Audio unload error:", error);
-    } finally {
-      soundRef.current = null;
-      setPlaying(false);
-    }
-  };
+  const statusSubscriptionRef = useRef<{
+    remove: () => void;
+  } | null>(null);
 
   useEffect(() => {
+    void setAudioModeAsync({
+      playsInSilentMode: true,
+    });
+
     return () => {
-      void unloadSound();
+      statusSubscriptionRef.current?.remove();
+      statusSubscriptionRef.current = null;
+
+      playerRef.current?.remove();
+      playerRef.current = null;
     };
   }, []);
 
-  const handlePlaybackStatus = (
-    playbackStatus: AVPlaybackStatus
-  ) => {
-    if (!playbackStatus.isLoaded) {
-      setPlaying(false);
-      return;
-    }
+  const unloadSound = () => {
+    statusSubscriptionRef.current?.remove();
+    statusSubscriptionRef.current = null;
 
-    setPlaying(playbackStatus.isPlaying);
+    playerRef.current?.remove();
+    playerRef.current = null;
 
-    if (playbackStatus.didJustFinish) {
+    setPlaying(false);
+  };
+
+  const handlePlaybackStatus = (status: AudioStatus) => {
+    setPlaying(status.playing);
+
+    if (status.didJustFinish) {
       setPlaying(false);
     }
   };
@@ -63,8 +69,8 @@ export default function AIMusicScreen() {
 
     if (!cleanPrompt) {
       Alert.alert(
-        "CREOVA",
-        "Мусиқа учун prompt киритинг."
+        t("common.appName"),
+        t("aiMusic.errors.emptyPrompt")
       );
       return;
     }
@@ -76,16 +82,16 @@ export default function AIMusicScreen() {
     setLoading(true);
 
     try {
-      await unloadSound();
+      unloadSound();
       setAudioUrl(null);
 
       const result = await generateMusic(cleanPrompt);
 
       if (!result.success) {
         Alert.alert(
-          "AI Music",
+          t("aiMusic.title"),
           result.error ??
-            "Мусиқа яратишда хато юз берди."
+            t("aiMusic.errors.generationFailed")
         );
         return;
       }
@@ -94,8 +100,8 @@ export default function AIMusicScreen() {
 
       if (!url) {
         Alert.alert(
-          "CREOVA",
-          "Мусиқа аудио файли олинмади."
+          t("common.appName"),
+          t("aiMusic.errors.audioMissing")
         );
         return;
       }
@@ -103,81 +109,79 @@ export default function AIMusicScreen() {
       setAudioUrl(url);
 
       Alert.alert(
-        "CREOVA",
-        "Мусиқа тайёр бўлди."
+        t("common.appName"),
+        t("aiMusic.success.generated")
       );
     } catch (error) {
       console.error("AI Music error:", error);
 
       Alert.alert(
-        "Хатолик",
+        t("common.error"),
         error instanceof Error
           ? error.message
-          : "Мусиқа яратишда кутилмаган хато юз берди."
+          : t("aiMusic.errors.unexpected")
       );
     } finally {
       setLoading(false);
     }
   };
 
-  const handlePlayPause = async () => {
+  const handlePlayPause = () => {
     if (!audioUrl || loading) {
       return;
     }
 
     try {
-      if (!soundRef.current) {
-        const { sound } = await Audio.Sound.createAsync(
-          { uri: audioUrl },
-          {
-            shouldPlay: true,
-            progressUpdateIntervalMillis: 250,
-          },
-          handlePlaybackStatus
-        );
+      if (!playerRef.current) {
+        const player = createAudioPlayer(audioUrl);
 
-        soundRef.current = sound;
+        playerRef.current = player;
+
+        statusSubscriptionRef.current =
+          player.addListener(
+            "playbackStatusUpdate",
+            handlePlaybackStatus
+          );
+
+        player.play();
         return;
       }
 
-      const status =
-        await soundRef.current.getStatusAsync();
-
-      if (!status.isLoaded) {
-        await unloadSound();
-        return;
-      }
-
-      if (status.isPlaying) {
-        await soundRef.current.pauseAsync();
+      if (playerRef.current.playing) {
+        playerRef.current.pause();
       } else {
-        await soundRef.current.playAsync();
+        playerRef.current.play();
       }
     } catch (error) {
-      console.error("Audio playback error:", error);
+      console.error(
+        "Audio playback error:",
+        error
+      );
 
       setPlaying(false);
 
       Alert.alert(
-        "Audio xatosi",
+        t("common.error"),
         error instanceof Error
           ? error.message
-          : "Аудиони ишга туширишда хато юз берди."
+          : t("aiMusic.errors.playbackFailed")
       );
     }
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>🎵 AI Music</Text>
+      <Text style={styles.title}>
+        🎶 {t("aiMusic.title")}
+      </Text>
 
       <Text style={styles.subtitle}>
-        CREOVA AI орқали мусиқа яратинг
+        {t("aiMusic.subtitle")}
       </Text>
 
       <TextInput
         style={styles.input}
-        placeholder="Масалан: cinematic piano music"
+        placeholder={t("aiMusic.promptPlaceholder")}
         placeholderTextColor="#64748B"
         value={prompt}
         onChangeText={setPrompt}
@@ -200,7 +204,7 @@ export default function AIMusicScreen() {
           <ActivityIndicator color="#FFFFFF" />
         ) : (
           <Text style={styles.buttonText}>
-            Мусиқа яратиш
+            {t("aiMusic.generateButton")}
           </Text>
         )}
       </Pressable>
@@ -208,21 +212,21 @@ export default function AIMusicScreen() {
       {audioUrl && (
         <View style={styles.resultCard}>
           <Text style={styles.resultTitle}>
-            🎶 Мусиқа тайёр
+            🎶 {t("aiMusic.result.title")}
           </Text>
 
           <Text style={styles.resultText}>
-            Яратилган мусиқани эшитишингиз мумкин.
+            {t("aiMusic.result.description")}
           </Text>
 
           <Pressable
             style={styles.playButton}
-            onPress={() => {
-              void handlePlayPause();
-            }}
+            onPress={handlePlayPause}
           >
             <Text style={styles.playButtonText}>
-              {playing ? "⏸ Тўхтатиш" : "▶️ Эшитиш"}
+              {playing
+                ? `⏸ ${t("aiMusic.player.pause")}`
+                : `▶️ ${t("aiMusic.player.play")}`}
             </Text>
           </Pressable>
         </View>
@@ -306,17 +310,17 @@ const styles = StyleSheet.create({
   },
 
   playButton: {
-    height: 48,
-    marginTop: 16,
-    borderRadius: 10,
-    backgroundColor: "#2563EB",
+    height: 50,
+    marginTop: 18,
+    borderRadius: 12,
+    backgroundColor: "#16A34A",
     alignItems: "center",
     justifyContent: "center",
   },
 
   playButtonText: {
     color: "#FFFFFF",
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: "700",
   },
 });

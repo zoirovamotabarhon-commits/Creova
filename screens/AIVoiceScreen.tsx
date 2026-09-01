@@ -9,59 +9,61 @@ import {
   View,
 } from "react-native";
 import {
-  Audio,
-  AVPlaybackStatus,
-} from "expo-av";
+  createAudioPlayer,
+  setAudioModeAsync,
+  type AudioPlayer,
+  type AudioStatus,
+} from "expo-audio";
+import { useTranslation } from "react-i18next";
+
 import { generateVoice } from "../services/voice";
 
 export default function AIVoiceScreen() {
+  const { t } = useTranslation();
+
   const [text, setText] = useState("");
   const [audioUrl, setAudioUrl] =
     useState<string | null>(null);
-  const [loading, setLoading] =
-    useState(false);
-  const [playing, setPlaying] =
-    useState(false);
+  const [loading, setLoading] = useState(false);
+  const [playing, setPlaying] = useState(false);
 
-  const soundRef =
-    useRef<Audio.Sound | null>(null);
+  const playerRef =
+    useRef<AudioPlayer | null>(null);
+
+  const statusSubscriptionRef = useRef<{
+    remove: () => void;
+  } | null>(null);
 
   useEffect(() => {
+    void setAudioModeAsync({
+      playsInSilentMode: true,
+    });
+
     return () => {
-      void unloadSound();
+      statusSubscriptionRef.current?.remove();
+      statusSubscriptionRef.current = null;
+
+      playerRef.current?.remove();
+      playerRef.current = null;
     };
   }, []);
 
-  const unloadSound = async () => {
-    const sound = soundRef.current;
+  const unloadSound = () => {
+    statusSubscriptionRef.current?.remove();
+    statusSubscriptionRef.current = null;
 
-    if (!sound) {
-      return;
-    }
+    playerRef.current?.remove();
+    playerRef.current = null;
 
-    try {
-      await sound.unloadAsync();
-    } catch {
-      // Sound already unloaded.
-    } finally {
-      soundRef.current = null;
-      setPlaying(false);
-    }
+    setPlaying(false);
   };
 
   const handlePlaybackStatus = (
-    status: AVPlaybackStatus
+    status: AudioStatus
   ) => {
-    if (!status.isLoaded) {
-      setPlaying(false);
-      return;
-    }
+    setPlaying(status.playing);
 
-    setPlaying(status.isPlaying);
-
-    if (
-      status.didJustFinish
-    ) {
+    if (status.didJustFinish) {
       setPlaying(false);
     }
   };
@@ -71,115 +73,107 @@ export default function AIVoiceScreen() {
 
     if (!cleanText) {
       Alert.alert(
-        "CREOVA",
-        "Овоз учун матн киритинг."
+        t("common.appName"),
+        t("aiVoice.errors.emptyText")
       );
+      return;
+    }
+
+    if (loading) {
       return;
     }
 
     setLoading(true);
 
     try {
-      await unloadSound();
+      unloadSound();
       setAudioUrl(null);
 
       const result =
-        await generateVoice(
-          cleanText
-        );
+        await generateVoice(cleanText);
 
       if (!result.success) {
         Alert.alert(
-          "Voice generation failed",
+          t("aiVoice.title"),
           result.error ??
-            "Овоз яратишда хато юз берди."
+            t("aiVoice.errors.generationFailed")
         );
         return;
       }
 
-      if (
-        !result.audioUrl
-      ) {
+      const url = result.audioUrl?.trim();
+
+      if (!url) {
         Alert.alert(
-          "CREOVA",
-          "Аудио файли олинмади."
+          t("common.appName"),
+          t("aiVoice.errors.audioMissing")
         );
         return;
       }
 
-      setAudioUrl(
-        result.audioUrl
-      );
+      setAudioUrl(url);
 
       Alert.alert(
-        "CREOVA",
-        "Овоз тайёр бўлди."
+        t("common.appName"),
+        t("aiVoice.success.generated")
       );
     } catch (error) {
+      console.error(
+        "AI Voice error:",
+        error
+      );
+
       Alert.alert(
-        "Хатолик",
+        t("common.error"),
         error instanceof Error
           ? error.message
-          : "Овоз яратишда кутилмаган хато юз берди."
+          : t("aiVoice.errors.unexpected")
       );
     } finally {
       setLoading(false);
     }
   };
 
-  const handlePlayPause = async () => {
-    if (!audioUrl) {
+  const handlePlayPause = () => {
+    if (!audioUrl || loading) {
       return;
     }
 
     try {
-      if (!soundRef.current) {
-        const {
-          sound,
-        } =
-          await Audio.Sound.createAsync(
-            {
-              uri: audioUrl,
-            },
-            {
-              shouldPlay: true,
-              progressUpdateIntervalMillis:
-                250,
-            },
+      if (!playerRef.current) {
+        const player =
+          createAudioPlayer(audioUrl);
+
+        playerRef.current = player;
+
+        statusSubscriptionRef.current =
+          player.addListener(
+            "playbackStatusUpdate",
             handlePlaybackStatus
           );
 
-        soundRef.current =
-          sound;
-
+        player.play();
         return;
       }
 
-      const status =
-        await soundRef.current.getStatusAsync();
-
-      if (
-        !status.isLoaded
-      ) {
-        await unloadSound();
-        return;
-      }
-
-      if (
-        status.isPlaying
-      ) {
-        await soundRef.current.pauseAsync();
+      if (playerRef.current.playing) {
+        playerRef.current.pause();
       } else {
-        await soundRef.current.playAsync();
+        playerRef.current.play();
       }
     } catch (error) {
+      console.error(
+        "Audio playback error:",
+        error
+      );
+
       setPlaying(false);
 
       Alert.alert(
-        "Audio xatosi",
+        t("common.error"),
         error instanceof Error
           ? error.message
-          : "Аудиони ишга туширишда хато юз берди."
+          : t("aiVoice.errors.playbackFailed")
       );
     }
   };
@@ -187,16 +181,16 @@ export default function AIVoiceScreen() {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>
-        🎤 AI Voice
+        🎤 {t("aiVoice.title")}
       </Text>
 
       <Text style={styles.subtitle}>
-        CREOVA AI орқали матнни овозга айлантиринг
+        {t("aiVoice.subtitle")}
       </Text>
 
       <TextInput
         style={styles.input}
-        placeholder="Масалан: Салом, CREOVA!"
+        placeholder={t("aiVoice.textPlaceholder")}
         placeholderTextColor="#64748B"
         value={text}
         onChangeText={setText}
@@ -211,9 +205,9 @@ export default function AIVoiceScreen() {
           loading &&
             styles.buttonDisabled,
         ]}
-        onPress={
-          handleGenerate
-        }
+        onPress={() => {
+          void handleGenerate();
+        }}
         disabled={loading}
       >
         {loading ? (
@@ -221,52 +215,32 @@ export default function AIVoiceScreen() {
             color="#FFFFFF"
           />
         ) : (
-          <Text
-            style={
-              styles.buttonText
-            }
-          >
-            Овоз яратиш
+          <Text style={styles.buttonText}>
+            {t("aiVoice.generateButton")}
           </Text>
         )}
       </Pressable>
 
       {audioUrl && (
-        <View
-          style={styles.resultCard}
-        >
-          <Text
-            style={
-              styles.resultTitle
-            }
-          >
-            🔊 Овоз тайёр
+        <View style={styles.resultCard}>
+          <Text style={styles.resultTitle}>
+            🔊 {t("aiVoice.result.title")}
           </Text>
 
-          <Text
-            style={
-              styles.resultText
-            }
-          >
-            Матн овозга муваффақиятли айлантирилди.
+          <Text style={styles.resultText}>
+            {t("aiVoice.result.description")}
           </Text>
 
           <Pressable
-            style={
-              styles.playButton
-            }
-            onPress={
-              handlePlayPause
-            }
+            style={styles.playButton}
+            onPress={handlePlayPause}
           >
             <Text
-              style={
-                styles.playButtonText
-              }
+              style={styles.playButtonText}
             >
               {playing
-                ? "⏸ Тўхтатиш"
-                : "▶️ Эшитиш"}
+                ? `⏸ ${t("aiVoice.player.pause")}`
+                : `▶️ ${t("aiVoice.player.play")}`}
             </Text>
           </Pressable>
         </View>

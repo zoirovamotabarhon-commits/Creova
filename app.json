@@ -11,7 +11,8 @@
     ],
     "plugins": [
       "expo-router",
-      "expo-asset"
+      "expo-asset",
+      "expo-audio"
     ],
     "android": {
       "package": "com.creova.app"
