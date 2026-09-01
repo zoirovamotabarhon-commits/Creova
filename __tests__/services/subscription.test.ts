@@ -1,23 +1,49 @@
-import { useSubscriptionStore } from '../../store/subscriptionStore';
+import {
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 
-describe('Subscription Service', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
+import {
+  getSubscriptionState,
+  clearSubscription,
+  getCurrentSubscription,
+  isCurrentUserPremium,
+} from "../../store/subscriptionStore";
+
+describe("subscriptionStore", () => {
+  it("returns the initial subscription state", () => {
+    clearSubscription();
+
+    const state = getSubscriptionState();
+
+    expect(state.subscription).toBeNull();
+    expect(state.loading).toBe(false);
+    expect(state.error).toBeNull();
   });
 
-  it('should initialize with default subscription values', () => {
-    const state = useSubscriptionStore.getState();
+  it("clears the subscription state", () => {
+    clearSubscription();
 
-    expect(state).toBeDefined();
+    const state = getSubscriptionState();
+
+    expect(state).toEqual({
+      subscription: null,
+      loading: false,
+      error: null,
+    });
   });
 
-  it('should correctly handle entitlement status checks', () => {
-    const state = useSubscriptionStore.getState();
+  it("returns null when there is no current subscription", () => {
+    clearSubscription();
 
-    const isEntitled =
-      state.subscription?.status === 'active' ||
-      state.subscription?.status === 'trialing';
+    expect(getCurrentSubscription()).toBeNull();
+  });
 
-    expect(isEntitled).toBe(true);
+  it("returns false when the current user is not premium", () => {
+    clearSubscription();
+
+    expect(isCurrentUserPremium()).toBe(false);
   });
 });
