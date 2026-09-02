@@ -2,9 +2,9 @@ name: CI Pipeline
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main ]
   pull_request:
-    branches: [ main, develop ]
+    branches: [ main ]
 
 jobs:
   test-and-lint:
@@ -18,15 +18,11 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
+          cache: 'npm'
 
       - name: Install dependencies
-        run: npm install --legacy-peer-deps
+        run: npm ci
 
       - name: Run unit tests
-        run: |
-          if npx jest --version > /dev/null 2>&1; then
-            npx jest --config jest/config.js --passWithNoTests
-          else
-            echo "Jest is not installed yet, skipping tests cleanly."
-          fi
+        run: npx jest
 
