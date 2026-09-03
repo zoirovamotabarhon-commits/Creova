@@ -1,5 +1,17 @@
 {
-  "common": { "appName": "CREOVA", "error": "Xəta", "success": "Uğurlu" },
+  "common": {
+    "appName": "CREOVA",
+    "error": "Xəta",
+    "success": "Uğurlu",
+    "generate": "Generate",
+    "analyze": "Analyze",
+    "apply": "Apply",
+    "cancel": "Cancel",
+    "save": "Save",
+    "loading": "Loading...",
+    "retry": "Retry",
+    "delete": "Delete"
+  },
   "aiVideo": {
     "title": "🎬 AI Video",
     "subtitle": "CREOVA AI ilə video yaradın",
@@ -29,18 +41,16 @@
     "subtitle": "CREOVA AI ilə mətni səsə çevirin",
     "textPlaceholder": "Məsələn: Salam, CREOVA!",
     "generateButton": "Səs yarat",
-    "emptyTextMessage": "Səs üçün mətn daxil edin.",
-    "generationFailedTitle": "Səs yaradıla bilmədi",
-    "generationFailedMessage": "Səs yaradılarkən xəta baş verdi.",
-    "noAudioMessage": "Audio fayl alınmadı.",
-    "readyMessage": "Səs hazırdır.",
-    "unexpectedError": "Səs yaradılarkən gözlənilməz xəta baş verdi.",
-    "resultTitle": "🔊 Səs hazırdır",
-    "resultText": "Mətn uğurla səsə çevrildi.",
-    "play": "▶️ Səsləndir",
-    "pause": "⏸ Fasilə",
-    "audioErrorTitle": "Audio xətası",
-    "audioErrorMessage": "Audio səsləndirilərkən xəta baş verdi."
+    "result": { "title": "🔊 Səs hazırdır", "description": "Mətn uğurla səsə çevrildi." },
+    "player": { "play": "▶️ Səsləndir", "pause": "⏸ Fasilə" },
+    "errors": {
+      "emptyText": "Səs üçün mətn daxil edin.",
+      "generationFailed": "Səs yaradılarkən xəta baş verdi.",
+      "audioMissing": "Audio fayl alınmadı.",
+      "unexpected": "Səs yaradılarkən gözlənilməz xəta baş verdi.",
+      "playbackFailed": "Audio səsləndirilərkən xəta baş verdi."
+    },
+    "success": { "generated": "Səs hazırdır." }
   },
   "profile": {
     "title": "Profil",
@@ -52,5 +62,68 @@
     "loadFailed": "Profil yüklənə bilmədi.",
     "updateFailed": "Profil yenilənə bilmədi.",
     "updateSuccess": "Profil uğurla yeniləndi."
+  },
+  "aiMusic": {
+    "title": "🎶 AI Musiqi",
+    "subtitle": "CREOVA AI ilə musiqi yaradın",
+    "promptPlaceholder": "Məsələn: Gün batımında futuristik şəhər",
+    "generateButton": "Musiqi yarat",
+    "result": { "title": "🎶 Musiqi hazırdır", "description": "Mətn uğurla musiqiyə çevrildi." },
+    "player": { "play": "▶️ Səsləndir", "pause": "⏸ Fasilə" },
+    "errors": {
+      "emptyPrompt": "Musiqi üçün təsvir daxil edin.",
+      "generationFailed": "Musiqi yaradılması uğursuz oldu.",
+      "audioMissing": "Audio fayl alınmadı.",
+      "unexpected": "Musiqi yaradılarkən gözlənilməz xəta baş verdi.",
+      "playbackFailed": "Audio səsləndirilərkən xəta baş verdi."
+    },
+    "success": { "generated": "Musiqi uğurla yaradıldı." }
+  },
+  "navigation": {
+    "home": "Ana səhifə",
+    "code_studio": "Kod Studiyası",
+    "vision_studio": "Görmə Studiyası",
+    "chat": "AI Söhbət",
+    "settings": "Tənzimləmələr"
+  },
+  "dashboard": {
+    "welcome": "Creova AI Platforması",
+    "subtitle": "Başlamaq üçün muxtar AI agent iş sahəsini seçin",
+    "code_title": "AI Kod Studiyası",
+    "code_desc": "Developer Agent ilə kodu yenidən qurun, sazlayın, yaradın və real vaxt fərqlərinə baxın.",
+    "vision_title": "AI Görmə Studiyası",
+    "vision_desc": "Ekran görüntülərini, dizayn maketlərini təhlil edin və UI-ni doğma komponentlərə çevirin.",
+    "chat_title": "AI Ümumi Köməkçi",
+    "chat_desc": "Ümumi düşüncə, fikir mübadiləsi və arxitektura müzakirəsi."
+  },
+  "code": {
+    "title": "AI Kod Studiyası",
+    "workspace_editor": "İş sahəsi redaktoru",
+    "proposed_changes": "Təklif olunan AI dəyişiklikləri",
+    "apply_changes": "Dəyişiklikləri tətbiq et",
+    "prompt_placeholder": "AI-dan kod yazmasını və ya yenidən qurmasını istəyin...",
+    "file_explorer": "Layihə Gəzgini",
+    "no_files": "İş sahəsində fayl tapılmadı",
+    "terminal_title": "İcra Konsolu",
+    "terminal_empty": "Konsol hazırdır. İcra qeydləri gözlənilir..."
+  },
+  "vision": {
+    "title": "AI Görmə Studiyası",
+    "image_url_label": "Şəkil URL-i və ya mənbəyi",
+    "url_placeholder": "Şəkil URL-ni buraya yapışdırın...",
+    "results_label": "Təhlil Nəticələri",
+    "ai_label": "Görmə AI",
+    "prompt_placeholder": "Şəkli təsvir edin və ya haqqında soruşun..."
+  },
+  "chat": {
+    "you": "Siz",
+    "ai": "Köməkçi",
+    "placeholder": "Mesajınızı yazın..."
+  },
+  "settings": {
+    "title": "Tənzimləmələr",
+    "language": "Dil",
+    "theme": "Tema",
+    "api_key": "Supabase və AI Konfiqurasiyası"
   }
 }
