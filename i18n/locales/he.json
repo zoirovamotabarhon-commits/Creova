@@ -1,46 +1,56 @@
 {
-  "common": { "appName": "CREOVA", "error": "שגיאה", "success": "הצלחה" },
+  "common": {
+    "appName": "CREOVA",
+    "error": "שגיאה",
+    "success": "הצלחה",
+    "generate": "Generate",
+    "analyze": "Analyze",
+    "apply": "Apply",
+    "cancel": "Cancel",
+    "save": "Save",
+    "loading": "Loading...",
+    "retry": "Retry",
+    "delete": "Delete"
+  },
   "aiVideo": {
     "title": "🎬 וידאו AI",
     "subtitle": "צרו סרטונים עם CREOVA AI",
     "promptPlaceholder": "לדוגמה: עיר עתידנית בשקיעה",
     "generateButton": "צור וידאו",
     "emptyPromptTitle": "CREOVA",
-    "emptyPromptMessage": "הזינו תיאור לוידאו.",
-    "statusTitle": "סטטוס וידאו",
+    "emptyPromptMessage": "נא להזין תיאור לסרטון.",
+    "statusTitle": "סטטוס הווידאו",
     "progressLabel": "התקדמות",
     "videoErrorTitle": "שגיאת וידאו",
-    "videoStatusError": "לא ניתן היה לקבל את סטטוס הוידאו.",
+    "videoStatusError": "אירעה שגיאה בעת קבלת סטטוס הווידאו.",
     "videoReadyTitle": "CREOVA",
-    "videoReadyMessage": "הוידאו מוכן.",
-    "videoReadyNoUrl": "הוידאו מוכן, אך כתובת ה-MP4 לא התקבלה.",
-    "videoFailedTitle": "יצירת הוידאו נכשלה",
-    "videoFailedStatus": "סטטוס וידאו: {{status}}",
+    "videoReadyMessage": "הווידאו שלך מוכן.",
+    "videoReadyNoUrl": "הווידאו מוכן, אך לא התקבלה כתובת MP4.",
+    "videoFailedTitle": "יצירת הווידאו נכשלה",
+    "videoFailedStatus": "סטטוס הווידאו: {{status}}",
     "videoTooLongTitle": "CREOVA",
-    "videoTooLongMessage": "יצירת הוידאו אורכת זמן רב. אנא בדקו שוב מאוחר יותר.",
-    "videoCheckError": "שגיאה בבדיקת סטטוס הוידאו.",
-    "generationFailed": "יצירת הוידאו נכשלה.",
-    "unexpectedError": "אירעה שגיאה לא צפויה במהלך יצירת הוידאו.",
-    "noUrlYet": "כתובת ה-MP4 לא התקבלה.",
+    "videoTooLongMessage": "יצירת הווידאו אורכת זמן רב מדי. נסו שוב מאוחר יותר.",
+    "videoCheckError": "אירעה שגיאה בעת בדיקת סטטוס הווידאו.",
+    "generationFailed": "יצירת הווידאו נכשלה.",
+    "unexpectedError": "אירעה שגיאה לא צפויה במהלך יצירת הווידאו.",
+    "noUrlYet": "עדיין לא התקבלה כתובת MP4.",
     "idLabel": "מזהה: {{id}}"
   },
   "aiVoice": {
     "title": "🎤 קול AI",
-    "subtitle": "הפכו טקסט לדיבור עם CREOVA AI",
+    "subtitle": "המירו טקסט לדיבור עם CREOVA AI",
     "textPlaceholder": "לדוגמה: שלום, CREOVA!",
     "generateButton": "צור קול",
-    "emptyTextMessage": "הזינו טקסט לקול.",
-    "generationFailedTitle": "יצירת הקול נכשלה",
-    "generationFailedMessage": "אירעה שגיאה במהלך יצירת הקול.",
-    "noAudioMessage": "קובץ השמע לא התקבל.",
-    "readyMessage": "הקול מוכן.",
-    "unexpectedError": "אירעה שגיאה לא צפויה במהלך יצירת הקול.",
-    "resultTitle": "🔊 הקול מוכן",
-    "resultText": "הטקסט הומר בהצלחה לדיבור.",
-    "play": "▶️ נגן",
-    "pause": "⏸ השהה",
-    "audioErrorTitle": "שגיאת שמע",
-    "audioErrorMessage": "אירעה שגיאה בעת ניגון השמע."
+    "result": { "title": "🔊 הקול מוכן", "description": "הטקסט שלך הומר בהצלחה לדיבור." },
+    "player": { "play": "▶️ נגן", "pause": "⏸ השהה" },
+    "errors": {
+      "emptyText": "נא להזין טקסט עבור הקול.",
+      "generationFailed": "אירעה שגיאה במהלך יצירת הקול.",
+      "audioMissing": "קובץ השמע לא התקבל.",
+      "unexpected": "אירעה שגיאה לא צפויה במהלך יצירת הקול.",
+      "playbackFailed": "אירעה שגיאה בעת ניגון השמע."
+    },
+    "success": { "generated": "הקול נוצר בהצלחה." }
   },
   "profile": {
     "title": "פרופיל",
@@ -52,5 +62,68 @@
     "loadFailed": "טעינת הפרופיל נכשלה.",
     "updateFailed": "עדכון הפרופיל נכשל.",
     "updateSuccess": "הפרופיל עודכן בהצלחה."
+  },
+  "aiMusic": {
+    "title": "🎶 מוזיקת AI",
+    "subtitle": "צרו מוזיקה עם CREOVA AI",
+    "promptPlaceholder": "לדוגמה: עיר עתידנית בשקיעה",
+    "generateButton": "צור מוזיקה",
+    "result": { "title": "🎶 המוזיקה מוכנה", "description": "הטקסט שלך הומר בהצלחה למוזיקה." },
+    "player": { "play": "▶️ נגן", "pause": "⏸ השהה" },
+    "errors": {
+      "emptyPrompt": "נא להזין תיאור למוזיקה.",
+      "generationFailed": "יצירת המוזיקה נכשלה.",
+      "audioMissing": "קובץ השמע לא התקבל.",
+      "unexpected": "אירעה שגיאה לא צפויה במהלך יצירת המוזיקה.",
+      "playbackFailed": "אירעה שגיאה בעת ניגון השמע."
+    },
+    "success": { "generated": "המוזיקה נוצרה בהצלחה." }
+  },
+  "navigation": {
+    "home": "בית",
+    "code_studio": "סטודיו קוד",
+    "vision_studio": "סטודיו חזון",
+    "chat": "צ'אט AI",
+    "settings": "הגדרות"
+  },
+  "dashboard": {
+    "welcome": "פלטפורמת Creova AI",
+    "subtitle": "בחרו סביבת עבודה של סוכן AI אוטונומי כדי להתחיל",
+    "code_title": "סטודיו קוד AI",
+    "code_desc": "בצעו ריפקטורינג, איתור באגים, יצירת קוד וצפו בהבדלים בזמן אמת עם Developer Agent.",
+    "vision_title": "סטודיו חזון AI",
+    "vision_desc": "נתחו צילומי מסך, דגמי עיצוב והמירו את ה-UI לרכיבים ילידיים.",
+    "chat_title": "עוזר כללי AI",
+    "chat_desc": "חשיבה כללית, שיתוף רעיונות ודיון בארכיטקטורה."
+  },
+  "code": {
+    "title": "סטודיו קוד AI",
+    "workspace_editor": "עורך סביבת עבודה",
+    "proposed_changes": "שינויים מוצעים ע\"י AI",
+    "apply_changes": "החל שינויים",
+    "prompt_placeholder": "בקשו מה-AI לכתוב או לבצע ריפקטורינג לקוד...",
+    "file_explorer": "סייר הפרויקט",
+    "no_files": "לא נמצאו קבצים בסביבת העבודה",
+    "terminal_title": "קונסולת ביצוע",
+    "terminal_empty": "הקונסולה מוכנה. ממתין ליומני ביצוע..."
+  },
+  "vision": {
+    "title": "סטודיו חזון AI",
+    "image_url_label": "כתובת URL של תמונה או מקור",
+    "url_placeholder": "הדביקו כאן את כתובת ה-URL של התמונה...",
+    "results_label": "תוצאות ניתוח",
+    "ai_label": "AI חזון",
+    "prompt_placeholder": "תארו או שאלו על התמונה..."
+  },
+  "chat": {
+    "you": "אתה",
+    "ai": "עוזר",
+    "placeholder": "הקלד את ההודעה שלך..."
+  },
+  "settings": {
+    "title": "הגדרות",
+    "language": "שפה",
+    "theme": "ערכת נושא",
+    "api_key": "תצורת Supabase ו-AI"
   }
-}
+  }
