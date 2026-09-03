@@ -1,46 +1,56 @@
 {
-  "common": { "appName": "CREOVA", "error": "خطا", "success": "موفقیت" },
+  "common": {
+    "appName": "CREOVA",
+    "error": "خطا",
+    "success": "موفقیت",
+    "generate": "Generate",
+    "analyze": "Analyze",
+    "apply": "Apply",
+    "cancel": "Cancel",
+    "save": "Save",
+    "loading": "Loading...",
+    "retry": "Retry",
+    "delete": "Delete"
+  },
   "aiVideo": {
     "title": "🎬 ویدیوی هوش مصنوعی",
     "subtitle": "با CREOVA AI ویدیو بسازید",
     "promptPlaceholder": "مثال: شهری آینده‌نگر در غروب آفتاب",
-    "generateButton": "ساخت ویدیو",
+    "generateButton": "تولید ویدیو",
     "emptyPromptTitle": "CREOVA",
-    "emptyPromptMessage": "توضیحی برای ویدیو وارد کنید.",
+    "emptyPromptMessage": "لطفاً توضیحی برای ویدیو وارد کنید.",
     "statusTitle": "وضعیت ویدیو",
     "progressLabel": "پیشرفت",
     "videoErrorTitle": "خطای ویدیو",
-    "videoStatusError": "دریافت وضعیت ویدیو ناموفق بود.",
+    "videoStatusError": "هنگام دریافت وضعیت ویدیو خطایی رخ داد.",
     "videoReadyTitle": "CREOVA",
-    "videoReadyMessage": "ویدیو آماده است.",
-    "videoReadyNoUrl": "ویدیو آماده است، اما لینک MP4 دریافت نشد.",
-    "videoFailedTitle": "ساخت ویدیو ناموفق بود",
+    "videoReadyMessage": "ویدیوی شما آماده است.",
+    "videoReadyNoUrl": "ویدیو آماده است، اما آدرس MP4 دریافت نشد.",
+    "videoFailedTitle": "تولید ویدیو ناموفق بود",
     "videoFailedStatus": "وضعیت ویدیو: {{status}}",
     "videoTooLongTitle": "CREOVA",
-    "videoTooLongMessage": "ساخت ویدیو زمان زیادی می‌برد. لطفاً بعداً بررسی کنید.",
-    "videoCheckError": "خطا در بررسی وضعیت ویدیو.",
-    "generationFailed": "ساخت ویدیو ناموفق بود.",
-    "unexpectedError": "خطای غیرمنتظره‌ای هنگام ساخت ویدیو رخ داد.",
-    "noUrlYet": "لینک MP4 دریافت نشد.",
+    "videoTooLongMessage": "تولید ویدیو زمان زیادی می‌برد. لطفاً بعداً دوباره بررسی کنید.",
+    "videoCheckError": "هنگام بررسی وضعیت ویدیو خطایی رخ داد.",
+    "generationFailed": "تولید ویدیو ناموفق بود.",
+    "unexpectedError": "هنگام تولید ویدیو خطای غیرمنتظره‌ای رخ داد.",
+    "noUrlYet": "هنوز آدرس MP4 دریافت نشده است.",
     "idLabel": "شناسه: {{id}}"
   },
   "aiVoice": {
     "title": "🎤 صدای هوش مصنوعی",
-    "subtitle": "با CREOVA AI متن را به گفتار تبدیل کنید",
+    "subtitle": "متن را با CREOVA AI به گفتار تبدیل کنید",
     "textPlaceholder": "مثال: سلام، CREOVA!",
-    "generateButton": "ساخت صدا",
-    "emptyTextMessage": "متنی برای صدا وارد کنید.",
-    "generationFailedTitle": "ساخت صدا ناموفق بود",
-    "generationFailedMessage": "خطایی هنگام ساخت صدا رخ داد.",
-    "noAudioMessage": "فایل صوتی دریافت نشد.",
-    "readyMessage": "صدا آماده است.",
-    "unexpectedError": "خطای غیرمنتظره‌ای هنگام ساخت صدا رخ داد.",
-    "resultTitle": "🔊 صدا آماده است",
-    "resultText": "متن با موفقیت به گفتار تبدیل شد.",
-    "play": "▶️ پخش",
-    "pause": "⏸ توقف",
-    "audioErrorTitle": "خطای صدا",
-    "audioErrorMessage": "خطایی هنگام پخش صدا رخ داد."
+    "generateButton": "تولید صدا",
+    "result": { "title": "🔊 صدا آماده است", "description": "متن شما با موفقیت به گفتار تبدیل شد." },
+    "player": { "play": "▶️ پخش", "pause": "⏸ توقف موقت" },
+    "errors": {
+      "emptyText": "لطفاً متنی برای صدا وارد کنید.",
+      "generationFailed": "هنگام تولید صدا خطایی رخ داد.",
+      "audioMissing": "فایل صوتی دریافت نشد.",
+      "unexpected": "هنگام تولید صدا خطای غیرمنتظره‌ای رخ داد.",
+      "playbackFailed": "هنگام پخش صدا خطایی رخ داد."
+    },
+    "success": { "generated": "صدا با موفقیت تولید شد." }
   },
   "profile": {
     "title": "پروفایل",
@@ -52,5 +62,68 @@
     "loadFailed": "بارگذاری پروفایل ناموفق بود.",
     "updateFailed": "به‌روزرسانی پروفایل ناموفق بود.",
     "updateSuccess": "پروفایل با موفقیت به‌روزرسانی شد."
+  },
+  "aiMusic": {
+    "title": "🎶 موسیقی هوش مصنوعی",
+    "subtitle": "با CREOVA AI موسیقی بسازید",
+    "promptPlaceholder": "مثال: شهری آینده‌نگر در غروب آفتاب",
+    "generateButton": "تولید موسیقی",
+    "result": { "title": "🎶 موسیقی آماده است", "description": "متن شما با موفقیت به موسیقی تبدیل شد." },
+    "player": { "play": "▶️ پخش", "pause": "⏸ توقف موقت" },
+    "errors": {
+      "emptyPrompt": "لطفاً توضیحی برای موسیقی وارد کنید.",
+      "generationFailed": "تولید موسیقی ناموفق بود.",
+      "audioMissing": "فایل صوتی دریافت نشد.",
+      "unexpected": "هنگام تولید موسیقی خطای غیرمنتظره‌ای رخ داد.",
+      "playbackFailed": "هنگام پخش صدا خطایی رخ داد."
+    },
+    "success": { "generated": "موسیقی با موفقیت تولید شد." }
+  },
+  "navigation": {
+    "home": "خانه",
+    "code_studio": "استودیو کد",
+    "vision_studio": "استودیو بینایی",
+    "chat": "گفتگوی هوش مصنوعی",
+    "settings": "تنظیمات"
+  },
+  "dashboard": {
+    "welcome": "پلتفرم هوش مصنوعی Creova",
+    "subtitle": "برای شروع یک فضای کاری عامل هوش مصنوعی خودمختار انتخاب کنید",
+    "code_title": "استودیو کد هوش مصنوعی",
+    "code_desc": "با Developer Agent کد را بازسازی، اشکال‌زدایی و تولید کنید و تفاوت‌ها را در زمان واقعی مشاهده کنید.",
+    "vision_title": "استودیو بینایی هوش مصنوعی",
+    "vision_desc": "تصاویر صفحه، طرح‌های ماکت را تحلیل کنید و رابط کاربری را به اجزای بومی تبدیل کنید.",
+    "chat_title": "دستیار عمومی هوش مصنوعی",
+    "chat_desc": "استدلال عمومی، تبادل نظر و بحث معماری."
+  },
+  "code": {
+    "title": "استودیو کد هوش مصنوعی",
+    "workspace_editor": "ویرایشگر فضای کاری",
+    "proposed_changes": "تغییرات پیشنهادی هوش مصنوعی",
+    "apply_changes": "اعمال تغییرات",
+    "prompt_placeholder": "از هوش مصنوعی بخواهید کد بنویسد یا بازسازی کند...",
+    "file_explorer": "کاوشگر پروژه",
+    "no_files": "هیچ فایلی در فضای کاری یافت نشد",
+    "terminal_title": "کنسول اجرا",
+    "terminal_empty": "کنسول آماده است. در انتظار گزارش‌های اجرا..."
+  },
+  "vision": {
+    "title": "استودیو بینایی هوش مصنوعی",
+    "image_url_label": "آدرس یا منبع تصویر",
+    "url_placeholder": "آدرس تصویر را اینجا جای‌گذاری کنید...",
+    "results_label": "نتایج تحلیل",
+    "ai_label": "هوش مصنوعی بینایی",
+    "prompt_placeholder": "تصویر را توصیف کنید یا درباره آن سؤال بپرسید..."
+  },
+  "chat": {
+    "you": "شما",
+    "ai": "دستیار",
+    "placeholder": "پیام خود را تایپ کنید..."
+  },
+  "settings": {
+    "title": "تنظیمات",
+    "language": "زبان",
+    "theme": "پوسته",
+    "api_key": "پیکربندی Supabase و هوش مصنوعی"
   }
 }
