@@ -1,5 +1,6 @@
 {
   "common": {
+    "appName": "CREOVA",
     "generate": "Generate",
     "analyze": "Analyze",
     "apply": "Apply",
@@ -57,5 +58,72 @@
     "language": "Language",
     "theme": "Theme",
     "api_key": "Supabase & AI Configuration"
+  },
+  "aiVideo": {
+    "title": "🎬 AI Video",
+    "subtitle": "Generate video with CREOVA AI",
+    "promptPlaceholder": "e.g. A futuristic city at sunset",
+    "generateButton": "Generate Video",
+    "emptyPromptTitle": "CREOVA",
+    "emptyPromptMessage": "Please enter a prompt for the video.",
+    "statusTitle": "Video status",
+    "progressLabel": "Progress",
+    "videoErrorTitle": "Video error",
+    "videoStatusError": "An error occurred while fetching video status.",
+    "videoReadyTitle": "CREOVA",
+    "videoReadyMessage": "Your video is ready.",
+    "videoReadyNoUrl": "Video is ready, but no MP4 URL was received.",
+    "videoFailedTitle": "Video generation failed",
+    "videoFailedStatus": "Video status: {{status}}",
+    "videoTooLongTitle": "CREOVA",
+    "videoTooLongMessage": "Video generation is taking too long. Please check again later.",
+    "videoCheckError": "An error occurred while checking video status.",
+    "generationFailed": "Video generation failed.",
+    "unexpectedError": "An unexpected error occurred while generating the video.",
+    "noUrlYet": "No MP4 URL received yet.",
+    "idLabel": "ID: {{id}}"
+  },
+  "aiVoice": {
+    "title": "🎤 AI Voice",
+    "subtitle": "Convert text to speech with CREOVA AI",
+    "textPlaceholder": "e.g. Hello, CREOVA!",
+    "generateButton": "Generate Voice",
+    "result": { "title": "🔊 Voice Ready", "description": "Your text was successfully converted into speech." },
+    "player": { "play": "▶️ Play", "pause": "⏸ Pause" },
+    "errors": {
+      "emptyText": "Please enter text for the voice.",
+      "generationFailed": "An error occurred while generating the voice.",
+      "audioMissing": "Audio file was not received.",
+      "unexpected": "An unexpected error occurred while generating the voice.",
+      "playbackFailed": "An error occurred while playing the audio."
+    },
+    "success": { "generated": "Voice generated successfully." }
+  },
+  "aiMusic": {
+    "title": "🎶 AI Music",
+    "subtitle": "Generate music with CREOVA AI",
+    "promptPlaceholder": "e.g. A futuristic city at sunset",
+    "generateButton": "Generate Music",
+    "result": { "title": "🎶 Music Ready", "description": "Your text was successfully turned into music." },
+    "player": { "play": "▶️ Play", "pause": "⏸ Pause" },
+    "errors": {
+      "emptyPrompt": "Please enter a prompt for the music.",
+      "generationFailed": "Music generation failed.",
+      "audioMissing": "Audio file was not received.",
+      "unexpected": "An unexpected error occurred while generating music.",
+      "playbackFailed": "An error occurred while playing the audio."
+    },
+    "success": { "generated": "Music generated successfully." }
+  },
+  "profile": {
+    "title": "Profile",
+    "nameLabel": "Name",
+    "namePlaceholder": "Enter your name",
+    "emailLabel": "Email",
+    "saveButton": "Save",
+    "nameRequired": "Name is required.",
+    "loadFailed": "Failed to load profile.",
+    "updateFailed": "Failed to update profile.",
+    "updateSuccess": "Profile updated successfully."
   }
 }
