@@ -1,46 +1,56 @@
 {
-  "common": { "appName": "CREOVA", "error": "Грешка", "success": "Успех" },
+  "common": {
+    "appName": "CREOVA",
+    "error": "Грешка",
+    "success": "Успех",
+    "generate": "Generate",
+    "analyze": "Analyze",
+    "apply": "Apply",
+    "cancel": "Cancel",
+    "save": "Save",
+    "loading": "Loading...",
+    "retry": "Retry",
+    "delete": "Delete"
+  },
   "aiVideo": {
     "title": "🎬 AI Видео",
-    "subtitle": "Създавайте видеа с CREOVA AI",
-    "promptPlaceholder": "Напр: Футуристичен град по залез слънце",
-    "generateButton": "Създай видео",
+    "subtitle": "Генерирайте видео с CREOVA AI",
+    "promptPlaceholder": "напр. Футуристичен град по залез",
+    "generateButton": "Генерирай видео",
     "emptyPromptTitle": "CREOVA",
-    "emptyPromptMessage": "Въведете описание за видеото.",
+    "emptyPromptMessage": "Моля, въведете описание за видеото.",
     "statusTitle": "Статус на видеото",
-    "progressLabel": "Прогрес",
+    "progressLabel": "Напредък",
     "videoErrorTitle": "Грешка във видеото",
-    "videoStatusError": "Неуспешно извличане на статуса на видеото.",
+    "videoStatusError": "Възникна грешка при извличане на статуса на видеото.",
     "videoReadyTitle": "CREOVA",
-    "videoReadyMessage": "Видеото е готово.",
-    "videoReadyNoUrl": "Видеото е готово, но MP4 URL не беше получен.",
-    "videoFailedTitle": "Създаването на видеото се провали",
+    "videoReadyMessage": "Вашето видео е готово.",
+    "videoReadyNoUrl": "Видеото е готово, но не беше получен MP4 URL.",
+    "videoFailedTitle": "Генерирането на видео се провали",
     "videoFailedStatus": "Статус на видеото: {{status}}",
     "videoTooLongTitle": "CREOVA",
-    "videoTooLongMessage": "Създаването на видеото отнема твърде много време. Моля, проверете по-късно.",
-    "videoCheckError": "Грешка при проверка на статуса на видеото.",
-    "generationFailed": "Създаването на видеото се провали.",
-    "unexpectedError": "Възникна неочаквана грешка при създаването на видеото.",
-    "noUrlYet": "MP4 URL не беше получен.",
+    "videoTooLongMessage": "Генерирането на видео отнема твърде много време. Моля, проверете отново по-късно.",
+    "videoCheckError": "Възникна грешка при проверка на статуса на видеото.",
+    "generationFailed": "Генерирането на видео се провали.",
+    "unexpectedError": "Възникна неочаквана грешка при генериране на видеото.",
+    "noUrlYet": "Все още не е получен MP4 URL.",
     "idLabel": "ID: {{id}}"
   },
   "aiVoice": {
     "title": "🎤 AI Глас",
-    "subtitle": "Превърнете текста в реч с CREOVA AI",
-    "textPlaceholder": "Напр: Здравей, CREOVA!",
-    "generateButton": "Създай глас",
-    "emptyTextMessage": "Въведете текст за гласа.",
-    "generationFailedTitle": "Създаването на гласа се провали",
-    "generationFailedMessage": "Възникна грешка при създаването на гласа.",
-    "noAudioMessage": "Аудио файлът не беше получен.",
-    "readyMessage": "Гласът е готов.",
-    "unexpectedError": "Възникна неочаквана грешка при създаването на гласа.",
-    "resultTitle": "🔊 Гласът е готов",
-    "resultText": "Текстът беше успешно преобразуван в реч.",
-    "play": "▶️ Пусни",
-    "pause": "⏸ Пауза",
-    "audioErrorTitle": "Аудио грешка",
-    "audioErrorMessage": "Възникна грешка при възпроизвеждане на аудиото."
+    "subtitle": "Превърнете текст в реч с CREOVA AI",
+    "textPlaceholder": "напр. Здравей, CREOVA!",
+    "generateButton": "Генерирай глас",
+    "result": { "title": "🔊 Гласът е готов", "description": "Текстът беше успешно превърнат в реч." },
+    "player": { "play": "▶️ Пусни", "pause": "⏸ Пауза" },
+    "errors": {
+      "emptyText": "Моля, въведете текст за гласа.",
+      "generationFailed": "Възникна грешка при генериране на гласа.",
+      "audioMissing": "Аудио файлът не беше получен.",
+      "unexpected": "Възникна неочаквана грешка при генериране на гласа.",
+      "playbackFailed": "Възникна грешка при възпроизвеждане на аудиото."
+    },
+    "success": { "generated": "Гласът е генериран успешно." }
   },
   "profile": {
     "title": "Профил",
@@ -49,8 +59,71 @@
     "emailLabel": "Имейл",
     "saveButton": "Запази",
     "nameRequired": "Името е задължително.",
-    "loadFailed": "Неуспешно зареждане на профила.",
-    "updateFailed": "Неуспешно актуализиране на профила.",
-    "updateSuccess": "Профилът е актуализиран успешно."
+    "loadFailed": "Зареждането на профила се провали.",
+    "updateFailed": "Актуализирането на профила се провали.",
+    "updateSuccess": "Профилът беше успешно актуализиран."
+  },
+  "aiMusic": {
+    "title": "🎶 AI Музика",
+    "subtitle": "Генерирайте музика с CREOVA AI",
+    "promptPlaceholder": "напр. Футуристичен град по залез",
+    "generateButton": "Генерирай музика",
+    "result": { "title": "🎶 Музиката е готова", "description": "Текстът беше успешно превърнат в музика." },
+    "player": { "play": "▶️ Пусни", "pause": "⏸ Пауза" },
+    "errors": {
+      "emptyPrompt": "Моля, въведете описание за музиката.",
+      "generationFailed": "Генерирането на музика се провали.",
+      "audioMissing": "Аудио файлът не беше получен.",
+      "unexpected": "Възникна неочаквана грешка при генериране на музика.",
+      "playbackFailed": "Възникна грешка при възпроизвеждане на аудиото."
+    },
+    "success": { "generated": "Музиката е генерирана успешно." }
+  },
+  "navigation": {
+    "home": "Начало",
+    "code_studio": "Код Студио",
+    "vision_studio": "Визуално Студио",
+    "chat": "AI Чат",
+    "settings": "Настройки"
+  },
+  "dashboard": {
+    "welcome": "Платформа Creova AI",
+    "subtitle": "Изберете работно пространство на автономен AI агент, за да започнете",
+    "code_title": "AI Код Студио",
+    "code_desc": "Рефакторирайте, отстранявайте грешки, генерирайте код и вижте разликите в реално време с Developer Agent.",
+    "vision_title": "AI Визуално Студио",
+    "vision_desc": "Анализирайте екранни снимки, дизайн макети и преобразувайте UI в нативни компоненти.",
+    "chat_title": "AI Общ Асистент",
+    "chat_desc": "Общо разсъждение, споделяне на идеи и обсъждане на архитектурата."
+  },
+  "code": {
+    "title": "AI Код Студио",
+    "workspace_editor": "Редактор на работното пространство",
+    "proposed_changes": "Предложени AI промени",
+    "apply_changes": "Приложи промените",
+    "prompt_placeholder": "Помолете AI да напише или рефакторира код...",
+    "file_explorer": "Проводник на проекта",
+    "no_files": "Няма намерени файлове в работното пространство",
+    "terminal_title": "Конзола за изпълнение",
+    "terminal_empty": "Конзолата е готова. Изчакване на логове от изпълнението..."
+  },
+  "vision": {
+    "title": "AI Визуално Студио",
+    "image_url_label": "URL на изображение или източник",
+    "url_placeholder": "Поставете URL на изображението тук...",
+    "results_label": "Резултати от анализа",
+    "ai_label": "Визуален AI",
+    "prompt_placeholder": "Опишете или попитайте за изображението..."
+  },
+  "chat": {
+    "you": "Вие",
+    "ai": "Асистент",
+    "placeholder": "Напишете съобщението си..."
+  },
+  "settings": {
+    "title": "Настройки",
+    "language": "Език",
+    "theme": "Тема",
+    "api_key": "Supabase и AI конфигурация"
   }
 }
