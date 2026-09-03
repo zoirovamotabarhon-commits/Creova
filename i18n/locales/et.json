@@ -1,46 +1,56 @@
 {
-  "common": { "appName": "CREOVA", "error": "Viga", "success": "Õnnestus" },
+  "common": {
+    "appName": "CREOVA",
+    "error": "Viga",
+    "success": "Õnnestus",
+    "generate": "Generate",
+    "analyze": "Analyze",
+    "apply": "Apply",
+    "cancel": "Cancel",
+    "save": "Save",
+    "loading": "Loading...",
+    "retry": "Retry",
+    "delete": "Delete"
+  },
   "aiVideo": {
-    "title": "🎬 Tehisintellekti video",
-    "subtitle": "Looge videoid CREOVA AI abil",
-    "promptPlaceholder": "Nt: Futuristlik linn päikeseloojangul",
-    "generateButton": "Loo video",
+    "title": "🎬 AI Video",
+    "subtitle": "Looge videoid CREOVA AI-ga",
+    "promptPlaceholder": "nt. Futuristlik linn päikeseloojangul",
+    "generateButton": "Genereeri video",
     "emptyPromptTitle": "CREOVA",
-    "emptyPromptMessage": "Sisestage video kirjeldus.",
+    "emptyPromptMessage": "Sisestage palun video jaoks kirjeldus.",
     "statusTitle": "Video olek",
     "progressLabel": "Edenemine",
     "videoErrorTitle": "Video viga",
-    "videoStatusError": "Video oleku toomine ebaõnnestus.",
+    "videoStatusError": "Video oleku toomisel tekkis viga.",
     "videoReadyTitle": "CREOVA",
-    "videoReadyMessage": "Video on valmis.",
+    "videoReadyMessage": "Teie video on valmis.",
     "videoReadyNoUrl": "Video on valmis, kuid MP4 URL-i ei saadud.",
-    "videoFailedTitle": "Video loomine ebaõnnestus",
+    "videoFailedTitle": "Video genereerimine ebaõnnestus",
     "videoFailedStatus": "Video olek: {{status}}",
     "videoTooLongTitle": "CREOVA",
-    "videoTooLongMessage": "Video loomine võtab liiga kaua aega. Proovige hiljem uuesti.",
-    "videoCheckError": "Viga video oleku kontrollimisel.",
-    "generationFailed": "Video loomine ebaõnnestus.",
+    "videoTooLongMessage": "Video genereerimine võtab liiga kaua aega. Kontrollige palun hiljem uuesti.",
+    "videoCheckError": "Video oleku kontrollimisel tekkis viga.",
+    "generationFailed": "Video genereerimine ebaõnnestus.",
     "unexpectedError": "Video loomisel tekkis ootamatu viga.",
-    "noUrlYet": "MP4 URL-i ei saadud.",
+    "noUrlYet": "MP4 URL-i ei ole veel saadud.",
     "idLabel": "ID: {{id}}"
   },
   "aiVoice": {
-    "title": "🎤 Tehisintellekti hääl",
-    "subtitle": "Muutke tekst kõneks CREOVA AI abil",
-    "textPlaceholder": "Nt: Tere, CREOVA!",
-    "generateButton": "Loo hääl",
-    "emptyTextMessage": "Sisestage hääle jaoks tekst.",
-    "generationFailedTitle": "Hääle loomine ebaõnnestus",
-    "generationFailedMessage": "Hääle loomisel tekkis viga.",
-    "noAudioMessage": "Helifaili ei saadud.",
-    "readyMessage": "Hääl on valmis.",
-    "unexpectedError": "Hääle loomisel tekkis ootamatu viga.",
-    "resultTitle": "🔊 Hääl valmis",
-    "resultText": "Tekst muudeti edukalt kõneks.",
-    "play": "▶️ Esita",
-    "pause": "⏸ Paus",
-    "audioErrorTitle": "Heli viga",
-    "audioErrorMessage": "Heli esitamisel tekkis viga."
+    "title": "🎤 AI Hääl",
+    "subtitle": "Teisendage tekst kõneks CREOVA AI-ga",
+    "textPlaceholder": "nt. Tere, CREOVA!",
+    "generateButton": "Genereeri hääl",
+    "result": { "title": "🔊 Hääl valmis", "description": "Teie tekst teisendati edukalt kõneks." },
+    "player": { "play": "▶️ Esita", "pause": "⏸ Paus" },
+    "errors": {
+      "emptyText": "Sisestage palun hääle jaoks tekst.",
+      "generationFailed": "Hääle genereerimisel tekkis viga.",
+      "audioMissing": "Heli faili ei saadud.",
+      "unexpected": "Hääle genereerimisel tekkis ootamatu viga.",
+      "playbackFailed": "Heli esitamisel tekkis viga."
+    },
+    "success": { "generated": "Hääl genereeriti edukalt." }
   },
   "profile": {
     "title": "Profiil",
@@ -51,6 +61,69 @@
     "nameRequired": "Nimi on kohustuslik.",
     "loadFailed": "Profiili laadimine ebaõnnestus.",
     "updateFailed": "Profiili värskendamine ebaõnnestus.",
-    "updateSuccess": "Profiil edukalt värskendatud."
+    "updateSuccess": "Profiil värskendati edukalt."
+  },
+  "aiMusic": {
+    "title": "🎶 AI Muusika",
+    "subtitle": "Genereerige muusikat CREOVA AI-ga",
+    "promptPlaceholder": "nt. Futuristlik linn päikeseloojangul",
+    "generateButton": "Genereeri muusika",
+    "result": { "title": "🎶 Muusika valmis", "description": "Teie tekst teisendati edukalt muusikaks." },
+    "player": { "play": "▶️ Esita", "pause": "⏸ Paus" },
+    "errors": {
+      "emptyPrompt": "Sisestage palun muusika jaoks kirjeldus.",
+      "generationFailed": "Muusika genereerimine ebaõnnestus.",
+      "audioMissing": "Heli faili ei saadud.",
+      "unexpected": "Muusika loomisel tekkis ootamatu viga.",
+      "playbackFailed": "Heli esitamisel tekkis viga."
+    },
+    "success": { "generated": "Muusika genereeriti edukalt." }
+  },
+  "navigation": {
+    "home": "Avaleht",
+    "code_studio": "Koodistuudio",
+    "vision_studio": "Nägemisstuudio",
+    "chat": "Tehisintellekti vestlus",
+    "settings": "Seaded"
+  },
+  "dashboard": {
+    "welcome": "Creova AI Platvorm",
+    "subtitle": "Alustamiseks valige autonoomse AI-agendi töökeskkond",
+    "code_title": "AI Koodistuudio",
+    "code_desc": "Refaktoreerige, siluge, genereerige koodi ja vaadake reaalajas erinevusi Developer Agentiga.",
+    "vision_title": "AI Nägemisstuudio",
+    "vision_desc": "Analüüsige ekraanipilte, disainimakette ja teisendage UI natiivseteks komponentideks.",
+    "chat_title": "AI Üldassistent",
+    "chat_desc": "Üldine arutlemine, mõttevahetus ja arhitektuuriarutelu."
+  },
+  "code": {
+    "title": "AI Koodistuudio",
+    "workspace_editor": "Töökeskkonna redaktor",
+    "proposed_changes": "Pakutud AI muudatused",
+    "apply_changes": "Rakenda muudatused",
+    "prompt_placeholder": "Paluge AI-l kirjutada või refaktoreerida koodi...",
+    "file_explorer": "Projekti sirvija",
+    "no_files": "Töökeskkonnast ei leitud faile",
+    "terminal_title": "Käivituskonsool",
+    "terminal_empty": "Konsool on valmis. Ootab käivituslogisid..."
+  },
+  "vision": {
+    "title": "AI Nägemisstuudio",
+    "image_url_label": "Pildi URL või allikas",
+    "url_placeholder": "Kleepige pildi URL siia...",
+    "results_label": "Analüüsi tulemused",
+    "ai_label": "Nägemis-AI",
+    "prompt_placeholder": "Kirjeldage pilti või küsige selle kohta..."
+  },
+  "chat": {
+    "you": "Sina",
+    "ai": "Assistent",
+    "placeholder": "Kirjutage oma sõnum..."
+  },
+  "settings": {
+    "title": "Seaded",
+    "language": "Keel",
+    "theme": "Teema",
+    "api_key": "Supabase ja AI seadistus"
   }
-}
+  }
