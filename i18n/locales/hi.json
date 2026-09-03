@@ -1,5 +1,17 @@
 {
-  "common": { "appName": "CREOVA", "error": "त्रुटि", "success": "सफलता" },
+  "common": {
+    "appName": "CREOVA",
+    "error": "त्रुटि",
+    "success": "सफलता",
+    "generate": "Generate",
+    "analyze": "Analyze",
+    "apply": "Apply",
+    "cancel": "Cancel",
+    "save": "Save",
+    "loading": "Loading...",
+    "retry": "Retry",
+    "delete": "Delete"
+  },
   "aiVideo": {
     "title": "🎬 AI वीडियो",
     "subtitle": "CREOVA AI के साथ वीडियो बनाएं",
@@ -29,18 +41,16 @@
     "subtitle": "CREOVA AI के साथ टेक्स्ट को आवाज़ में बदलें",
     "textPlaceholder": "उदा: नमस्ते, CREOVA!",
     "generateButton": "आवाज़ बनाएं",
-    "emptyTextMessage": "आवाज़ के लिए टेक्स्ट दर्ज करें।",
-    "generationFailedTitle": "आवाज़ बनाना विफल रहा",
-    "generationFailedMessage": "आवाज़ बनाते समय त्रुटि हुई।",
-    "noAudioMessage": "ऑडियो फ़ाइल प्राप्त नहीं हुई।",
-    "readyMessage": "आवाज़ तैयार है।",
-    "unexpectedError": "आवाज़ बनाते समय एक अप्रत्याशित त्रुटि हुई।",
-    "resultTitle": "🔊 आवाज़ तैयार है",
-    "resultText": "टेक्स्ट सफलतापूर्वक आवाज़ में बदल दिया गया।",
-    "play": "▶️ चलाएं",
-    "pause": "⏸ रोकें",
-    "audioErrorTitle": "ऑडियो त्रुटि",
-    "audioErrorMessage": "ऑडियो चलाते समय त्रुटि हुई।"
+    "result": { "title": "🔊 आवाज़ तैयार है", "description": "टेक्स्ट सफलतापूर्वक आवाज़ में बदल दिया गया।" },
+    "player": { "play": "▶️ चलाएं", "pause": "⏸ रोकें" },
+    "errors": {
+      "emptyText": "आवाज़ के लिए टेक्स्ट दर्ज करें।",
+      "generationFailed": "आवाज़ बनाते समय त्रुटि हुई।",
+      "audioMissing": "ऑडियो फ़ाइल प्राप्त नहीं हुई।",
+      "unexpected": "आवाज़ बनाते समय एक अप्रत्याशित त्रुटि हुई।",
+      "playbackFailed": "ऑडियो चलाते समय त्रुटि हुई।"
+    },
+    "success": { "generated": "आवाज़ सफलतापूर्वक तैयार हुई।" }
   },
   "profile": {
     "title": "प्रोफ़ाइल",
@@ -52,5 +62,68 @@
     "loadFailed": "प्रोफ़ाइल लोड करने में विफल।",
     "updateFailed": "प्रोफ़ाइल अपडेट करने में विफल।",
     "updateSuccess": "प्रोफ़ाइल सफलतापूर्वक अपडेट की गई।"
+  },
+  "aiMusic": {
+    "title": "🎶 AI संगीत",
+    "subtitle": "CREOVA AI के साथ संगीत बनाएं",
+    "promptPlaceholder": "उदा: सूर्यास्त के समय एक भविष्यवादी शहर",
+    "generateButton": "संगीत बनाएं",
+    "result": { "title": "🎶 संगीत तैयार है", "description": "आपका टेक्स्ट सफलतापूर्वक संगीत में बदल दिया गया।" },
+    "player": { "play": "▶️ चलाएं", "pause": "⏸ रोकें" },
+    "errors": {
+      "emptyPrompt": "कृपया संगीत के लिए एक विवरण दर्ज करें।",
+      "generationFailed": "संगीत निर्माण विफल रहा।",
+      "audioMissing": "ऑडियो फ़ाइल प्राप्त नहीं हुई।",
+      "unexpected": "संगीत बनाते समय एक अप्रत्याशित त्रुटि हुई।",
+      "playbackFailed": "ऑडियो चलाते समय त्रुटि हुई।"
+    },
+    "success": { "generated": "संगीत सफलतापूर्वक बनाया गया।" }
+  },
+  "navigation": {
+    "home": "होम",
+    "code_studio": "कोड स्टूडियो",
+    "vision_studio": "विज़न स्टूडियो",
+    "chat": "AI चैट",
+    "settings": "सेटिंग्स"
+  },
+  "dashboard": {
+    "welcome": "Creova AI प्लेटफ़ॉर्म",
+    "subtitle": "शुरू करने के लिए एक स्वायत्त AI एजेंट कार्यक्षेत्र चुनें",
+    "code_title": "AI कोड स्टूडियो",
+    "code_desc": "Developer Agent के साथ कोड को रिफैक्टर करें, डीबग करें, जनरेट करें और रीयल-टाइम अंतर देखें।",
+    "vision_title": "AI विज़न स्टूडियो",
+    "vision_desc": "स्क्रीनशॉट, डिज़ाइन मॉकअप का विश्लेषण करें और UI को नेटिव कंपोनेंट्स में बदलें।",
+    "chat_title": "AI सामान्य सहायक",
+    "chat_desc": "सामान्य तर्क, विचार-विमर्श और आर्किटेक्चर चर्चा।"
+  },
+  "code": {
+    "title": "AI कोड स्टूडियो",
+    "workspace_editor": "वर्कस्पेस एडिटर",
+    "proposed_changes": "प्रस्तावित AI परिवर्तन",
+    "apply_changes": "परिवर्तन लागू करें",
+    "prompt_placeholder": "AI से कोड लिखने या रिफैक्टर करने के लिए कहें...",
+    "file_explorer": "प्रोजेक्ट एक्सप्लोरर",
+    "no_files": "वर्कस्पेस में कोई फ़ाइल नहीं मिली",
+    "terminal_title": "निष्पादन कंसोल",
+    "terminal_empty": "कंसोल तैयार है। निष्पादन लॉग की प्रतीक्षा है..."
+  },
+  "vision": {
+    "title": "AI विज़न स्टूडियो",
+    "image_url_label": "छवि URL या स्रोत",
+    "url_placeholder": "यहां छवि URL पेस्ट करें...",
+    "results_label": "विश्लेषण परिणाम",
+    "ai_label": "विज़न AI",
+    "prompt_placeholder": "छवि का वर्णन करें या उसके बारे में पूछें..."
+  },
+  "chat": {
+    "you": "आप",
+    "ai": "सहायक",
+    "placeholder": "अपना संदेश टाइप करें..."
+  },
+  "settings": {
+    "title": "सेटिंग्स",
+    "language": "भाषा",
+    "theme": "थीम",
+    "api_key": "Supabase और AI कॉन्फ़िगरेशन"
   }
 }
