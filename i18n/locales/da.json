@@ -1,46 +1,56 @@
 {
-  "common": { "appName": "CREOVA", "error": "Fejl", "success": "Succes" },
+  "common": {
+    "appName": "CREOVA",
+    "error": "Fejl",
+    "success": "Succes",
+    "generate": "Generate",
+    "analyze": "Analyze",
+    "apply": "Apply",
+    "cancel": "Cancel",
+    "save": "Save",
+    "loading": "Loading...",
+    "retry": "Retry",
+    "delete": "Delete"
+  },
   "aiVideo": {
-    "title": "🎬 AI-video",
-    "subtitle": "Generer videoer med CREOVA AI",
-    "promptPlaceholder": "F.eks: En futuristisk by ved solnedgang",
+    "title": "🎬 AI Video",
+    "subtitle": "Generer video med CREOVA AI",
+    "promptPlaceholder": "f.eks. En futuristisk by ved solnedgang",
     "generateButton": "Generer video",
     "emptyPromptTitle": "CREOVA",
-    "emptyPromptMessage": "Indtast en beskrivelse til videoen.",
+    "emptyPromptMessage": "Indtast venligst en beskrivelse til videoen.",
     "statusTitle": "Videostatus",
-    "progressLabel": "Fremgang",
-    "videoErrorTitle": "Videofejl",
-    "videoStatusError": "Kunne ikke hente videostatus.",
+    "progressLabel": "Fremskridt",
+    "videoErrorTitle": "Video fejl",
+    "videoStatusError": "Der opstod en fejl under hentning af videostatus.",
     "videoReadyTitle": "CREOVA",
-    "videoReadyMessage": "Videoen er klar.",
-    "videoReadyNoUrl": "Videoen er klar, men MP4-URL'en blev ikke modtaget.",
-    "videoFailedTitle": "Video kunne ikke genereres",
+    "videoReadyMessage": "Din video er klar.",
+    "videoReadyNoUrl": "Videoen er klar, men der blev ikke modtaget en MP4-URL.",
+    "videoFailedTitle": "Videogenerering mislykkedes",
     "videoFailedStatus": "Videostatus: {{status}}",
     "videoTooLongTitle": "CREOVA",
-    "videoTooLongMessage": "Videogenerering tager for lang tid. Prøv igen senere.",
-    "videoCheckError": "Fejl ved kontrol af videostatus.",
+    "videoTooLongMessage": "Videogenerering tager for lang tid. Tjek venligst igen senere.",
+    "videoCheckError": "Der opstod en fejl under kontrol af videostatus.",
     "generationFailed": "Videogenerering mislykkedes.",
-    "unexpectedError": "Der opstod en uventet fejl under videogenerering.",
-    "noUrlYet": "MP4-URL'en blev ikke modtaget.",
+    "unexpectedError": "Der opstod en uventet fejl under generering af videoen.",
+    "noUrlYet": "Der er endnu ikke modtaget en MP4-URL.",
     "idLabel": "ID: {{id}}"
   },
   "aiVoice": {
-    "title": "🎤 AI-stemme",
+    "title": "🎤 AI Stemme",
     "subtitle": "Konverter tekst til tale med CREOVA AI",
-    "textPlaceholder": "F.eks: Hej, CREOVA!",
+    "textPlaceholder": "f.eks. Hej, CREOVA!",
     "generateButton": "Generer stemme",
-    "emptyTextMessage": "Indtast tekst til stemmen.",
-    "generationFailedTitle": "Stemmegenerering mislykkedes",
-    "generationFailedMessage": "Der opstod en fejl under stemmegenerering.",
-    "noAudioMessage": "Lydfilen blev ikke modtaget.",
-    "readyMessage": "Stemmen er klar.",
-    "unexpectedError": "Der opstod en uventet fejl under stemmegenerering.",
-    "resultTitle": "🔊 Stemme klar",
-    "resultText": "Teksten blev konverteret til tale.",
-    "play": "▶️ Afspil",
-    "pause": "⏸ Pause",
-    "audioErrorTitle": "Lydfejl",
-    "audioErrorMessage": "Der opstod en fejl under afspilning af lyden."
+    "result": { "title": "🔊 Stemme klar", "description": "Din tekst blev succesfuldt konverteret til tale." },
+    "player": { "play": "▶️ Afspil", "pause": "⏸ Pause" },
+    "errors": {
+      "emptyText": "Indtast venligst tekst til stemmen.",
+      "generationFailed": "Der opstod en fejl under generering af stemmen.",
+      "audioMissing": "Lydfilen blev ikke modtaget.",
+      "unexpected": "Der opstod en uventet fejl under generering af stemmen.",
+      "playbackFailed": "Der opstod en fejl under afspilning af lyden."
+    },
+    "success": { "generated": "Stemme genereret med succes." }
   },
   "profile": {
     "title": "Profil",
@@ -49,8 +59,71 @@
     "emailLabel": "E-mail",
     "saveButton": "Gem",
     "nameRequired": "Navn er påkrævet.",
-    "loadFailed": "Kunne ikke indlæse profilen.",
-    "updateFailed": "Kunne ikke opdatere profilen.",
-    "updateSuccess": "Profilen blev opdateret."
+    "loadFailed": "Kunne ikke indlæse profil.",
+    "updateFailed": "Kunne ikke opdatere profil.",
+    "updateSuccess": "Profil opdateret med succes."
+  },
+  "aiMusic": {
+    "title": "🎶 AI Musik",
+    "subtitle": "Generer musik med CREOVA AI",
+    "promptPlaceholder": "f.eks. En futuristisk by ved solnedgang",
+    "generateButton": "Generer musik",
+    "result": { "title": "🎶 Musik klar", "description": "Din tekst blev succesfuldt omdannet til musik." },
+    "player": { "play": "▶️ Afspil", "pause": "⏸ Pause" },
+    "errors": {
+      "emptyPrompt": "Indtast venligst en prompt til musikken.",
+      "generationFailed": "Musikgenerering mislykkedes.",
+      "audioMissing": "Lydfilen blev ikke modtaget.",
+      "unexpected": "Der opstod en uventet fejl under generering af musik.",
+      "playbackFailed": "Der opstod en fejl under afspilning af lyden."
+    },
+    "success": { "generated": "Musik genereret med succes." }
+  },
+  "navigation": {
+    "home": "Hjem",
+    "code_studio": "Kode Studio",
+    "vision_studio": "Vision Studio",
+    "chat": "AI Chat",
+    "settings": "Indstillinger"
+  },
+  "dashboard": {
+    "welcome": "Creova AI Platform",
+    "subtitle": "Vælg et autonomt AI-agent arbejdsområde for at begynde",
+    "code_title": "AI Kode Studio",
+    "code_desc": "Refaktorer, fejlret, generer kode og se ændringer i realtid med Developer Agent.",
+    "vision_title": "AI Vision Studio",
+    "vision_desc": "Analyser skærmbilleder, designmockups, og konverter UI til native komponenter.",
+    "chat_title": "AI Generel Assistent",
+    "chat_desc": "Generel ræsonnering, idéudveksling og arkitekturdiskussion."
+  },
+  "code": {
+    "title": "AI Kode Studio",
+    "workspace_editor": "Arbejdsområde Editor",
+    "proposed_changes": "Foreslåede AI-ændringer",
+    "apply_changes": "Anvend ændringer",
+    "prompt_placeholder": "Bed AI om at skrive eller refaktorere kode...",
+    "file_explorer": "Projekt Explorer",
+    "no_files": "Ingen filer fundet i arbejdsområdet",
+    "terminal_title": "Eksekveringskonsol",
+    "terminal_empty": "Konsollen er klar. Venter på eksekveringslogs..."
+  },
+  "vision": {
+    "title": "AI Vision Studio",
+    "image_url_label": "Billed-URL eller kilde",
+    "url_placeholder": "Indsæt billed-URL her...",
+    "results_label": "Analyseresultater",
+    "ai_label": "Vision AI",
+    "prompt_placeholder": "Beskriv eller spørg om billedet..."
+  },
+  "chat": {
+    "you": "Dig",
+    "ai": "Assistent",
+    "placeholder": "Skriv din besked..."
+  },
+  "settings": {
+    "title": "Indstillinger",
+    "language": "Sprog",
+    "theme": "Tema",
+    "api_key": "Supabase & AI Konfiguration"
   }
 }
