@@ -1,46 +1,56 @@
 {
-  "common": { "appName": "CREOVA", "error": "Σφάλμα", "success": "Επιτυχία" },
+  "common": {
+    "appName": "CREOVA",
+    "error": "Σφάλμα",
+    "success": "Επιτυχία",
+    "generate": "Generate",
+    "analyze": "Analyze",
+    "apply": "Apply",
+    "cancel": "Cancel",
+    "save": "Save",
+    "loading": "Loading...",
+    "retry": "Retry",
+    "delete": "Delete"
+  },
   "aiVideo": {
-    "title": "🎬 Βίντεο AI",
+    "title": "🎬 AI Βίντεο",
     "subtitle": "Δημιουργήστε βίντεο με το CREOVA AI",
-    "promptPlaceholder": "Π.χ: Μια φουτουριστική πόλη στο ηλιοβασίλεμα",
+    "promptPlaceholder": "π.χ. Μια φουτουριστική πόλη στο ηλιοβασίλεμα",
     "generateButton": "Δημιουργία βίντεο",
     "emptyPromptTitle": "CREOVA",
-    "emptyPromptMessage": "Εισαγάγετε μια περιγραφή για το βίντεο.",
+    "emptyPromptMessage": "Παρακαλώ εισαγάγετε μια περιγραφή για το βίντεο.",
     "statusTitle": "Κατάσταση βίντεο",
     "progressLabel": "Πρόοδος",
     "videoErrorTitle": "Σφάλμα βίντεο",
-    "videoStatusError": "Αποτυχία λήψης κατάστασης βίντεο.",
+    "videoStatusError": "Παρουσιάστηκε σφάλμα κατά τη λήψη της κατάστασης του βίντεο.",
     "videoReadyTitle": "CREOVA",
-    "videoReadyMessage": "Το βίντεο είναι έτοιμο.",
-    "videoReadyNoUrl": "Το βίντεο είναι έτοιμο, αλλά δεν ελήφθη το URL MP4.",
+    "videoReadyMessage": "Το βίντεό σας είναι έτοιμο.",
+    "videoReadyNoUrl": "Το βίντεο είναι έτοιμο, αλλά δεν ελήφθη URL MP4.",
     "videoFailedTitle": "Η δημιουργία βίντεο απέτυχε",
     "videoFailedStatus": "Κατάσταση βίντεο: {{status}}",
     "videoTooLongTitle": "CREOVA",
-    "videoTooLongMessage": "Η δημιουργία βίντεο διαρκεί πολύ. Ελέγξτε ξανά αργότερα.",
-    "videoCheckError": "Σφάλμα κατά τον έλεγχο της κατάστασης του βίντεο.",
+    "videoTooLongMessage": "Η δημιουργία βίντεο διαρκεί πολύ. Παρακαλώ ελέγξτε ξανά αργότερα.",
+    "videoCheckError": "Παρουσιάστηκε σφάλμα κατά τον έλεγχο της κατάστασης του βίντεο.",
     "generationFailed": "Η δημιουργία βίντεο απέτυχε.",
     "unexpectedError": "Παρουσιάστηκε απρόσμενο σφάλμα κατά τη δημιουργία του βίντεο.",
-    "noUrlYet": "Δεν ελήφθη το URL MP4.",
+    "noUrlYet": "Δεν έχει ληφθεί ακόμα URL MP4.",
     "idLabel": "ID: {{id}}"
   },
   "aiVoice": {
-    "title": "🎤 Φωνή AI",
+    "title": "🎤 AI Φωνή",
     "subtitle": "Μετατρέψτε κείμενο σε ομιλία με το CREOVA AI",
-    "textPlaceholder": "Π.χ: Γεια σου, CREOVA!",
+    "textPlaceholder": "π.χ. Γεια σου, CREOVA!",
     "generateButton": "Δημιουργία φωνής",
-    "emptyTextMessage": "Εισαγάγετε κείμενο για τη φωνή.",
-    "generationFailedTitle": "Η δημιουργία φωνής απέτυχε",
-    "generationFailedMessage": "Παρουσιάστηκε σφάλμα κατά τη δημιουργία της φωνής.",
-    "noAudioMessage": "Δεν ελήφθη το αρχείο ήχου.",
-    "readyMessage": "Η φωνή είναι έτοιμη.",
-    "unexpectedError": "Παρουσιάστηκε απρόσμενο σφάλμα κατά τη δημιουργία της φωνής.",
-    "resultTitle": "🔊 Η φωνή είναι έτοιμη",
-    "resultText": "Το κείμενο μετατράπηκε επιτυχώς σε ομιλία.",
-    "play": "▶️ Αναπαραγωγή",
-    "pause": "⏸ Παύση",
-    "audioErrorTitle": "Σφάλμα ήχου",
-    "audioErrorMessage": "Παρουσιάστηκε σφάλμα κατά την αναπαραγωγή του ήχου."
+    "result": { "title": "🔊 Η φωνή είναι έτοιμη", "description": "Το κείμενό σας μετατράπηκε επιτυχώς σε ομιλία." },
+    "player": { "play": "▶️ Αναπαραγωγή", "pause": "⏸ Παύση" },
+    "errors": {
+      "emptyText": "Παρακαλώ εισαγάγετε κείμενο για τη φωνή.",
+      "generationFailed": "Παρουσιάστηκε σφάλμα κατά τη δημιουργία της φωνής.",
+      "audioMissing": "Δεν ελήφθη αρχείο ήχου.",
+      "unexpected": "Παρουσιάστηκε απρόσμενο σφάλμα κατά τη δημιουργία της φωνής.",
+      "playbackFailed": "Παρουσιάστηκε σφάλμα κατά την αναπαραγωγή του ήχου."
+    },
+    "success": { "generated": "Η φωνή δημιουργήθηκε επιτυχώς." }
   },
   "profile": {
     "title": "Προφίλ",
@@ -49,8 +59,71 @@
     "emailLabel": "Email",
     "saveButton": "Αποθήκευση",
     "nameRequired": "Το όνομα είναι υποχρεωτικό.",
-    "loadFailed": "Αποτυχία φόρτωσης προφίλ.",
-    "updateFailed": "Αποτυχία ενημέρωσης προφίλ.",
+    "loadFailed": "Η φόρτωση του προφίλ απέτυχε.",
+    "updateFailed": "Η ενημέρωση του προφίλ απέτυχε.",
     "updateSuccess": "Το προφίλ ενημερώθηκε επιτυχώς."
+  },
+  "aiMusic": {
+    "title": "🎶 AI Μουσική",
+    "subtitle": "Δημιουργήστε μουσική με το CREOVA AI",
+    "promptPlaceholder": "π.χ. Μια φουτουριστική πόλη στο ηλιοβασίλεμα",
+    "generateButton": "Δημιουργία μουσικής",
+    "result": { "title": "🎶 Η μουσική είναι έτοιμη", "description": "Το κείμενό σας μετατράπηκε επιτυχώς σε μουσική." },
+    "player": { "play": "▶️ Αναπαραγωγή", "pause": "⏸ Παύση" },
+    "errors": {
+      "emptyPrompt": "Παρακαλώ εισαγάγετε μια περιγραφή για τη μουσική.",
+      "generationFailed": "Η δημιουργία μουσικής απέτυχε.",
+      "audioMissing": "Δεν ελήφθη αρχείο ήχου.",
+      "unexpected": "Παρουσιάστηκε απρόσμενο σφάλμα κατά τη δημιουργία μουσικής.",
+      "playbackFailed": "Παρουσιάστηκε σφάλμα κατά την αναπαραγωγή του ήχου."
+    },
+    "success": { "generated": "Η μουσική δημιουργήθηκε επιτυχώς." }
+  },
+  "navigation": {
+    "home": "Αρχική",
+    "code_studio": "Στούντιο Κώδικα",
+    "vision_studio": "Στούντιο Όρασης",
+    "chat": "AI Συνομιλία",
+    "settings": "Ρυθμίσεις"
+  },
+  "dashboard": {
+    "welcome": "Πλατφόρμα Creova AI",
+    "subtitle": "Επιλέξτε έναν αυτόνομο χώρο εργασίας πράκτορα AI για να ξεκινήσετε",
+    "code_title": "Στούντιο Κώδικα AI",
+    "code_desc": "Αναδιαμορφώστε, εντοπίστε σφάλματα, δημιουργήστε κώδικα και δείτε διαφορές σε πραγματικό χρόνο με τον Developer Agent.",
+    "vision_title": "Στούντιο Όρασης AI",
+    "vision_desc": "Αναλύστε στιγμιότυπα οθόνης, σχέδια mockup και μετατρέψτε το UI σε native στοιχεία.",
+    "chat_title": "Γενικός Βοηθός AI",
+    "chat_desc": "Γενική συλλογιστική, ανταλλαγή ιδεών και συζήτηση αρχιτεκτονικής."
+  },
+  "code": {
+    "title": "Στούντιο Κώδικα AI",
+    "workspace_editor": "Επεξεργαστής Χώρου Εργασίας",
+    "proposed_changes": "Προτεινόμενες Αλλαγές AI",
+    "apply_changes": "Εφαρμογή Αλλαγών",
+    "prompt_placeholder": "Ζητήστε από την AI να γράψει ή να αναδιαμορφώσει κώδικα...",
+    "file_explorer": "Εξερεύνηση Έργου",
+    "no_files": "Δεν βρέθηκαν αρχεία στον χώρο εργασίας",
+    "terminal_title": "Κονσόλα Εκτέλεσης",
+    "terminal_empty": "Η κονσόλα είναι έτοιμη. Αναμονή για αρχεία καταγραφής εκτέλεσης..."
+  },
+  "vision": {
+    "title": "Στούντιο Όρασης AI",
+    "image_url_label": "URL εικόνας ή πηγή",
+    "url_placeholder": "Επικολλήστε το URL της εικόνας εδώ...",
+    "results_label": "Αποτελέσματα Ανάλυσης",
+    "ai_label": "AI Όρασης",
+    "prompt_placeholder": "Περιγράψτε ή ρωτήστε σχετικά με την εικόνα..."
+  },
+  "chat": {
+    "you": "Εσείς",
+    "ai": "Βοηθός",
+    "placeholder": "Πληκτρολογήστε το μήνυμά σας..."
+  },
+  "settings": {
+    "title": "Ρυθμίσεις",
+    "language": "Γλώσσα",
+    "theme": "Θέμα",
+    "api_key": "Ρύθμιση Supabase & AI"
   }
 }
