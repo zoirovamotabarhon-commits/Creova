@@ -1,46 +1,56 @@
 {
-  "common": { "appName": "CREOVA", "error": "Fehler", "success": "Erfolgreich" },
+  "common": {
+    "appName": "CREOVA",
+    "error": "Fehler",
+    "success": "Erfolg",
+    "generate": "Generate",
+    "analyze": "Analyze",
+    "apply": "Apply",
+    "cancel": "Cancel",
+    "save": "Save",
+    "loading": "Loading...",
+    "retry": "Retry",
+    "delete": "Delete"
+  },
   "aiVideo": {
     "title": "🎬 KI-Video",
     "subtitle": "Erstellen Sie Videos mit CREOVA AI",
-    "promptPlaceholder": "z.B.: Eine futuristische Stadt bei Sonnenuntergang",
-    "generateButton": "Video erstellen",
+    "promptPlaceholder": "z. B. Eine futuristische Stadt bei Sonnenuntergang",
+    "generateButton": "Video generieren",
     "emptyPromptTitle": "CREOVA",
-    "emptyPromptMessage": "Geben Sie eine Beschreibung für das Video ein.",
+    "emptyPromptMessage": "Bitte geben Sie eine Beschreibung für das Video ein.",
     "statusTitle": "Videostatus",
     "progressLabel": "Fortschritt",
     "videoErrorTitle": "Videofehler",
-    "videoStatusError": "Videostatus konnte nicht abgerufen werden.",
+    "videoStatusError": "Beim Abrufen des Videostatus ist ein Fehler aufgetreten.",
     "videoReadyTitle": "CREOVA",
-    "videoReadyMessage": "Video ist fertig.",
-    "videoReadyNoUrl": "Video ist fertig, aber die MP4-URL wurde nicht empfangen.",
-    "videoFailedTitle": "Videoerstellung fehlgeschlagen",
+    "videoReadyMessage": "Ihr Video ist fertig.",
+    "videoReadyNoUrl": "Das Video ist fertig, aber es wurde keine MP4-URL empfangen.",
+    "videoFailedTitle": "Videogenerierung fehlgeschlagen",
     "videoFailedStatus": "Videostatus: {{status}}",
     "videoTooLongTitle": "CREOVA",
-    "videoTooLongMessage": "Die Videoerstellung dauert zu lange. Bitte später erneut prüfen.",
-    "videoCheckError": "Fehler beim Prüfen des Videostatus.",
-    "generationFailed": "Videoerstellung fehlgeschlagen.",
-    "unexpectedError": "Ein unerwarteter Fehler ist bei der Videoerstellung aufgetreten.",
-    "noUrlYet": "MP4-URL wurde nicht empfangen.",
+    "videoTooLongMessage": "Die Videogenerierung dauert zu lange. Bitte später erneut prüfen.",
+    "videoCheckError": "Beim Überprüfen des Videostatus ist ein Fehler aufgetreten.",
+    "generationFailed": "Videogenerierung fehlgeschlagen.",
+    "unexpectedError": "Beim Erstellen des Videos ist ein unerwarteter Fehler aufgetreten.",
+    "noUrlYet": "Es wurde noch keine MP4-URL empfangen.",
     "idLabel": "ID: {{id}}"
   },
   "aiVoice": {
     "title": "🎤 KI-Stimme",
-    "subtitle": "Wandeln Sie Text mit CREOVA AI in Sprache um",
-    "textPlaceholder": "z.B.: Hallo, CREOVA!",
-    "generateButton": "Stimme erstellen",
-    "emptyTextMessage": "Geben Sie Text für die Stimme ein.",
-    "generationFailedTitle": "Stimmerstellung fehlgeschlagen",
-    "generationFailedMessage": "Bei der Stimmerstellung ist ein Fehler aufgetreten.",
-    "noAudioMessage": "Audiodatei wurde nicht empfangen.",
-    "readyMessage": "Stimme ist fertig.",
-    "unexpectedError": "Ein unerwarteter Fehler ist bei der Stimmerstellung aufgetreten.",
-    "resultTitle": "🔊 Stimme fertig",
-    "resultText": "Text wurde erfolgreich in Sprache umgewandelt.",
-    "play": "▶️ Abspielen",
-    "pause": "⏸ Pause",
-    "audioErrorTitle": "Audiofehler",
-    "audioErrorMessage": "Beim Abspielen des Audios ist ein Fehler aufgetreten."
+    "subtitle": "Konvertieren Sie Text mit CREOVA AI in Sprache",
+    "textPlaceholder": "z. B. Hallo, CREOVA!",
+    "generateButton": "Stimme generieren",
+    "result": { "title": "🔊 Stimme fertig", "description": "Ihr Text wurde erfolgreich in Sprache umgewandelt." },
+    "player": { "play": "▶️ Abspielen", "pause": "⏸ Pause" },
+    "errors": {
+      "emptyText": "Bitte geben Sie Text für die Stimme ein.",
+      "generationFailed": "Beim Generieren der Stimme ist ein Fehler aufgetreten.",
+      "audioMissing": "Die Audiodatei wurde nicht empfangen.",
+      "unexpected": "Beim Generieren der Stimme ist ein unerwarteter Fehler aufgetreten.",
+      "playbackFailed": "Beim Abspielen des Audios ist ein Fehler aufgetreten."
+    },
+    "success": { "generated": "Stimme erfolgreich generiert." }
   },
   "profile": {
     "title": "Profil",
@@ -52,5 +62,68 @@
     "loadFailed": "Profil konnte nicht geladen werden.",
     "updateFailed": "Profil konnte nicht aktualisiert werden.",
     "updateSuccess": "Profil erfolgreich aktualisiert."
+  },
+  "aiMusic": {
+    "title": "🎶 KI-Musik",
+    "subtitle": "Erstellen Sie Musik mit CREOVA AI",
+    "promptPlaceholder": "z. B. Eine futuristische Stadt bei Sonnenuntergang",
+    "generateButton": "Musik generieren",
+    "result": { "title": "🎶 Musik fertig", "description": "Ihr Text wurde erfolgreich in Musik umgewandelt." },
+    "player": { "play": "▶️ Abspielen", "pause": "⏸ Pause" },
+    "errors": {
+      "emptyPrompt": "Bitte geben Sie eine Beschreibung für die Musik ein.",
+      "generationFailed": "Die Musikgenerierung ist fehlgeschlagen.",
+      "audioMissing": "Die Audiodatei wurde nicht empfangen.",
+      "unexpected": "Beim Erstellen der Musik ist ein unerwarteter Fehler aufgetreten.",
+      "playbackFailed": "Beim Abspielen des Audios ist ein Fehler aufgetreten."
+    },
+    "success": { "generated": "Musik erfolgreich generiert." }
+  },
+  "navigation": {
+    "home": "Startseite",
+    "code_studio": "Code-Studio",
+    "vision_studio": "Vision-Studio",
+    "chat": "KI-Chat",
+    "settings": "Einstellungen"
+  },
+  "dashboard": {
+    "welcome": "Creova KI-Plattform",
+    "subtitle": "Wählen Sie einen autonomen KI-Agenten-Arbeitsbereich, um zu beginnen",
+    "code_title": "KI-Code-Studio",
+    "code_desc": "Refaktorieren, debuggen, generieren Sie Code und sehen Sie Echtzeit-Unterschiede mit dem Developer Agent.",
+    "vision_title": "KI-Vision-Studio",
+    "vision_desc": "Analysieren Sie Screenshots, Design-Mockups und wandeln Sie die UI in native Komponenten um.",
+    "chat_title": "Allgemeiner KI-Assistent",
+    "chat_desc": "Allgemeines Denken, Ideenaustausch und Architekturdiskussion."
+  },
+  "code": {
+    "title": "KI-Code-Studio",
+    "workspace_editor": "Arbeitsbereich-Editor",
+    "proposed_changes": "Vorgeschlagene KI-Änderungen",
+    "apply_changes": "Änderungen übernehmen",
+    "prompt_placeholder": "Bitten Sie die KI, Code zu schreiben oder zu refaktorieren...",
+    "file_explorer": "Projekt-Explorer",
+    "no_files": "Keine Dateien im Arbeitsbereich gefunden",
+    "terminal_title": "Ausführungskonsole",
+    "terminal_empty": "Konsole bereit. Warte auf Ausführungsprotokolle..."
+  },
+  "vision": {
+    "title": "KI-Vision-Studio",
+    "image_url_label": "Bild-URL oder Quelle",
+    "url_placeholder": "Bild-URL hier einfügen...",
+    "results_label": "Analyseergebnisse",
+    "ai_label": "Vision-KI",
+    "prompt_placeholder": "Beschreiben Sie das Bild oder stellen Sie eine Frage dazu..."
+  },
+  "chat": {
+    "you": "Sie",
+    "ai": "Assistent",
+    "placeholder": "Nachricht eingeben..."
+  },
+  "settings": {
+    "title": "Einstellungen",
+    "language": "Sprache",
+    "theme": "Design",
+    "api_key": "Supabase- & KI-Konfiguration"
   }
-}
+  }
