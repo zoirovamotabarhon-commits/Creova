@@ -1,46 +1,56 @@
 {
-  "common": { "appName": "CREOVA", "error": "ত্রুটি", "success": "সফল" },
+  "common": {
+    "appName": "CREOVA",
+    "error": "ত্রুটি",
+    "success": "সফল",
+    "generate": "Generate",
+    "analyze": "Analyze",
+    "apply": "Apply",
+    "cancel": "Cancel",
+    "save": "Save",
+    "loading": "Loading...",
+    "retry": "Retry",
+    "delete": "Delete"
+  },
   "aiVideo": {
     "title": "🎬 AI ভিডিও",
     "subtitle": "CREOVA AI দিয়ে ভিডিও তৈরি করুন",
-    "promptPlaceholder": "উদা: সূর্যাস্তে একটি ভবিষ্যৎ শহর",
+    "promptPlaceholder": "যেমন: সূর্যাস্তে একটি ভবিষ্যত শহর",
     "generateButton": "ভিডিও তৈরি করুন",
     "emptyPromptTitle": "CREOVA",
-    "emptyPromptMessage": "ভিডিওর জন্য একটি বিবরণ লিখুন।",
+    "emptyPromptMessage": "ভিডিওর জন্য একটি বর্ণনা লিখুন।",
     "statusTitle": "ভিডিওর অবস্থা",
     "progressLabel": "অগ্রগতি",
     "videoErrorTitle": "ভিডিও ত্রুটি",
     "videoStatusError": "ভিডিওর অবস্থা আনতে ব্যর্থ হয়েছে।",
     "videoReadyTitle": "CREOVA",
-    "videoReadyMessage": "ভিডিও প্রস্তুত।",
-    "videoReadyNoUrl": "ভিডিও প্রস্তুত, কিন্তু MP4 URL পাওয়া যায়নি।",
+    "videoReadyMessage": "আপনার ভিডিও প্রস্তুত।",
+    "videoReadyNoUrl": "ভিডিও প্রস্তুত, তবে কোনো MP4 URL পাওয়া যায়নি।",
     "videoFailedTitle": "ভিডিও তৈরি ব্যর্থ হয়েছে",
     "videoFailedStatus": "ভিডিওর অবস্থা: {{status}}",
     "videoTooLongTitle": "CREOVA",
-    "videoTooLongMessage": "ভিডিও তৈরিতে অনেক সময় লাগছে। পরে আবার চেক করুন।",
-    "videoCheckError": "ভিডিওর অবস্থা যাচাই করতে ত্রুটি।",
+    "videoTooLongMessage": "ভিডিও তৈরি করতে খুব বেশি সময় লাগছে। অনুগ্রহ করে পরে আবার দেখুন।",
+    "videoCheckError": "ভিডিওর অবস্থা পরীক্ষা করার সময় একটি ত্রুটি ঘটেছে।",
     "generationFailed": "ভিডিও তৈরি ব্যর্থ হয়েছে।",
     "unexpectedError": "ভিডিও তৈরির সময় একটি অপ্রত্যাশিত ত্রুটি ঘটেছে।",
-    "noUrlYet": "MP4 URL পাওয়া যায়নি।",
+    "noUrlYet": "এখনও কোনো MP4 URL পাওয়া যায়নি।",
     "idLabel": "ID: {{id}}"
   },
   "aiVoice": {
     "title": "🎤 AI ভয়েস",
-    "subtitle": "CREOVA AI দিয়ে টেক্সটকে কণ্ঠস্বরে রূপান্তর করুন",
-    "textPlaceholder": "উদা: হ্যালো, CREOVA!",
+    "subtitle": "CREOVA AI দিয়ে টেক্সটকে স্পিচে রূপান্তর করুন",
+    "textPlaceholder": "যেমন: হ্যালো, CREOVA!",
     "generateButton": "ভয়েস তৈরি করুন",
-    "emptyTextMessage": "ভয়েসের জন্য টেক্সট লিখুন।",
-    "generationFailedTitle": "ভয়েস তৈরি ব্যর্থ হয়েছে",
-    "generationFailedMessage": "ভয়েস তৈরির সময় ত্রুটি ঘটেছে।",
-    "noAudioMessage": "অডিও ফাইল পাওয়া যায়নি।",
-    "readyMessage": "ভয়েস প্রস্তুত।",
-    "unexpectedError": "ভয়েস তৈরির সময় একটি অপ্রত্যাশিত ত্রুটি ঘটেছে।",
-    "resultTitle": "🔊 ভয়েস প্রস্তুত",
-    "resultText": "টেক্সট সফলভাবে কণ্ঠস্বরে রূপান্তরিত হয়েছে।",
-    "play": "▶️ চালান",
-    "pause": "⏸ বিরতি",
-    "audioErrorTitle": "অডিও ত্রুটি",
-    "audioErrorMessage": "অডিও চালানোর সময় ত্রুটি ঘটেছে।"
+    "result": { "title": "🔊 ভয়েস প্রস্তুত", "description": "আপনার টেক্সট সফলভাবে স্পিচে রূপান্তরিত হয়েছে।" },
+    "player": { "play": "▶️ প্লে", "pause": "⏸ পজ" },
+    "errors": {
+      "emptyText": "ভয়েসের জন্য টেক্সট লিখুন।",
+      "generationFailed": "ভয়েস তৈরির সময় একটি ত্রুটি ঘটেছে।",
+      "audioMissing": "অডিও ফাইল পাওয়া যায়নি।",
+      "unexpected": "ভয়েস তৈরির সময় একটি অপ্রত্যাশিত ত্রুটি ঘটেছে।",
+      "playbackFailed": "অডিও চালানোর সময় একটি ত্রুটি ঘটেছে।"
+    },
+    "success": { "generated": "ভয়েস সফলভাবে তৈরি হয়েছে।" }
   },
   "profile": {
     "title": "প্রোফাইল",
@@ -52,5 +62,68 @@
     "loadFailed": "প্রোফাইল লোড করতে ব্যর্থ হয়েছে।",
     "updateFailed": "প্রোফাইল আপডেট করতে ব্যর্থ হয়েছে।",
     "updateSuccess": "প্রোফাইল সফলভাবে আপডেট হয়েছে।"
+  },
+  "aiMusic": {
+    "title": "🎶 AI সঙ্গীত",
+    "subtitle": "CREOVA AI দিয়ে সঙ্গীত তৈরি করুন",
+    "promptPlaceholder": "যেমন: সূর্যাস্তে একটি ভবিষ্যত শহর",
+    "generateButton": "সঙ্গীত তৈরি করুন",
+    "result": { "title": "🎶 সঙ্গীত প্রস্তুত", "description": "আপনার লেখা সফলভাবে সঙ্গীতে রূপান্তরিত হয়েছে।" },
+    "player": { "play": "▶️ প্লে", "pause": "⏸ পজ" },
+    "errors": {
+      "emptyPrompt": "সঙ্গীতের জন্য একটি প্রম্পট লিখুন।",
+      "generationFailed": "সঙ্গীত তৈরি ব্যর্থ হয়েছে।",
+      "audioMissing": "অডিও ফাইল পাওয়া যায়নি।",
+      "unexpected": "সঙ্গীত তৈরির সময় একটি অপ্রত্যাশিত ত্রুটি ঘটেছে।",
+      "playbackFailed": "অডিও চালানোর সময় একটি ত্রুটি ঘটেছে।"
+    },
+    "success": { "generated": "সঙ্গীত সফলভাবে তৈরি হয়েছে।" }
+  },
+  "navigation": {
+    "home": "হোম",
+    "code_studio": "কোড স্টুডিও",
+    "vision_studio": "ভিশন স্টুডিও",
+    "chat": "AI চ্যাট",
+    "settings": "সেটিংস"
+  },
+  "dashboard": {
+    "welcome": "Creova AI প্ল্যাটফর্ম",
+    "subtitle": "শুরু করতে একটি স্বায়ত্তশাসিত AI এজেন্ট ওয়ার্কস্পেস নির্বাচন করুন",
+    "code_title": "AI কোড স্টুডিও",
+    "code_desc": "Developer Agent দিয়ে কোড রিফ্যাক্টর, ডিবাগ, তৈরি করুন এবং রিয়েল-টাইম পরিবর্তন দেখুন।",
+    "vision_title": "AI ভিশন স্টুডিও",
+    "vision_desc": "স্ক্রিনশট, ডিজাইন মকআপ বিশ্লেষণ করুন এবং UI-কে নেটিভ কম্পোনেন্টে রূপান্তর করুন।",
+    "chat_title": "AI সাধারণ সহকারী",
+    "chat_desc": "সাধারণ যুক্তি, ধারণা বিনিময় এবং স্থাপত্য আলোচনা।"
+  },
+  "code": {
+    "title": "AI কোড স্টুডিও",
+    "workspace_editor": "ওয়ার্কস্পেস এডিটর",
+    "proposed_changes": "প্রস্তাবিত AI পরিবর্তন",
+    "apply_changes": "পরিবর্তন প্রয়োগ করুন",
+    "prompt_placeholder": "AI-কে কোড লিখতে বা রিফ্যাক্টর করতে বলুন...",
+    "file_explorer": "প্রজেক্ট এক্সপ্লোরার",
+    "no_files": "ওয়ার্কস্পেসে কোনো ফাইল পাওয়া যায়নি",
+    "terminal_title": "এক্সিকিউশন কনসোল",
+    "terminal_empty": "কনসোল প্রস্তুত। এক্সিকিউশন লগের জন্য অপেক্ষা করা হচ্ছে..."
+  },
+  "vision": {
+    "title": "AI ভিশন স্টুডিও",
+    "image_url_label": "ছবির URL বা উৎস",
+    "url_placeholder": "এখানে ছবির URL পেস্ট করুন...",
+    "results_label": "বিশ্লেষণ ফলাফল",
+    "ai_label": "ভিশন AI",
+    "prompt_placeholder": "ছবি সম্পর্কে বর্ণনা করুন বা জিজ্ঞাসা করুন..."
+  },
+  "chat": {
+    "you": "আপনি",
+    "ai": "সহকারী",
+    "placeholder": "আপনার বার্তা টাইপ করুন..."
+  },
+  "settings": {
+    "title": "সেটিংস",
+    "language": "ভাষা",
+    "theme": "থিম",
+    "api_key": "Supabase ও AI কনফিগারেশন"
   }
 }
