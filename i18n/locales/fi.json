@@ -1,46 +1,56 @@
 {
-  "common": { "appName": "CREOVA", "error": "Virhe", "success": "Onnistui" },
+  "common": {
+    "appName": "CREOVA",
+    "error": "Virhe",
+    "success": "Onnistui",
+    "generate": "Generate",
+    "analyze": "Analyze",
+    "apply": "Apply",
+    "cancel": "Cancel",
+    "save": "Save",
+    "loading": "Loading...",
+    "retry": "Retry",
+    "delete": "Delete"
+  },
   "aiVideo": {
-    "title": "🎬 Tekoälyvideo",
+    "title": "🎬 AI-video",
     "subtitle": "Luo videoita CREOVA AI:lla",
-    "promptPlaceholder": "Esim: Futuristinen kaupunki auringonlaskussa",
+    "promptPlaceholder": "esim. Futuristinen kaupunki auringonlaskussa",
     "generateButton": "Luo video",
     "emptyPromptTitle": "CREOVA",
     "emptyPromptMessage": "Anna kuvaus videolle.",
     "statusTitle": "Videon tila",
     "progressLabel": "Edistyminen",
     "videoErrorTitle": "Videovirhe",
-    "videoStatusError": "Videon tilaa ei voitu hakea.",
+    "videoStatusError": "Videon tilan hakemisessa tapahtui virhe.",
     "videoReadyTitle": "CREOVA",
-    "videoReadyMessage": "Video on valmis.",
+    "videoReadyMessage": "Videosi on valmis.",
     "videoReadyNoUrl": "Video on valmis, mutta MP4-URL:ää ei vastaanotettu.",
     "videoFailedTitle": "Videon luonti epäonnistui",
     "videoFailedStatus": "Videon tila: {{status}}",
     "videoTooLongTitle": "CREOVA",
     "videoTooLongMessage": "Videon luonti kestää liian kauan. Tarkista myöhemmin uudelleen.",
-    "videoCheckError": "Virhe videon tilan tarkistuksessa.",
+    "videoCheckError": "Videon tilan tarkistuksessa tapahtui virhe.",
     "generationFailed": "Videon luonti epäonnistui.",
     "unexpectedError": "Videon luonnissa tapahtui odottamaton virhe.",
-    "noUrlYet": "MP4-URL:ää ei vastaanotettu.",
+    "noUrlYet": "MP4-URL:ää ei ole vielä vastaanotettu.",
     "idLabel": "ID: {{id}}"
   },
   "aiVoice": {
-    "title": "🎤 Tekoäly­ääni",
+    "title": "🎤 AI-ääni",
     "subtitle": "Muunna teksti puheeksi CREOVA AI:lla",
-    "textPlaceholder": "Esim: Hei, CREOVA!",
+    "textPlaceholder": "esim. Hei, CREOVA!",
     "generateButton": "Luo ääni",
-    "emptyTextMessage": "Anna teksti äänelle.",
-    "generationFailedTitle": "Äänen luonti epäonnistui",
-    "generationFailedMessage": "Äänen luonnissa tapahtui virhe.",
-    "noAudioMessage": "Äänitiedostoa ei vastaanotettu.",
-    "readyMessage": "Ääni on valmis.",
-    "unexpectedError": "Äänen luonnissa tapahtui odottamaton virhe.",
-    "resultTitle": "🔊 Ääni valmis",
-    "resultText": "Teksti muunnettiin onnistuneesti puheeksi.",
-    "play": "▶️ Toista",
-    "pause": "⏸ Tauko",
-    "audioErrorTitle": "Äänivirhe",
-    "audioErrorMessage": "Äänen toistossa tapahtui virhe."
+    "result": { "title": "🔊 Ääni valmis", "description": "Tekstisi muunnettiin onnistuneesti puheeksi." },
+    "player": { "play": "▶️ Toista", "pause": "⏸ Tauko" },
+    "errors": {
+      "emptyText": "Anna teksti äänelle.",
+      "generationFailed": "Äänen luonnissa tapahtui virhe.",
+      "audioMissing": "Äänitiedostoa ei vastaanotettu.",
+      "unexpected": "Äänen luonnissa tapahtui odottamaton virhe.",
+      "playbackFailed": "Äänen toistossa tapahtui virhe."
+    },
+    "success": { "generated": "Ääni luotu onnistuneesti." }
   },
   "profile": {
     "title": "Profiili",
@@ -49,8 +59,71 @@
     "emailLabel": "Sähköposti",
     "saveButton": "Tallenna",
     "nameRequired": "Nimi vaaditaan.",
-    "loadFailed": "Profiilia ei voitu ladata.",
-    "updateFailed": "Profiilia ei voitu päivittää.",
-    "updateSuccess": "Profiili päivitettiin onnistuneesti."
+    "loadFailed": "Profiilin lataus epäonnistui.",
+    "updateFailed": "Profiilin päivitys epäonnistui.",
+    "updateSuccess": "Profiili päivitetty onnistuneesti."
+  },
+  "aiMusic": {
+    "title": "🎶 AI-musiikki",
+    "subtitle": "Luo musiikkia CREOVA AI:lla",
+    "promptPlaceholder": "esim. Futuristinen kaupunki auringonlaskussa",
+    "generateButton": "Luo musiikkia",
+    "result": { "title": "🎶 Musiikki valmis", "description": "Tekstisi muunnettiin onnistuneesti musiikiksi." },
+    "player": { "play": "▶️ Toista", "pause": "⏸ Tauko" },
+    "errors": {
+      "emptyPrompt": "Anna kuvaus musiikille.",
+      "generationFailed": "Musiikin luonti epäonnistui.",
+      "audioMissing": "Äänitiedostoa ei vastaanotettu.",
+      "unexpected": "Musiikin luonnissa tapahtui odottamaton virhe.",
+      "playbackFailed": "Äänen toistossa tapahtui virhe."
+    },
+    "success": { "generated": "Musiikki luotu onnistuneesti." }
+  },
+  "navigation": {
+    "home": "Koti",
+    "code_studio": "Koodistudio",
+    "vision_studio": "Visiostudio",
+    "chat": "Tekoälychat",
+    "settings": "Asetukset"
+  },
+  "dashboard": {
+    "welcome": "Creova AI -alusta",
+    "subtitle": "Valitse autonomisen tekoälyagentin työtila aloittaaksesi",
+    "code_title": "AI-koodistudio",
+    "code_desc": "Refaktoroi, debuggaa, generoi koodia ja näe reaaliaikaiset muutokset Developer Agentin kanssa.",
+    "vision_title": "AI-visiostudio",
+    "vision_desc": "Analysoi kuvakaappauksia, suunnittelumalleja ja muunna käyttöliittymä natiiveiksi komponenteiksi.",
+    "chat_title": "AI-yleisavustaja",
+    "chat_desc": "Yleinen päättely, ideoiden vaihto ja arkkitehtuurikeskustelu."
+  },
+  "code": {
+    "title": "AI-koodistudio",
+    "workspace_editor": "Työtilan editori",
+    "proposed_changes": "Ehdotetut AI-muutokset",
+    "apply_changes": "Käytä muutoksia",
+    "prompt_placeholder": "Pyydä tekoälyä kirjoittamaan tai refaktoroimaan koodia...",
+    "file_explorer": "Projektin selain",
+    "no_files": "Työtilasta ei löytynyt tiedostoja",
+    "terminal_title": "Suorituskonsoli",
+    "terminal_empty": "Konsoli valmis. Odottaa suorituslokia..."
+  },
+  "vision": {
+    "title": "AI-visiostudio",
+    "image_url_label": "Kuvan URL tai lähde",
+    "url_placeholder": "Liitä kuvan URL tähän...",
+    "results_label": "Analyysin tulokset",
+    "ai_label": "Visio-AI",
+    "prompt_placeholder": "Kuvaile kuvaa tai kysy siitä..."
+  },
+  "chat": {
+    "you": "Sinä",
+    "ai": "Avustaja",
+    "placeholder": "Kirjoita viestisi..."
+  },
+  "settings": {
+    "title": "Asetukset",
+    "language": "Kieli",
+    "theme": "Teema",
+    "api_key": "Supabase- ja AI-asetukset"
   }
 }
