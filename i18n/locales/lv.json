@@ -1,9 +1,21 @@
 {
-  "common": { "appName": "CREOVA", "error": "Kļūda", "success": "Veiksmīgi" },
+  "common": {
+    "appName": "CREOVA",
+    "error": "Kļūda",
+    "success": "Veiksmīgi",
+    "generate": "Ģenerēt",
+    "analyze": "Analizēt",
+    "apply": "Lietot",
+    "cancel": "Atcelt",
+    "save": "Saglabāt",
+    "loading": "Ielādē...",
+    "retry": "Mēģināt vēlreiz",
+    "delete": "Dzēst"
+  },
   "aiVideo": {
-    "title": "🎬 AI Video",
-    "subtitle": "Izveidojiet video ar CREOVA AI",
-    "promptPlaceholder": "Piem: Futūristiska pilsēta saulrietā",
+    "title": "🎬 AI video",
+    "subtitle": "Ģenerējiet videoklipus ar CREOVA AI",
+    "promptPlaceholder": "piem. Futūristiska pilsēta saulrieta laikā",
     "generateButton": "Ģenerēt video",
     "emptyPromptTitle": "CREOVA",
     "emptyPromptMessage": "Ievadiet video aprakstu.",
@@ -12,35 +24,33 @@
     "videoErrorTitle": "Video kļūda",
     "videoStatusError": "Neizdevās iegūt video statusu.",
     "videoReadyTitle": "CREOVA",
-    "videoReadyMessage": "Video ir gatavs.",
+    "videoReadyMessage": "Jūsu video ir gatavs.",
     "videoReadyNoUrl": "Video ir gatavs, bet MP4 URL netika saņemts.",
     "videoFailedTitle": "Video ģenerēšana neizdevās",
     "videoFailedStatus": "Video statuss: {{status}}",
     "videoTooLongTitle": "CREOVA",
-    "videoTooLongMessage": "Video ģenerēšana aizņem pārāk ilgu laiku. Pārbaudiet vēlreiz vēlāk.",
-    "videoCheckError": "Kļūda, pārbaudot video statusu.",
+    "videoTooLongMessage": "Video ģenerēšana aizņem pārāk ilgu laiku. Pārbaudiet vēlāk.",
+    "videoCheckError": "Pārbaudot video statusu, radās kļūda.",
     "generationFailed": "Video ģenerēšana neizdevās.",
     "unexpectedError": "Ģenerējot video, radās neparedzēta kļūda.",
-    "noUrlYet": "MP4 URL netika saņemts.",
+    "noUrlYet": "MP4 URL vēl nav saņemts.",
     "idLabel": "ID: {{id}}"
   },
   "aiVoice": {
-    "title": "🎤 AI Balss",
-    "subtitle": "Pārvērtiet tekstu runā ar CREOVA AI",
-    "textPlaceholder": "Piem: Sveiki, CREOVA!",
+    "title": "🎤 AI balss",
+    "subtitle": "Pārvērtiet tekstu balsī ar CREOVA AI",
+    "textPlaceholder": "piem. Sveiki, CREOVA!",
     "generateButton": "Ģenerēt balsi",
-    "emptyTextMessage": "Ievadiet tekstu balsij.",
-    "generationFailedTitle": "Balss ģenerēšana neizdevās",
-    "generationFailedMessage": "Ģenerējot balsi, radās kļūda.",
-    "noAudioMessage": "Audio fails netika saņemts.",
-    "readyMessage": "Balss ir gatava.",
-    "unexpectedError": "Ģenerējot balsi, radās neparedzēta kļūda.",
-    "resultTitle": "🔊 Balss gatava",
-    "resultText": "Teksts veiksmīgi pārvērsts runā.",
-    "play": "▶️ Atskaņot",
-    "pause": "⏸ Pauze",
-    "audioErrorTitle": "Audio kļūda",
-    "audioErrorMessage": "Atskaņojot audio, radās kļūda."
+    "result": { "title": "🔊 Balss gatava", "description": "Jūsu teksts ir veiksmīgi pārvērsts balsī." },
+    "player": { "play": "▶️ Atskaņot", "pause": "⏸ Pauze" },
+    "errors": {
+      "emptyText": "Ievadiet tekstu balsij.",
+      "generationFailed": "Ģenerējot balsi, radās kļūda.",
+      "audioMissing": "Audio fails netika saņemts.",
+      "unexpected": "Ģenerējot balsi, radās neparedzēta kļūda.",
+      "playbackFailed": "Atskaņojot audio, radās kļūda."
+    },
+    "success": { "generated": "Balss veiksmīgi ģenerēta." }
   },
   "profile": {
     "title": "Profils",
@@ -52,5 +62,68 @@
     "loadFailed": "Neizdevās ielādēt profilu.",
     "updateFailed": "Neizdevās atjaunināt profilu.",
     "updateSuccess": "Profils veiksmīgi atjaunināts."
+  },
+  "aiMusic": {
+    "title": "🎶 AI mūzika",
+    "subtitle": "Ģenerējiet mūziku ar CREOVA AI",
+    "promptPlaceholder": "piem. Futūristiska pilsēta saulrieta laikā",
+    "generateButton": "Ģenerēt mūziku",
+    "result": { "title": "🎶 Mūzika gatava", "description": "Jūsu teksts ir veiksmīgi pārvērsts mūzikā." },
+    "player": { "play": "▶️ Atskaņot", "pause": "⏸ Pauze" },
+    "errors": {
+      "emptyPrompt": "Ievadiet mūzikas aprakstu.",
+      "generationFailed": "Ģenerējot mūziku, radās kļūda.",
+      "audioMissing": "Audio fails netika saņemts.",
+      "unexpected": "Ģenerējot mūziku, radās neparedzēta kļūda.",
+      "playbackFailed": "Atskaņojot audio, radās kļūda."
+    },
+    "success": { "generated": "Mūzika veiksmīgi ģenerēta." }
+  },
+  "navigation": {
+    "home": "Sākums",
+    "code_studio": "Koda studija",
+    "vision_studio": "Redzes studija",
+    "chat": "AI tērzēšana",
+    "settings": "Iestatījumi"
+  },
+  "dashboard": {
+    "welcome": "CREOVA AI platforma",
+    "subtitle": "Lai sāktu, izvēlieties autonomā AI aģenta darbvietu",
+    "code_title": "AI koda studija",
+    "code_desc": "Izmantojot Developer Agent, pārveidojiet, atkļūdojiet, ģenerējiet kodu un reāllaikā skatiet izmaiņas.",
+    "vision_title": "AI redzes studija",
+    "vision_desc": "Analizējiet ekrānuzņēmumus, dizaina maketus un pārveidojiet UI par vietējiem komponentiem.",
+    "chat_title": "Vispārējais AI asistents",
+    "chat_desc": "Vispārīga spriešana, ideju apmaiņa un arhitektūras apspriešana."
+  },
+  "code": {
+    "title": "AI koda studija",
+    "workspace_editor": "Darbvietas redaktors",
+    "proposed_changes": "AI ierosinātās izmaiņas",
+    "apply_changes": "Lietot izmaiņas",
+    "prompt_placeholder": "Lūdziet AI uzrakstīt vai pārveidot kodu...",
+    "file_explorer": "Projekta faili",
+    "no_files": "Darbvietā nav atrasti faili",
+    "terminal_title": "Izpildes konsole",
+    "terminal_empty": "Konsole ir gatava. Gaida izpildes žurnālus..."
+  },
+  "vision": {
+    "title": "AI redzes studija",
+    "image_url_label": "Attēla URL vai avots",
+    "url_placeholder": "Ielīmējiet attēla URL šeit...",
+    "results_label": "Analīzes rezultāti",
+    "ai_label": "AI redze",
+    "prompt_placeholder": "Aprakstiet attēlu vai uzdodiet par to jautājumu..."
+  },
+  "chat": {
+    "you": "Jūs",
+    "ai": "Asistents",
+    "placeholder": "Rakstiet savu ziņu..."
+  },
+  "settings": {
+    "title": "Iestatījumi",
+    "language": "Valoda",
+    "theme": "Motīvs",
+    "api_key": "Supabase un AI iestatījumi"
   }
 }
