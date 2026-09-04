@@ -1,9 +1,21 @@
 {
-  "common": { "appName": "CREOVA", "error": "Ошибка", "success": "Успешно" },
+  "common": {
+    "appName": "CREOVA",
+    "error": "Ошибка",
+    "success": "Успех",
+    "generate": "Generate",
+    "analyze": "Analyze",
+    "apply": "Apply",
+    "cancel": "Cancel",
+    "save": "Save",
+    "loading": "Loading...",
+    "retry": "Retry",
+    "delete": "Delete"
+  },
   "aiVideo": {
-    "title": "🎬 AI Видео",
+    "title": "🎬 ИИ Видео",
     "subtitle": "Создавайте видео с CREOVA AI",
-    "promptPlaceholder": "Например: Футуристический город на закате",
+    "promptPlaceholder": "например, футуристический город на закате",
     "generateButton": "Создать видео",
     "emptyPromptTitle": "CREOVA",
     "emptyPromptMessage": "Введите описание для видео.",
@@ -12,45 +24,106 @@
     "videoErrorTitle": "Ошибка видео",
     "videoStatusError": "Не удалось получить статус видео.",
     "videoReadyTitle": "CREOVA",
-    "videoReadyMessage": "Видео готово.",
+    "videoReadyMessage": "Ваше видео готово.",
     "videoReadyNoUrl": "Видео готово, но URL MP4 не получен.",
     "videoFailedTitle": "Не удалось создать видео",
     "videoFailedStatus": "Статус видео: {{status}}",
     "videoTooLongTitle": "CREOVA",
     "videoTooLongMessage": "Создание видео занимает слишком много времени. Проверьте позже.",
-    "videoCheckError": "Ошибка при проверке статуса видео.",
+    "videoCheckError": "Произошла ошибка при проверке статуса видео.",
     "generationFailed": "Не удалось создать видео.",
     "unexpectedError": "Произошла непредвиденная ошибка при создании видео.",
-    "noUrlYet": "URL MP4 не получен.",
+    "noUrlYet": "URL MP4 ещё не получен.",
     "idLabel": "ID: {{id}}"
   },
   "aiVoice": {
-    "title": "🎤 AI Голос",
-    "subtitle": "Превращайте текст в речь с CREOVA AI",
-    "textPlaceholder": "Например: Привет, CREOVA!",
+    "title": "🎤 ИИ Голос",
+    "subtitle": "Преобразуйте текст в речь с CREOVA AI",
+    "textPlaceholder": "например, Привет, CREOVA!",
     "generateButton": "Создать голос",
-    "emptyTextMessage": "Введите текст для озвучивания.",
-    "generationFailedTitle": "Не удалось создать голос",
-    "generationFailedMessage": "Произошла ошибка при создании голоса.",
-    "noAudioMessage": "Аудиофайл не получен.",
-    "readyMessage": "Голос готов.",
-    "unexpectedError": "Произошла непредвиденная ошибка при создании голоса.",
-    "resultTitle": "🔊 Голос готов",
-    "resultText": "Текст успешно преобразован в речь.",
-    "play": "▶️ Слушать",
-    "pause": "⏸ Пауза",
-    "audioErrorTitle": "Ошибка аудио",
-    "audioErrorMessage": "Произошла ошибка при воспроизведении аудио."
+    "result": { "title": "🔊 Голос готов", "description": "Ваш текст успешно преобразован в речь." },
+    "player": { "play": "▶️ Воспроизвести", "pause": "⏸ Пауза" },
+    "errors": {
+      "emptyText": "Введите текст для озвучивания.",
+      "generationFailed": "Произошла ошибка при создании голоса.",
+      "audioMissing": "Аудиофайл не получен.",
+      "unexpected": "Произошла непредвиденная ошибка при создании голоса.",
+      "playbackFailed": "Произошла ошибка при воспроизведении аудио."
+    },
+    "success": { "generated": "Голос успешно создан." }
   },
   "profile": {
     "title": "Профиль",
     "nameLabel": "Имя",
-    "namePlaceholder": "Введите ваше имя",
-    "emailLabel": "Email",
+    "namePlaceholder": "Введите своё имя",
+    "emailLabel": "Электронная почта",
     "saveButton": "Сохранить",
     "nameRequired": "Имя обязательно.",
     "loadFailed": "Не удалось загрузить профиль.",
     "updateFailed": "Не удалось обновить профиль.",
     "updateSuccess": "Профиль успешно обновлён."
+  },
+  "aiMusic": {
+    "title": "🎶 ИИ Музыка",
+    "subtitle": "Создавайте музыку с CREOVA AI",
+    "promptPlaceholder": "например, футуристический город на закате",
+    "generateButton": "Создать музыку",
+    "result": { "title": "🎶 Музыка готова", "description": "Ваш текст успешно преобразован в музыку." },
+    "player": { "play": "▶️ Воспроизвести", "pause": "⏸ Пауза" },
+    "errors": {
+      "emptyPrompt": "Введите описание для музыки.",
+      "generationFailed": "Ошибка при создании музыки.",
+      "audioMissing": "Аудиофайл не получен.",
+      "unexpected": "Произошла непредвиденная ошибка при создании музыки.",
+      "playbackFailed": "Произошла ошибка при воспроизведении аудио."
+    },
+    "success": { "generated": "Музыка успешно создана." }
+  },
+  "navigation": {
+    "home": "Главная",
+    "code_studio": "Студия кода",
+    "vision_studio": "Студия Vision",
+    "chat": "ИИ Чат",
+    "settings": "Настройки"
+  },
+  "dashboard": {
+    "welcome": "Платформа Creova AI",
+    "subtitle": "Выберите рабочее пространство автономного ИИ-агента, чтобы начать",
+    "code_title": "ИИ Студия кода",
+    "code_desc": "Рефакторьте, исправляйте, создавайте код и просматривайте изменения в реальном времени с Developer Agent.",
+    "vision_title": "ИИ Студия Vision",
+    "vision_desc": "Анализируйте скриншоты, макеты дизайна и преобразуйте UI в нативные компоненты.",
+    "chat_title": "Общий ИИ Ассистент",
+    "chat_desc": "Общие рассуждения, идеи и обсуждение архитектуры."
+  },
+  "code": {
+    "title": "ИИ Студия кода",
+    "workspace_editor": "Редактор рабочего пространства",
+    "proposed_changes": "Предлагаемые ИИ изменения",
+    "apply_changes": "Применить изменения",
+    "prompt_placeholder": "Попросите ИИ написать или отрефакторить код...",
+    "file_explorer": "Проводник проекта",
+    "no_files": "В рабочем пространстве файлы не найдены",
+    "terminal_title": "Консоль выполнения",
+    "terminal_empty": "Консоль готова. Ожидание журналов выполнения..."
+  },
+  "vision": {
+    "title": "ИИ Студия Vision",
+    "image_url_label": "URL изображения или источник",
+    "url_placeholder": "Вставьте URL изображения здесь...",
+    "results_label": "Результаты анализа",
+    "ai_label": "ИИ Vision",
+    "prompt_placeholder": "Опишите изображение или задайте вопрос о нём..."
+  },
+  "chat": {
+    "you": "Вы",
+    "ai": "Ассистент",
+    "placeholder": "Введите сообщение..."
+  },
+  "settings": {
+    "title": "Настройки",
+    "language": "Язык",
+    "theme": "Тема",
+    "api_key": "Настройки Supabase и ИИ"
   }
 }
