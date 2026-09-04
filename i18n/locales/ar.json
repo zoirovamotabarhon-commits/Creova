@@ -1,5 +1,17 @@
 {
-  "common": { "appName": "CREOVA", "error": "خطأ", "success": "نجاح" },
+  "common": {
+    "appName": "CREOVA",
+    "error": "خطأ",
+    "success": "نجاح",
+    "generate": "إنشاء",
+    "analyze": "تحليل",
+    "apply": "تطبيق",
+    "cancel": "إلغاء",
+    "save": "حفظ",
+    "loading": "جارٍ التحميل...",
+    "retry": "إعادة المحاولة",
+    "delete": "حذف"
+  },
   "aiVideo": {
     "title": "🎬 فيديو الذكاء الاصطناعي",
     "subtitle": "أنشئ مقاطع فيديو باستخدام CREOVA AI",
@@ -29,18 +41,24 @@
     "subtitle": "حوّل النص إلى كلام باستخدام CREOVA AI",
     "textPlaceholder": "مثال: مرحبًا، CREOVA!",
     "generateButton": "إنشاء صوت",
-    "emptyTextMessage": "أدخل نصًا للصوت.",
-    "generationFailedTitle": "فشل إنشاء الصوت",
-    "generationFailedMessage": "حدث خطأ أثناء إنشاء الصوت.",
-    "noAudioMessage": "لم يتم استلام الملف الصوتي.",
-    "readyMessage": "الصوت جاهز.",
-    "unexpectedError": "حدث خطأ غير متوقع أثناء إنشاء الصوت.",
-    "resultTitle": "🔊 الصوت جاهز",
-    "resultText": "تم تحويل النص إلى كلام بنجاح.",
-    "play": "▶️ تشغيل",
-    "pause": "⏸ إيقاف مؤقت",
-    "audioErrorTitle": "خطأ في الصوت",
-    "audioErrorMessage": "حدث خطأ أثناء تشغيل الصوت."
+    "result": {
+      "title": "🔊 الصوت جاهز",
+      "description": "تم تحويل النص إلى كلام بنجاح."
+    },
+    "player": {
+      "play": "▶️ تشغيل",
+      "pause": "⏸ إيقاف مؤقت"
+    },
+    "errors": {
+      "emptyText": "أدخل نصًا للصوت.",
+      "generationFailed": "حدث خطأ أثناء إنشاء الصوت.",
+      "audioMissing": "لم يتم استلام الملف الصوتي.",
+      "unexpected": "حدث خطأ غير متوقع أثناء إنشاء الصوت.",
+      "playbackFailed": "حدث خطأ أثناء تشغيل الصوت."
+    },
+    "success": {
+      "generated": "الصوت جاهز."
+    }
   },
   "profile": {
     "title": "الملف الشخصي",
@@ -52,5 +70,76 @@
     "loadFailed": "فشل تحميل الملف الشخصي.",
     "updateFailed": "فشل تحديث الملف الشخصي.",
     "updateSuccess": "تم تحديث الملف الشخصي بنجاح."
+  },
+  "aiMusic": {
+    "title": "🎵 موسيقى الذكاء الاصطناعي",
+    "subtitle": "أنشئ موسيقى باستخدام CREOVA AI",
+    "promptPlaceholder": "مثال: موسيقى سينمائية هادئة ومُلهمة",
+    "generateButton": "إنشاء موسيقى",
+    "result": {
+      "title": "🎵 الموسيقى جاهزة",
+      "description": "تم إنشاء الموسيقى بنجاح."
+    },
+    "player": {
+      "play": "▶️ تشغيل",
+      "pause": "⏸ إيقاف مؤقت"
+    },
+    "errors": {
+      "emptyPrompt": "أدخل وصفًا للموسيقى.",
+      "generationFailed": "فشل إنشاء الموسيقى.",
+      "audioMissing": "لم يتم استلام الملف الصوتي.",
+      "unexpected": "حدث خطأ غير متوقع أثناء إنشاء الموسيقى.",
+      "playbackFailed": "حدث خطأ أثناء تشغيل الموسيقى."
+    },
+    "success": {
+      "generated": "تم إنشاء الموسيقى بنجاح."
+    }
+  },
+  "navigation": {
+    "home": "الرئيسية",
+    "code_studio": "استوديو الأكواد",
+    "vision_studio": "استوديو الرؤية",
+    "chat": "الدردشة",
+    "settings": "الإعدادات"
+  },
+  "dashboard": {
+    "welcome": "مرحبًا بك في CREOVA",
+    "subtitle": "أنشئ واستكشف أدوات الذكاء الاصطناعي باستخدام CREOVA.",
+    "code_title": "استوديو الأكواد",
+    "code_desc": "اكتب الأكواد وحررها باستخدام الذكاء الاصطناعي.",
+    "vision_title": "استوديو الرؤية",
+    "vision_desc": "حلّل الصور باستخدام الذكاء الاصطناعي.",
+    "chat_title": "الدردشة مع الذكاء الاصطناعي",
+    "chat_desc": "تحدث مع مساعد الذكاء الاصطناعي."
+  },
+  "code": {
+    "title": "استوديو الأكواد",
+    "workspace_editor": "محرر مساحة العمل",
+    "proposed_changes": "التغييرات المقترحة",
+    "apply_changes": "تطبيق التغييرات",
+    "prompt_placeholder": "صف التغيير الذي تريد إجراءه...",
+    "file_explorer": "مستكشف الملفات",
+    "no_files": "لا توجد ملفات.",
+    "terminal_title": "الطرفية",
+    "terminal_empty": "لا توجد مخرجات في الطرفية."
+  },
+  "vision": {
+    "title": "استوديو الرؤية",
+    "image_url_label": "رابط الصورة",
+    "url_placeholder": "أدخل رابط الصورة...",
+    "results_label": "النتائج",
+    "ai_label": "تحليل الذكاء الاصطناعي",
+    "prompt_placeholder": "ماذا تريد أن تعرف عن هذه الصورة؟"
+  },
+  "chat": {
+    "you": "أنت",
+    "ai": "الذكاء الاصطناعي",
+    "placeholder": "اكتب رسالتك..."
+  },
+  "settings": {
+    "title": "الإعدادات",
+    "language": "اللغة",
+    "theme": "المظهر",
+    "api_key": "مفتاح API"
   }
 }
