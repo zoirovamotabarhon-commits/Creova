@@ -1,9 +1,21 @@
 {
-  "common": { "appName": "CREOVA", "error": "Hata", "success": "Başarılı" },
+  "common": {
+    "appName": "CREOVA",
+    "error": "Hata",
+    "success": "Başarılı",
+    "generate": "Generate",
+    "analyze": "Analyze",
+    "apply": "Apply",
+    "cancel": "Cancel",
+    "save": "Save",
+    "loading": "Loading...",
+    "retry": "Retry",
+    "delete": "Delete"
+  },
   "aiVideo": {
-    "title": "🎬 AI Video",
-    "subtitle": "CREOVA AI ile video oluşturun",
-    "promptPlaceholder": "Örnek: Gün batımında fütüristik bir şehir",
+    "title": "🎬 Yapay Zeka Videosu",
+    "subtitle": "CREOVA AI ile videolar oluşturun",
+    "promptPlaceholder": "ör. Gün batımında fütüristik bir şehir",
     "generateButton": "Video oluştur",
     "emptyPromptTitle": "CREOVA",
     "emptyPromptMessage": "Video için bir açıklama girin.",
@@ -12,35 +24,33 @@
     "videoErrorTitle": "Video hatası",
     "videoStatusError": "Video durumu alınamadı.",
     "videoReadyTitle": "CREOVA",
-    "videoReadyMessage": "Video hazır.",
-    "videoReadyNoUrl": "Video hazır, ancak MP4 URL'si alınamadı.",
-    "videoFailedTitle": "Video oluşturulamadı",
+    "videoReadyMessage": "Videonuz hazır.",
+    "videoReadyNoUrl": "Video hazır, ancak MP4 URL'si alınmadı.",
+    "videoFailedTitle": "Video oluşturma başarısız oldu",
     "videoFailedStatus": "Video durumu: {{status}}",
     "videoTooLongTitle": "CREOVA",
-    "videoTooLongMessage": "Video oluşturma çok uzun sürüyor. Lütfen daha sonra tekrar kontrol edin.",
-    "videoCheckError": "Video durumu kontrol edilirken hata oluştu.",
+    "videoTooLongMessage": "Video oluşturma çok uzun sürüyor. Daha sonra tekrar kontrol edin.",
+    "videoCheckError": "Video durumu kontrol edilirken bir hata oluştu.",
     "generationFailed": "Video oluşturma başarısız oldu.",
     "unexpectedError": "Video oluşturulurken beklenmeyen bir hata oluştu.",
-    "noUrlYet": "MP4 URL'si alınamadı.",
+    "noUrlYet": "Henüz bir MP4 URL'si alınmadı.",
     "idLabel": "ID: {{id}}"
   },
   "aiVoice": {
-    "title": "🎤 AI Ses",
+    "title": "🎤 Yapay Zeka Sesi",
     "subtitle": "CREOVA AI ile metni sese dönüştürün",
-    "textPlaceholder": "Örnek: Merhaba, CREOVA!",
+    "textPlaceholder": "ör. Merhaba, CREOVA!",
     "generateButton": "Ses oluştur",
-    "emptyTextMessage": "Ses için metin girin.",
-    "generationFailedTitle": "Ses oluşturma başarısız",
-    "generationFailedMessage": "Ses oluşturulurken bir hata oluştu.",
-    "noAudioMessage": "Ses dosyası alınamadı.",
-    "readyMessage": "Ses hazır.",
-    "unexpectedError": "Ses oluşturulurken beklenmeyen bir hata oluştu.",
-    "resultTitle": "🔊 Ses hazır",
-    "resultText": "Metin başarıyla sese dönüştürüldü.",
-    "play": "▶️ Oynat",
-    "pause": "⏸ Duraklat",
-    "audioErrorTitle": "Ses hatası",
-    "audioErrorMessage": "Ses oynatılırken bir hata oluştu."
+    "result": { "title": "🔊 Ses hazır", "description": "Metniniz başarıyla sese dönüştürüldü." },
+    "player": { "play": "▶️ Oynat", "pause": "⏸ Duraklat" },
+    "errors": {
+      "emptyText": "Ses için metin girin.",
+      "generationFailed": "Ses oluşturulurken bir hata oluştu.",
+      "audioMissing": "Ses dosyası alınmadı.",
+      "unexpected": "Ses oluşturulurken beklenmeyen bir hata oluştu.",
+      "playbackFailed": "Ses oynatılırken bir hata oluştu."
+    },
+    "success": { "generated": "Ses başarıyla oluşturuldu." }
   },
   "profile": {
     "title": "Profil",
@@ -52,5 +62,68 @@
     "loadFailed": "Profil yüklenemedi.",
     "updateFailed": "Profil güncellenemedi.",
     "updateSuccess": "Profil başarıyla güncellendi."
+  },
+  "aiMusic": {
+    "title": "🎶 Yapay Zeka Müziği",
+    "subtitle": "CREOVA AI ile müzik oluşturun",
+    "promptPlaceholder": "ör. Gün batımında fütüristik bir şehir",
+    "generateButton": "Müzik oluştur",
+    "result": { "title": "🎶 Müzik hazır", "description": "Metniniz başarıyla müziğe dönüştürüldü." },
+    "player": { "play": "▶️ Oynat", "pause": "⏸ Duraklat" },
+    "errors": {
+      "emptyPrompt": "Müzik için bir açıklama girin.",
+      "generationFailed": "Müzik oluşturulurken hata oluştu.",
+      "audioMissing": "Ses dosyası alınmadı.",
+      "unexpected": "Müzik oluşturulurken beklenmeyen bir hata oluştu.",
+      "playbackFailed": "Ses oynatılırken bir hata oluştu."
+    },
+    "success": { "generated": "Müzik başarıyla oluşturuldu." }
+  },
+  "navigation": {
+    "home": "Ana Sayfa",
+    "code_studio": "Kod Stüdyosu",
+    "vision_studio": "Vision Stüdyosu",
+    "chat": "Yapay Zeka Sohbeti",
+    "settings": "Ayarlar"
+  },
+  "dashboard": {
+    "welcome": "Creova AI Platformu",
+    "subtitle": "Başlamak için otonom AI ajanının çalışma alanını seçin",
+    "code_title": "AI Kod Stüdyosu",
+    "code_desc": "Developer Agent ile kodu yeniden düzenleyin, hataları ayıklayın, kod oluşturun ve değişiklikleri gerçek zamanlı görüntüleyin.",
+    "vision_title": "AI Vision Stüdyosu",
+    "vision_desc": "Ekran görüntülerini ve tasarım maketlerini analiz edin, UI'ı yerel bileşenlere dönüştürün.",
+    "chat_title": "Genel AI Asistanı",
+    "chat_desc": "Genel akıl yürütme, fikir alışverişi ve mimari tartışması."
+  },
+  "code": {
+    "title": "AI Kod Stüdyosu",
+    "workspace_editor": "Çalışma alanı düzenleyicisi",
+    "proposed_changes": "AI tarafından önerilen değişiklikler",
+    "apply_changes": "Değişiklikleri uygula",
+    "prompt_placeholder": "AI'dan kod yazmasını veya yeniden düzenlemesini isteyin...",
+    "file_explorer": "Proje gezgini",
+    "no_files": "Çalışma alanında dosya bulunamadı",
+    "terminal_title": "Çalıştırma konsolu",
+    "terminal_empty": "Konsol hazır. Çalıştırma günlükleri bekleniyor..."
+  },
+  "vision": {
+    "title": "AI Vision Stüdyosu",
+    "image_url_label": "Görsel URL'si veya kaynak",
+    "url_placeholder": "Görsel URL'sini buraya yapıştırın...",
+    "results_label": "Analiz sonuçları",
+    "ai_label": "AI Vision",
+    "prompt_placeholder": "Görseli açıklayın veya görsel hakkında soru sorun..."
+  },
+  "chat": {
+    "you": "Siz",
+    "ai": "Asistan",
+    "placeholder": "Mesajınızı yazın..."
+  },
+  "settings": {
+    "title": "Ayarlar",
+    "language": "Dil",
+    "theme": "Tema",
+    "api_key": "Supabase ve AI ayarları"
   }
-}
+  }
