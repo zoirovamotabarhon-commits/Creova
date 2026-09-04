@@ -15,6 +15,9 @@
     "preview": {
       "distribution": "internal",
       "node": "22.13.0",
+      "android": {
+        "buildType": "apk"
+      },
       "env": {
         "NPM_CONFIG_REGISTRY": "https://registry.npmjs.org/",
         "npm_config_registry": "https://registry.npmjs.org/"
