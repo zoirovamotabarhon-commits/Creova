@@ -1,56 +1,129 @@
 {
-  "common": { "appName": "CREOVA", "error": "Помилка", "success": "Успіх" },
+  "common": {
+    "appName": "CREOVA",
+    "error": "Помилка",
+    "success": "Успіх",
+    "generate": "Generate",
+    "analyze": "Analyze",
+    "apply": "Apply",
+    "cancel": "Cancel",
+    "save": "Save",
+    "loading": "Loading...",
+    "retry": "Retry",
+    "delete": "Delete"
+  },
   "aiVideo": {
-    "title": "🎬 AI Відео",
-    "subtitle": "Створюйте відео з CREOVA AI",
-    "promptPlaceholder": "Напр: Футуристичне місто на заході сонця",
+    "title": "🎬 Відео ШІ",
+    "subtitle": "Створюйте відео за допомогою CREOVA AI",
+    "promptPlaceholder": "наприклад, футуристичне місто на заході сонця",
     "generateButton": "Створити відео",
     "emptyPromptTitle": "CREOVA",
-    "emptyPromptMessage": "Введіть опис для відео.",
-    "statusTitle": "Статус відео",
+    "emptyPromptMessage": "Введіть опис відео.",
+    "statusTitle": "Стан відео",
     "progressLabel": "Прогрес",
     "videoErrorTitle": "Помилка відео",
-    "videoStatusError": "Не вдалося отримати статус відео.",
+    "videoStatusError": "Не вдалося отримати стан відео.",
     "videoReadyTitle": "CREOVA",
-    "videoReadyMessage": "Відео готове.",
+    "videoReadyMessage": "Ваше відео готове.",
     "videoReadyNoUrl": "Відео готове, але URL MP4 не отримано.",
     "videoFailedTitle": "Не вдалося створити відео",
-    "videoFailedStatus": "Статус відео: {{status}}",
+    "videoFailedStatus": "Стан відео: {{status}}",
     "videoTooLongTitle": "CREOVA",
-    "videoTooLongMessage": "Створення відео триває занадто довго. Перевірте пізніше.",
-    "videoCheckError": "Помилка перевірки статусу відео.",
+    "videoTooLongMessage": "Створення відео триває надто довго. Перевірте ще раз пізніше.",
+    "videoCheckError": "Під час перевірки стану відео сталася помилка.",
     "generationFailed": "Не вдалося створити відео.",
-    "unexpectedError": "Під час створення відео сталася неочікувана помилка.",
-    "noUrlYet": "URL MP4 не отримано.",
+    "unexpectedError": "Під час створення відео сталася непередбачена помилка.",
+    "noUrlYet": "URL MP4 ще не отримано.",
     "idLabel": "ID: {{id}}"
   },
   "aiVoice": {
-    "title": "🎤 AI Голос",
-    "subtitle": "Перетворюйте текст на мовлення з CREOVA AI",
-    "textPlaceholder": "Напр: Привіт, CREOVA!",
+    "title": "🎤 Голос ШІ",
+    "subtitle": "Перетворюйте текст на мовлення за допомогою CREOVA AI",
+    "textPlaceholder": "наприклад, Привіт, CREOVA!",
     "generateButton": "Створити голос",
-    "emptyTextMessage": "Введіть текст для голосу.",
-    "generationFailedTitle": "Не вдалося створити голос",
-    "generationFailedMessage": "Під час створення голосу сталася помилка.",
-    "noAudioMessage": "Аудіофайл не отримано.",
-    "readyMessage": "Голос готовий.",
-    "unexpectedError": "Під час створення голосу сталася неочікувана помилка.",
-    "resultTitle": "🔊 Голос готовий",
-    "resultText": "Текст успішно перетворено на мовлення.",
-    "play": "▶️ Відтворити",
-    "pause": "⏸ Пауза",
-    "audioErrorTitle": "Помилка аудіо",
-    "audioErrorMessage": "Під час відтворення аудіо сталася помилка."
+    "result": { "title": "🔊 Голос готовий", "description": "Ваш текст успішно перетворено на мовлення." },
+    "player": { "play": "▶️ Відтворити", "pause": "⏸ Пауза" },
+    "errors": {
+      "emptyText": "Введіть текст для голосу.",
+      "generationFailed": "Під час створення голосу сталася помилка.",
+      "audioMissing": "Аудіофайл не отримано.",
+      "unexpected": "Під час створення голосу сталася непередбачена помилка.",
+      "playbackFailed": "Під час відтворення аудіо сталася помилка."
+    },
+    "success": { "generated": "Голос успішно створено." }
   },
   "profile": {
     "title": "Профіль",
     "nameLabel": "Ім'я",
-    "namePlaceholder": "Введіть ваше ім'я",
-    "emailLabel": "Email",
+    "namePlaceholder": "Введіть своє ім'я",
+    "emailLabel": "Електронна пошта",
     "saveButton": "Зберегти",
     "nameRequired": "Ім'я обов'язкове.",
     "loadFailed": "Не вдалося завантажити профіль.",
     "updateFailed": "Не вдалося оновити профіль.",
     "updateSuccess": "Профіль успішно оновлено."
+  },
+  "aiMusic": {
+    "title": "🎶 Музика ШІ",
+    "subtitle": "Створюйте музику за допомогою CREOVA AI",
+    "promptPlaceholder": "наприклад, футуристичне місто на заході сонця",
+    "generateButton": "Створити музику",
+    "result": { "title": "🎶 Музика готова", "description": "Ваш текст успішно перетворено на музику." },
+    "player": { "play": "▶️ Відтворити", "pause": "⏸ Пауза" },
+    "errors": {
+      "emptyPrompt": "Введіть опис музики.",
+      "generationFailed": "Помилка під час створення музики.",
+      "audioMissing": "Аудіофайл не отримано.",
+      "unexpected": "Під час створення музики сталася непередбачена помилка.",
+      "playbackFailed": "Під час відтворення аудіо сталася помилка."
+    },
+    "success": { "generated": "Музику успішно створено." }
+  },
+  "navigation": {
+    "home": "Головна",
+    "code_studio": "Студія коду",
+    "vision_studio": "Студія Vision",
+    "chat": "Чат ШІ",
+    "settings": "Налаштування"
+  },
+  "dashboard": {
+    "welcome": "Платформа Creova AI",
+    "subtitle": "Виберіть робочий простір автономного агента ШІ, щоб почати",
+    "code_title": "Студія коду ШІ",
+    "code_desc": "Рефакторьте, налагоджуйте, створюйте код і переглядайте зміни в реальному часі за допомогою Developer Agent.",
+    "vision_title": "Студія Vision ШІ",
+    "vision_desc": "Аналізуйте знімки екрана, макети дизайну та перетворюйте UI на нативні компоненти.",
+    "chat_title": "Загальний асистент ШІ",
+    "chat_desc": "Загальні міркування, обмін ідеями та обговорення архітектури."
+  },
+  "code": {
+    "title": "Студія коду ШІ",
+    "workspace_editor": "Редактор робочого простору",
+    "proposed_changes": "Запропоновані ШІ зміни",
+    "apply_changes": "Застосувати зміни",
+    "prompt_placeholder": "Попросіть ШІ написати або відрефакторити код...",
+    "file_explorer": "Провідник проєкту",
+    "no_files": "У робочому просторі файлів не знайдено",
+    "terminal_title": "Консоль виконання",
+    "terminal_empty": "Консоль готова. Очікування журналів виконання..."
+  },
+  "vision": {
+    "title": "Студія Vision ШІ",
+    "image_url_label": "URL зображення або джерело",
+    "url_placeholder": "Вставте URL зображення сюди...",
+    "results_label": "Результати аналізу",
+    "ai_label": "AI Vision",
+    "prompt_placeholder": "Опишіть зображення або поставте запитання про нього..."
+  },
+  "chat": {
+    "you": "Ви",
+    "ai": "Асистент",
+    "placeholder": "Введіть повідомлення..."
+  },
+  "settings": {
+    "title": "Налаштування",
+    "language": "Мова",
+    "theme": "Тема",
+    "api_key": "Налаштування Supabase та AI"
   }
-}
+  }
