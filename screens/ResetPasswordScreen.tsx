@@ -333,7 +333,7 @@ export default function ResetPasswordScreen() {
           }
         >
           <Text style={styles.buttonText}>
-            Qayta urinib ko'rish
+            Qayta urinib ko&apos;rish
           </Text>
         </Pressable>
       </View>

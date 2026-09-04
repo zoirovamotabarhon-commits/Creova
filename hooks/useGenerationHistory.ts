@@ -13,54 +13,87 @@ import {
 export function useGenerationHistory(
   type?: GenerationType
 ) {
-  const [
-    data,
-    setData,
-  ] = useState<
+  const [data, setData] = useState<
     GenerationHistoryItem[]
   >([]);
 
-  const [
-    loading,
-    setLoading,
-  ] = useState(true);
+  const [loading, setLoading] = useState(true);
 
-  const [
-    error,
-    setError,
-  ] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(
+    null
+  );
 
-  const refresh =
-    useCallback(async () => {
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+
+    const result = await getGenerationHistory({
+      type,
+      limit: 100,
+    });
+
+    if (!result.success) {
+      setError(
+        result.error ?? "Unable to load history."
+      );
+      setData([]);
+      setLoading(false);
+      return;
+    }
+
+    setData(result.data ?? []);
+    setLoading(false);
+  }, [type]);
+
+  useEffect(() => {
+    let active = true;
+
+    const loadHistory = async () => {
+      if (!active) return;
+
       setLoading(true);
       setError(null);
 
-      const result =
-        await getGenerationHistory({
+      try {
+        const result = await getGenerationHistory({
           type,
           limit: 100,
         });
 
-      if (!result.success) {
+        if (!active) return;
+
+        if (!result.success) {
+          setError(
+            result.error ??
+              "Unable to load history."
+          );
+          setData([]);
+          return;
+        }
+
+        setData(result.data ?? []);
+      } catch (err) {
+        if (!active) return;
+
         setError(
-          result.error ??
-            "Unable to load history."
+          err instanceof Error
+            ? err.message
+            : "Unable to load history."
         );
         setData([]);
-        setLoading(false);
-        return;
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
       }
+    };
 
-      setData(
-        result.data ?? []
-      );
+    void loadHistory();
 
-      setLoading(false);
-    }, [type]);
-
-  useEffect(() => {
-    void refresh();
-  }, [refresh]);
+    return () => {
+      active = false;
+    };
+  }, [type]);
 
   return {
     data,
@@ -68,4 +101,4 @@ export function useGenerationHistory(
     error,
     refresh,
   };
-                }
+}

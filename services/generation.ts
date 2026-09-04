@@ -41,23 +41,6 @@ export interface GenerationResult<T = unknown> {
   error?: string;
 }
 
-interface DatabaseGenerationRecord {
-  id: string;
-  user_id: string;
-  type: GenerationType;
-  status: GenerationStatus;
-  prompt: string;
-  metadata: Record<string, unknown>;
-  result_text: string | null;
-  result_url: string | null;
-  provider: string | null;
-  model: string | null;
-  error_message: string | null;
-  created_at: string;
-  started_at: string | null;
-  completed_at: string | null;
-}
-
 function createGenerationId(): string {
   if (
     typeof globalThis.crypto?.randomUUID ===
@@ -211,7 +194,8 @@ function normalizeGeneration(
         ? row.provider
         : null,
     model:
-      typeof row.model === "string"
+      typeof row.model ===
+      "string"
         ? row.model
         : null,
     errorMessage:

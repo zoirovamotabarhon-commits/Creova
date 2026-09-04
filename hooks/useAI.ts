@@ -1,19 +1,34 @@
-import { useState, useCallback } from 'react';
-import { AIRouter } from '../core/router/AIRouter';
-import { AgentContext } from '../core/agents/AgentContext';
-import { AIMessage } from '../core/ai/AIProvider';
+import {
+  useCallback,
+  useMemo,
+  useState,
+} from "react";
+
+import { AIRouter } from "../core/router/AIRouter";
+import { AgentContext } from "../core/agents/AgentContext";
+import { AIMessage } from "../core/ai/AIProvider";
 
 export interface UseAIOptions {
   projectId?: string;
   conversationId?: string;
 }
 
-export function useAI(options: UseAIOptions = {}) {
-  const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
-  const [messages, setMessages] = useState<AIMessage[]>([]);
+export function useAI(
+  options: UseAIOptions = {}
+) {
+  const [loading, setLoading] =
+    useState<boolean>(false);
 
-  const router = new AIRouter();
+  const [error, setError] =
+    useState<string | null>(null);
+
+  const [messages, setMessages] =
+    useState<AIMessage[]>([]);
+
+  const router = useMemo(
+    () => new AIRouter(),
+    []
+  );
 
   const sendMessage = useCallback(
     async (input: string) => {
@@ -22,8 +37,16 @@ export function useAI(options: UseAIOptions = {}) {
       setLoading(true);
       setError(null);
 
-      const userMessage: AIMessage = { role: 'user', content: input };
-      const updatedHistory = [...messages, userMessage];
+      const userMessage: AIMessage = {
+        role: "user",
+        content: input,
+      };
+
+      const updatedHistory = [
+        ...messages,
+        userMessage,
+      ];
+
       setMessages(updatedHistory);
 
       try {
@@ -33,24 +56,44 @@ export function useAI(options: UseAIOptions = {}) {
           history: messages,
         };
 
-        const response = await router.routeAndExecute(input, context);
+        const response =
+          await router.routeAndExecute(
+            input,
+            context
+          );
 
         const assistantMessage: AIMessage = {
-          role: 'assistant',
+          role: "assistant",
           content: response.content,
         };
 
-        setMessages((prev) => [...prev, assistantMessage]);
+        setMessages((prev) => [
+          ...prev,
+          assistantMessage,
+        ]);
+
         return response;
-      } catch (err: any) {
-        const errorMessage = err.message || 'An error occurred while processing AI request.';
+      } catch (err: unknown) {
+        const errorMessage =
+          err instanceof Error
+            ? err.message
+            : "An error occurred while processing AI request.";
+
         setError(errorMessage);
-        console.error('useAI Error:', err);
+        console.error(
+          "useAI Error:",
+          err
+        );
       } finally {
         setLoading(false);
       }
     },
-    [messages, options.projectId, options.conversationId]
+    [
+      messages,
+      options.projectId,
+      options.conversationId,
+      router,
+    ]
   );
 
   const clearMessages = useCallback(() => {

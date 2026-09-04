@@ -229,6 +229,8 @@ export async function initializeI18n():
     return;
   }
 
+  // i18next exposes these APIs on its default instance.
+  // eslint-disable-next-line import/no-named-as-default-member
   await i18n
     .use(initReactI18next)
     .init({
@@ -259,6 +261,7 @@ export async function initializeI18n():
   const initialLanguage =
     await getInitialLanguage();
 
+  // eslint-disable-next-line import/no-named-as-default-member
   await i18n.changeLanguage(
     initialLanguage,
   );
@@ -288,6 +291,7 @@ export async function setLanguage(
   }
 
   try {
+    // eslint-disable-next-line import/no-named-as-default-member
     await i18n.changeLanguage(
       languageCode,
     );

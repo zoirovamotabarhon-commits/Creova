@@ -144,9 +144,9 @@ export default function LoginScreen() {
           style={styles.linkButton}
         >
           <Text style={styles.linkText}>
-            Akkauntingiz yo'qmi?
+            Akkauntingiz yo&apos;qmi?
             {" "}
-            Ro'yxatdan o'ting
+            Ro&apos;yxatdan o&apos;ting
           </Text>
         </Pressable>
 

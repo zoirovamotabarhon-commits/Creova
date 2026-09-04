@@ -1,5 +1,6 @@
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
@@ -102,25 +103,26 @@ export function ThemeProvider({
     };
   }, []);
 
-  const setThemeMode = async (
-    nextMode: ThemeMode
-  ) => {
-    setModeState(nextMode);
+  const setThemeMode = useCallback(
+    async (nextMode: ThemeMode) => {
+      setModeState(nextMode);
 
-    try {
-      await AsyncStorage.setItem(
-        STORAGE_KEYS.THEME,
-        nextMode
-      );
-    } catch (error) {
-      console.warn(
-        "Failed to save theme:",
-        error
-      );
-    }
-  };
+      try {
+        await AsyncStorage.setItem(
+          STORAGE_KEYS.THEME,
+          nextMode
+        );
+      } catch (error) {
+        console.warn(
+          "Failed to save theme:",
+          error
+        );
+      }
+    },
+    []
+  );
 
-  const toggleTheme = async () => {
+  const toggleTheme = useCallback(async () => {
     const currentDark =
       mode === "system"
         ? getSystemMode() === "dark"
@@ -129,7 +131,7 @@ export function ThemeProvider({
     await setThemeMode(
       currentDark ? "light" : "dark"
     );
-  };
+  }, [mode, setThemeMode]);
 
   const colors = useMemo(
     () => getColors(mode),
@@ -157,6 +159,8 @@ export function ThemeProvider({
       darkMode,
       colors,
       loading,
+      setThemeMode,
+      toggleTheme,
     ]
   );
 

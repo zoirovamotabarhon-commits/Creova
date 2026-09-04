@@ -82,7 +82,7 @@ export default function RegisterScreen() {
 
       if (!result.success) {
         Alert.alert(
-          "Ro'yxatdan o'tish xatosi",
+          "Ro&apos;yxatdan o&apos;tish xatosi",
           result.message
         );
         return;
@@ -91,7 +91,7 @@ export default function RegisterScreen() {
       Alert.alert(
         "CREOVA",
         result.message ||
-          "Ro'yxatdan o'tish muvaffaqiyatli yakunlandi.",
+          "Ro&apos;yxatdan o&apos;tish muvaffaqiyatli yakunlandi.",
         [
           {
             text: "Kirish",
@@ -105,7 +105,7 @@ export default function RegisterScreen() {
         "Xatolik",
         error instanceof Error
           ? error.message
-          : "Ro'yxatdan o'tishda kutilmagan xatolik yuz berdi."
+          : "Ro&apos;yxatdan o&apos;tishda kutilmagan xatolik yuz berdi."
       );
     } finally {
       setLoading(false);
@@ -209,7 +209,7 @@ export default function RegisterScreen() {
               <ActivityIndicator color="#FFFFFF" />
             ) : (
               <Text style={styles.buttonText}>
-                Ro'yxatdan o'tish
+                Ro&apos;yxatdan o&apos;tish
               </Text>
             )}
           </Pressable>

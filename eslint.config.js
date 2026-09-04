@@ -4,11 +4,12 @@ module.exports = [
   ...expoConfig,
   {
     ignores: [
+      ".local/**",
       "supabase/functions/**",
       "node_modules/**",
       ".expo/**",
       "dist/**",
-      "build/**"
-    ]
-  }
+      "build/**",
+    ],
+  },
 ];

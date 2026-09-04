@@ -7,19 +7,15 @@
  * must never be exposed to the mobile application.
  */
 
-function readPublicEnvironmentVariable(name: string): string {
-  const value = process.env[name];
-
-  return typeof value === "string" ? value.trim() : "";
-}
-
 export const ENV = {
-  supabaseUrl: readPublicEnvironmentVariable(
-    "EXPO_PUBLIC_SUPABASE_URL"
-  ),
-  supabasePublishableKey: readPublicEnvironmentVariable(
-    "EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY"
-  ),
+  supabaseUrl:
+    typeof process.env.EXPO_PUBLIC_SUPABASE_URL === "string"
+      ? process.env.EXPO_PUBLIC_SUPABASE_URL.trim()
+      : "",
+  supabasePublishableKey:
+    typeof process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY === "string"
+      ? process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY.trim()
+      : "",
 } as const;
 
 export function isEnvironmentConfigured(): boolean {

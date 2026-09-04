@@ -1,27 +1,40 @@
-// Supabase va Env xatolarini oldini olish uchun mock (fayl tepasida bo'lishi shart)
 process.env.EXPO_PUBLIC_SUPABASE_URL = "https://mock.supabase.co";
 process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY = "mock-key";
+
+jest.mock("@react-native-async-storage/async-storage", () => {
+  /* eslint-disable @typescript-eslint/no-require-imports */
+  return require("@react-native-async-storage/async-storage/jest/async-storage-mock");
+  /* eslint-enable @typescript-eslint/no-require-imports */
+});
 
 jest.mock("@supabase/supabase-js", () => ({
   createClient: jest.fn(() => ({
     from: jest.fn(() => ({
       select: jest.fn().mockReturnThis(),
       eq: jest.fn().mockReturnThis(),
-      single: jest.fn().mockResolvedValue({ data: null, error: null }),
+      single: jest.fn().mockResolvedValue({
+        data: null,
+        error: null,
+      }),
     })),
     auth: {
-      getSession: jest.fn().mockResolvedValue({ data: { session: null }, error: null }),
+      getSession: jest.fn().mockResolvedValue({
+        data: { session: null },
+        error: null,
+      }),
     },
   })),
   processLock: jest.fn(),
 }));
 
-import {
+/* eslint-disable @typescript-eslint/no-require-imports */
+const {
   clearSubscription,
   getCurrentSubscription,
   getSubscriptionState,
   isCurrentUserPremium,
-} from "../../store/subscriptionStore";
+} = require("../../store/subscriptionStore");
+/* eslint-enable @typescript-eslint/no-require-imports */
 
 describe("subscriptionStore", () => {
   beforeEach(() => {

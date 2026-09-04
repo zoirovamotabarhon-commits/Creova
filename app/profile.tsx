@@ -1,5 +1,4 @@
 import React, {
-  useCallback,
   useEffect,
   useState,
 } from "react";
@@ -33,13 +32,17 @@ export default function ProfileScreen() {
   const [saving, setSaving] =
     useState(false);
 
-  const loadProfile =
-    useCallback(async () => {
-      setLoading(true);
+  useEffect(() => {
+    let active = true;
 
+    const loadProfile = async () => {
       try {
         const result =
           await getProfile();
+
+        if (!active) {
+          return;
+        }
 
         if (!result.success) {
           Alert.alert(
@@ -64,6 +67,10 @@ export default function ProfileScreen() {
           result.data.email ?? ""
         );
       } catch (error) {
+        if (!active) {
+          return;
+        }
+
         console.error(
           "Profile load error:",
           error
@@ -76,13 +83,18 @@ export default function ProfileScreen() {
             : "Failed to load profile."
         );
       } finally {
-        setLoading(false);
+        if (active) {
+          setLoading(false);
+        }
       }
-    }, []);
+    };
 
-  useEffect(() => {
     void loadProfile();
-  }, [loadProfile]);
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const saveProfile =
     async () => {

@@ -77,6 +77,11 @@ export default function AIVideoScreen() {
   const checkingRef =
     useRef(false);
 
+  const checkVideoStatusRef =
+    useRef<
+      ((id: string) => Promise<boolean>) | null
+    >(null);
+
   const player =
     useVideoPlayer(
       videoUrl,
@@ -112,6 +117,8 @@ export default function AIVideoScreen() {
     return () => {
       mountedRef.current = false;
       clearPollingTimer();
+      checkVideoStatusRef.current =
+        null;
     };
   }, [clearPollingTimer]);
 
@@ -131,7 +138,7 @@ export default function AIVideoScreen() {
             pollingTimerRef.current =
               null;
 
-            void checkVideoStatus(
+            void checkVideoStatusRef.current?.(
               id
             );
           }, POLL_INTERVAL_MS);
@@ -295,6 +302,16 @@ export default function AIVideoScreen() {
         stopPolling,
       ]
     );
+
+  useEffect(() => {
+    checkVideoStatusRef.current =
+      checkVideoStatus;
+
+    return () => {
+      checkVideoStatusRef.current =
+        null;
+    };
+  }, [checkVideoStatus]);
 
   const handleGenerate =
     async () => {

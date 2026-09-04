@@ -9,48 +9,78 @@ import {
 } from "../services/wallet";
 
 export function useWallet() {
-  const [
-    balance,
-    setBalance,
-  ] = useState<number>(0);
+  const [balance, setBalance] =
+    useState<number>(0);
 
-  const [
-    loading,
-    setLoading,
-  ] = useState(true);
+  const [loading, setLoading] =
+    useState(true);
 
-  const [
-    error,
-    setError,
-  ] = useState<string | null>(null);
+  const [error, setError] =
+    useState<string | null>(null);
 
-  const refresh =
-    useCallback(async () => {
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+
+    const result = await getCoinBalance();
+
+    if (!result.success) {
+      setError(
+        result.error ??
+          "Unable to load wallet."
+      );
+      setLoading(false);
+      return;
+    }
+
+    setBalance(result.balance ?? 0);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    const loadWallet = async () => {
+      if (!active) return;
+
       setLoading(true);
       setError(null);
 
-      const result =
-        await getCoinBalance();
+      try {
+        const result = await getCoinBalance();
 
-      if (!result.success) {
+        if (!active) return;
+
+        if (!result.success) {
+          setError(
+            result.error ??
+              "Unable to load wallet."
+          );
+          return;
+        }
+
+        setBalance(result.balance ?? 0);
+      } catch (err) {
+        if (!active) return;
+
         setError(
-          result.error ??
-            "Unable to load wallet."
+          err instanceof Error
+            ? err.message
+            : "Unable to load wallet."
         );
-        setLoading(false);
-        return;
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
       }
+    };
 
-      setBalance(
-        result.balance ?? 0
-      );
+    void loadWallet();
 
-      setLoading(false);
-    }, []);
-
-  useEffect(() => {
-    void refresh();
-  }, [refresh]);
+    return () => {
+      active = false;
+    };
+  }, []);
 
   return {
     balance,
@@ -58,4 +88,4 @@ export function useWallet() {
     error,
     refresh,
   };
-      }
+}

@@ -1,11 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createClient, processLock } from "@supabase/supabase-js";
+import "react-native-url-polyfill/auto";
 import { ENV, validateEnvironment } from "../constants/env";
-
-// Jest test muhitida polyfill xatolik bermasligi uchun shartli yuklash
-if (process.env.NODE_ENV !== "test") {
-  require("react-native-url-polyfill/auto");
-}
 
 validateEnvironment();
 
