@@ -1,56 +1,129 @@
 {
-  "common": { "appName": "CREOVA", "error": "Սխալ", "success": "Հաջողություն" },
+  "common": {
+    "appName": "CREOVA",
+    "error": "Սխալ",
+    "success": "Հաջողություն",
+    "generate": "Ստեղծել",
+    "analyze": "Վերլուծել",
+    "apply": "Կիրառել",
+    "cancel": "Չեղարկել",
+    "save": "Պահպանել",
+    "loading": "Բեռնում...",
+    "retry": "Կրկին փորձել",
+    "delete": "Ջնջել"
+  },
   "aiVideo": {
     "title": "🎬 AI Տեսանյութ",
-    "subtitle": "Ստեղծեք տեսանյութեր CREOVA AI-ով",
-    "promptPlaceholder": "Օր: Ապագայի քաղաք մայրամուտին",
+    "subtitle": "Ստեղծեք տեսանյութեր CREOVA AI-ի միջոցով",
+    "promptPlaceholder": "օր. Ապագայի քաղաքը մայրամուտին",
     "generateButton": "Ստեղծել տեսանյութ",
     "emptyPromptTitle": "CREOVA",
-    "emptyPromptMessage": "Մուտքագրեք տեսանյութի նկարագրություն։",
+    "emptyPromptMessage": "Մուտքագրեք տեսանյութի նկարագրությունը։",
     "statusTitle": "Տեսանյութի կարգավիճակ",
     "progressLabel": "Առաջընթաց",
     "videoErrorTitle": "Տեսանյութի սխալ",
     "videoStatusError": "Չհաջողվեց ստանալ տեսանյութի կարգավիճակը։",
     "videoReadyTitle": "CREOVA",
-    "videoReadyMessage": "Տեսանյութը պատրաստ է։",
-    "videoReadyNoUrl": "Տեսանյութը պատրաստ է, բայց MP4 URL-ը չի ստացվել։",
+    "videoReadyMessage": "Ձեր տեսանյութը պատրաստ է։",
+    "videoReadyNoUrl": "Տեսանյութը պատրաստ է, սակայն MP4 URL չի ստացվել։",
     "videoFailedTitle": "Տեսանյութի ստեղծումը ձախողվեց",
     "videoFailedStatus": "Տեսանյութի կարգավիճակ՝ {{status}}",
     "videoTooLongTitle": "CREOVA",
     "videoTooLongMessage": "Տեսանյութի ստեղծումը չափազանց երկար է տևում։ Ստուգեք ավելի ուշ։",
-    "videoCheckError": "Սխալ տեսանյութի կարգավիճակը ստուգելիս։",
+    "videoCheckError": "Սխալ տեղի ունեցավ տեսանյութի կարգավիճակը ստուգելիս։",
     "generationFailed": "Տեսանյութի ստեղծումը ձախողվեց։",
-    "unexpectedError": "Տեսանյութի ստեղծման ընթացքում անսպասելի սխալ առաջացավ։",
-    "noUrlYet": "MP4 URL-ը չի ստացվել։",
-    "idLabel": "ID: {{id}}"
+    "unexpectedError": "Տեսանյութ ստեղծելիս անսպասելի սխալ տեղի ունեցավ։",
+    "noUrlYet": "Դեռևս MP4 URL չի ստացվել։",
+    "idLabel": "ID՝ {{id}}"
   },
   "aiVoice": {
     "title": "🎤 AI Ձայն",
-    "subtitle": "Փոխակերպեք տեքստը խոսքի CREOVA AI-ով",
-    "textPlaceholder": "Օր: Բարև, CREOVA!",
+    "subtitle": "Փոխարկեք տեքստը ձայնի CREOVA AI-ի միջոցով",
+    "textPlaceholder": "օր. Բարև, CREOVA!",
     "generateButton": "Ստեղծել ձայն",
-    "emptyTextMessage": "Մուտքագրեք տեքստ ձայնի համար։",
-    "generationFailedTitle": "Ձայնի ստեղծումը ձախողվեց",
-    "generationFailedMessage": "Ձայնի ստեղծման ընթացքում սխալ առաջացավ։",
-    "noAudioMessage": "Աուդիո ֆայլը չի ստացվել։",
-    "readyMessage": "Ձայնը պատրաստ է։",
-    "unexpectedError": "Ձայնի ստեղծման ընթացքում անսպասելի սխալ առաջացավ։",
-    "resultTitle": "🔊 Ձայնը պատրաստ է",
-    "resultText": "Տեքստը հաջողությամբ փոխակերպվեց խոսքի։",
-    "play": "▶️ Նվագարկել",
-    "pause": "⏸ Դադար",
-    "audioErrorTitle": "Աուդիո սխալ",
-    "audioErrorMessage": "Աուդիոն նվագարկելիս սխալ առաջացավ։"
+    "result": { "title": "🔊 Ձայնը պատրաստ է", "description": "Ձեր տեքստը հաջողությամբ փոխարկվեց ձայնի։" },
+    "player": { "play": "▶️ Նվագարկել", "pause": "⏸ Դադարեցնել" },
+    "errors": {
+      "emptyText": "Մուտքագրեք տեքստ ձայնի համար։",
+      "generationFailed": "Ձայն ստեղծելիս սխալ տեղի ունեցավ։",
+      "audioMissing": "Ձայնային ֆայլ չի ստացվել։",
+      "unexpected": "Ձայն ստեղծելիս անսպասելի սխալ տեղի ունեցավ։",
+      "playbackFailed": "Ձայնը նվագարկելիս սխալ տեղի ունեցավ։"
+    },
+    "success": { "generated": "Ձայնը հաջողությամբ ստեղծվեց։" }
   },
   "profile": {
     "title": "Պրոֆիլ",
     "nameLabel": "Անուն",
     "namePlaceholder": "Մուտքագրեք ձեր անունը",
-    "emailLabel": "Էլ. փոստ",
+    "emailLabel": "Էլ․ փոստ",
     "saveButton": "Պահպանել",
     "nameRequired": "Անունը պարտադիր է։",
-    "loadFailed": "Պրոֆիլի բեռնումը ձախողվեց։",
-    "updateFailed": "Պրոֆիլի թարմացումը ձախողվեց։",
+    "loadFailed": "Չհաջողվեց բեռնել պրոֆիլը։",
+    "updateFailed": "Չհաջողվեց թարմացնել պրոֆիլը։",
     "updateSuccess": "Պրոֆիլը հաջողությամբ թարմացվեց։"
+  },
+  "aiMusic": {
+    "title": "🎶 AI Երաժշտություն",
+    "subtitle": "Ստեղծեք երաժշտություն CREOVA AI-ի միջոցով",
+    "promptPlaceholder": "օր. Ապագայի քաղաքը մայրամուտին",
+    "generateButton": "Ստեղծել երաժշտություն",
+    "result": { "title": "🎶 Երաժշտությունը պատրաստ է", "description": "Ձեր տեքստը հաջողությամբ փոխարկվեց երաժշտության։" },
+    "player": { "play": "▶️ Նվագարկել", "pause": "⏸ Դադարեցնել" },
+    "errors": {
+      "emptyPrompt": "Մուտքագրեք երաժշտության նկարագրությունը։",
+      "generationFailed": "Երաժշտություն ստեղծելիս սխալ տեղի ունեցավ։",
+      "audioMissing": "Ձայնային ֆայլ չի ստացվել։",
+      "unexpected": "Երաժշտություն ստեղծելիս անսպասելի սխալ տեղի ունեցավ։",
+      "playbackFailed": "Ձայնը նվագարկելիս սխալ տեղի ունեցավ։"
+    },
+    "success": { "generated": "Երաժշտությունը հաջողությամբ ստեղծվեց։" }
+  },
+  "navigation": {
+    "home": "Գլխավոր",
+    "code_studio": "Կոդի ստուդիա",
+    "vision_studio": "Տեսողության ստուդիա",
+    "chat": "AI զրույց",
+    "settings": "Կարգավորումներ"
+  },
+  "dashboard": {
+    "welcome": "CREOVA AI հարթակ",
+    "subtitle": "Սկսելու համար ընտրեք ինքնավար AI գործակալի աշխատանքային տարածք",
+    "code_title": "AI Կոդի ստուդիա",
+    "code_desc": "Վերակառուցեք, շտկեք սխալները, ստեղծեք կոդ և իրական ժամանակում դիտեք փոփոխությունները Developer Agent-ի միջոցով։",
+    "vision_title": "AI Տեսողության ստուդիա",
+    "vision_desc": "Վերլուծեք էկրանի պատկերները, դիզայնի մակետները և UI-ն փոխարկեք բնիկ բաղադրիչների։",
+    "chat_title": "Ընդհանուր AI օգնական",
+    "chat_desc": "Ընդհանուր դատողություն, գաղափարների փոխանակում և ճարտարապետության քննարկում։"
+  },
+  "code": {
+    "title": "AI Կոդի ստուդիա",
+    "workspace_editor": "Աշխատանքային տարածքի խմբագրիչ",
+    "proposed_changes": "AI-ի առաջարկած փոփոխություններ",
+    "apply_changes": "Կիրառել փոփոխությունները",
+    "prompt_placeholder": "Խնդրեք AI-ին գրել կամ վերակառուցել կոդ...",
+    "file_explorer": "Նախագծի ֆայլերի դիտարկիչ",
+    "no_files": "Աշխատանքային տարածքում ֆայլեր չեն գտնվել",
+    "terminal_title": "Գործարկման վահանակ",
+    "terminal_empty": "Վահանակը պատրաստ է։ Սպասվում են գործարկման գրանցամատյաններ..."
+  },
+  "vision": {
+    "title": "AI Տեսողության ստուդիա",
+    "image_url_label": "Պատկերի URL կամ աղբյուր",
+    "url_placeholder": "Տեղադրեք պատկերի URL-ն այստեղ...",
+    "results_label": "Վերլուծության արդյունքներ",
+    "ai_label": "AI Տեսողություն",
+    "prompt_placeholder": "Նկարագրեք պատկերը կամ հարց տվեք դրա մասին..."
+  },
+  "chat": {
+    "you": "Դուք",
+    "ai": "Օգնական",
+    "placeholder": "Գրեք ձեր հաղորդագրությունը..."
+  },
+  "settings": {
+    "title": "Կարգավորումներ",
+    "language": "Լեզու",
+    "theme": "Թեմա",
+    "api_key": "Supabase-ի և AI-ի կարգավորումներ"
   }
 }
