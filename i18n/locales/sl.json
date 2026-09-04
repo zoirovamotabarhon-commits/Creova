@@ -1,46 +1,56 @@
 {
-  "common": { "appName": "CREOVA", "error": "Napaka", "success": "Uspeh" },
+  "common": {
+    "appName": "CREOVA",
+    "error": "Napaka",
+    "success": "Uspeh",
+    "generate": "Generate",
+    "analyze": "Analyze",
+    "apply": "Apply",
+    "cancel": "Cancel",
+    "save": "Save",
+    "loading": "Loading...",
+    "retry": "Retry",
+    "delete": "Delete"
+  },
   "aiVideo": {
-    "title": "🎬 AI Video",
+    "title": "🎬 Video z UI",
     "subtitle": "Ustvarjajte videoposnetke s CREOVA AI",
-    "promptPlaceholder": "Npr: Futuristično mesto ob sončnem zahodu",
+    "promptPlaceholder": "npr. Futuristično mesto ob sončnem zahodu",
     "generateButton": "Ustvari video",
     "emptyPromptTitle": "CREOVA",
-    "emptyPromptMessage": "Vnesite opis za video.",
+    "emptyPromptMessage": "Vnesite opis videa.",
     "statusTitle": "Stanje videa",
     "progressLabel": "Napredek",
     "videoErrorTitle": "Napaka videa",
-    "videoStatusError": "Pridobivanje stanja videa ni uspelo.",
+    "videoStatusError": "Stanja videa ni bilo mogoče pridobiti.",
     "videoReadyTitle": "CREOVA",
-    "videoReadyMessage": "Video je pripravljen.",
+    "videoReadyMessage": "Vaš video je pripravljen.",
     "videoReadyNoUrl": "Video je pripravljen, vendar URL MP4 ni bil prejet.",
     "videoFailedTitle": "Ustvarjanje videa ni uspelo",
     "videoFailedStatus": "Stanje videa: {{status}}",
     "videoTooLongTitle": "CREOVA",
-    "videoTooLongMessage": "Ustvarjanje videa traja predolgo. Poskusite znova pozneje.",
-    "videoCheckError": "Napaka pri preverjanju stanja videa.",
+    "videoTooLongMessage": "Ustvarjanje videa traja predolgo. Preverite znova pozneje.",
+    "videoCheckError": "Pri preverjanju stanja videa je prišlo do napake.",
     "generationFailed": "Ustvarjanje videa ni uspelo.",
-    "unexpectedError": "Med ustvarjanjem videa je prišlo do nepričakovane napake.",
-    "noUrlYet": "URL MP4 ni bil prejet.",
+    "unexpectedError": "Pri ustvarjanju videa je prišlo do nepričakovane napake.",
+    "noUrlYet": "URL MP4 še ni bil prejet.",
     "idLabel": "ID: {{id}}"
   },
   "aiVoice": {
-    "title": "🎤 AI Glas",
+    "title": "🎤 Glas z UI",
     "subtitle": "Pretvorite besedilo v govor s CREOVA AI",
-    "textPlaceholder": "Npr: Pozdravljen, CREOVA!",
+    "textPlaceholder": "npr. Pozdravljen, CREOVA!",
     "generateButton": "Ustvari glas",
-    "emptyTextMessage": "Vnesite besedilo za glas.",
-    "generationFailedTitle": "Ustvarjanje glasu ni uspelo",
-    "generationFailedMessage": "Med ustvarjanjem glasu je prišlo do napake.",
-    "noAudioMessage": "Zvočna datoteka ni bila prejeta.",
-    "readyMessage": "Glas je pripravljen.",
-    "unexpectedError": "Med ustvarjanjem glasu je prišlo do nepričakovane napake.",
-    "resultTitle": "🔊 Glas pripravljen",
-    "resultText": "Besedilo je bilo uspešno pretvorjeno v govor.",
-    "play": "▶️ Predvajaj",
-    "pause": "⏸ Premor",
-    "audioErrorTitle": "Zvočna napaka",
-    "audioErrorMessage": "Med predvajanjem zvoka je prišlo do napake."
+    "result": { "title": "🔊 Glas je pripravljen", "description": "Vaše besedilo je bilo uspešno pretvorjeno v govor." },
+    "player": { "play": "▶️ Predvajaj", "pause": "⏸ Premor" },
+    "errors": {
+      "emptyText": "Vnesite besedilo za glas.",
+      "generationFailed": "Pri ustvarjanju glasu je prišlo do napake.",
+      "audioMissing": "Zvočna datoteka ni bila prejeta.",
+      "unexpected": "Pri ustvarjanju glasu je prišlo do nepričakovane napake.",
+      "playbackFailed": "Pri predvajanju zvoka je prišlo do napake."
+    },
+    "success": { "generated": "Glas je bil uspešno ustvarjen." }
   },
   "profile": {
     "title": "Profil",
@@ -49,8 +59,71 @@
     "emailLabel": "E-pošta",
     "saveButton": "Shrani",
     "nameRequired": "Ime je obvezno.",
-    "loadFailed": "Nalaganje profila ni uspelo.",
-    "updateFailed": "Posodabljanje profila ni uspelo.",
+    "loadFailed": "Profila ni bilo mogoče naložiti.",
+    "updateFailed": "Profila ni bilo mogoče posodobiti.",
     "updateSuccess": "Profil je bil uspešno posodobljen."
+  },
+  "aiMusic": {
+    "title": "🎶 Glasba z UI",
+    "subtitle": "Ustvarjajte glasbo s CREOVA AI",
+    "promptPlaceholder": "npr. Futuristično mesto ob sončnem zahodu",
+    "generateButton": "Ustvari glasbo",
+    "result": { "title": "🎶 Glasba je pripravljena", "description": "Vaše besedilo je bilo uspešno pretvorjeno v glasbo." },
+    "player": { "play": "▶️ Predvajaj", "pause": "⏸ Premor" },
+    "errors": {
+      "emptyPrompt": "Vnesite opis glasbe.",
+      "generationFailed": "Napaka pri ustvarjanju glasbe.",
+      "audioMissing": "Zvočna datoteka ni bila prejeta.",
+      "unexpected": "Pri ustvarjanju glasbe je prišlo do nepričakovane napake.",
+      "playbackFailed": "Pri predvajanju zvoka je prišlo do napake."
+    },
+    "success": { "generated": "Glasba je bila uspešno ustvarjena." }
+  },
+  "navigation": {
+    "home": "Domov",
+    "code_studio": "Studio kode",
+    "vision_studio": "Vision studio",
+    "chat": "Klepet z UI",
+    "settings": "Nastavitve"
+  },
+  "dashboard": {
+    "welcome": "Platforma Creova AI",
+    "subtitle": "Za začetek izberite delovni prostor avtonomnega agenta UI",
+    "code_title": "Studio kode z UI",
+    "code_desc": "Preoblikujte, odpravljajte napake, ustvarjajte kodo in si ogledujte spremembe v realnem času z Developer Agent.",
+    "vision_title": "Vision studio z UI",
+    "vision_desc": "Analizirajte posnetke zaslona, oblikovalske makete in pretvorite UI v izvorne komponente.",
+    "chat_title": "Splošni pomočnik UI",
+    "chat_desc": "Splošno razmišljanje, izmenjava idej in razprava o arhitekturi."
+  },
+  "code": {
+    "title": "Studio kode z UI",
+    "workspace_editor": "Urejevalnik delovnega prostora",
+    "proposed_changes": "Predlagane spremembe UI",
+    "apply_changes": "Uporabi spremembe",
+    "prompt_placeholder": "Prosite UI, naj napiše ali preoblikuje kodo...",
+    "file_explorer": "Raziskovalec projekta",
+    "no_files": "V delovnem prostoru ni bilo najdenih datotek",
+    "terminal_title": "Konzola izvajanja",
+    "terminal_empty": "Konzola je pripravljena. Čaka na dnevnike izvajanja..."
+  },
+  "vision": {
+    "title": "Vision studio z UI",
+    "image_url_label": "URL slike ali vir",
+    "url_placeholder": "Tukaj prilepite URL slike...",
+    "results_label": "Rezultati analize",
+    "ai_label": "Vision UI",
+    "prompt_placeholder": "Opišite sliko ali postavite vprašanje o njej..."
+  },
+  "chat": {
+    "you": "Vi",
+    "ai": "Pomočnik",
+    "placeholder": "Vnesite sporočilo..."
+  },
+  "settings": {
+    "title": "Nastavitve",
+    "language": "Jezik",
+    "theme": "Tema",
+    "api_key": "Nastavitve Supabase in UI"
   }
 }
