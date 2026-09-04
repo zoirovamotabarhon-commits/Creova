@@ -1,9 +1,21 @@
 {
-  "common": { "appName": "CREOVA", "error": "Hiba", "success": "Sikeres" },
+  "common": {
+    "appName": "CREOVA",
+    "error": "Hiba",
+    "success": "Siker",
+    "generate": "Generálás",
+    "analyze": "Elemzés",
+    "apply": "Alkalmazás",
+    "cancel": "Mégse",
+    "save": "Mentés",
+    "loading": "Betöltés...",
+    "retry": "Újrapróbálás",
+    "delete": "Törlés"
+  },
   "aiVideo": {
     "title": "🎬 AI Videó",
-    "subtitle": "Készítsen videókat a CREOVA AI segítségével",
-    "promptPlaceholder": "Pl: Egy futurisztikus város naplementekor",
+    "subtitle": "Videók létrehozása a CREOVA AI segítségével",
+    "promptPlaceholder": "pl. Egy futurisztikus város naplementekor",
     "generateButton": "Videó létrehozása",
     "emptyPromptTitle": "CREOVA",
     "emptyPromptMessage": "Adjon meg egy leírást a videóhoz.",
@@ -13,34 +25,32 @@
     "videoStatusError": "Nem sikerült lekérni a videó állapotát.",
     "videoReadyTitle": "CREOVA",
     "videoReadyMessage": "A videó elkészült.",
-    "videoReadyNoUrl": "A videó elkészült, de az MP4 URL nem érkezett meg.",
+    "videoReadyNoUrl": "A videó elkészült, de MP4 URL nem érkezett.",
     "videoFailedTitle": "A videó létrehozása sikertelen",
     "videoFailedStatus": "Videó állapota: {{status}}",
     "videoTooLongTitle": "CREOVA",
-    "videoTooLongMessage": "A videó létrehozása túl sokáig tart. Kérjük, ellenőrizze később.",
-    "videoCheckError": "Hiba a videó állapotának ellenőrzésekor.",
+    "videoTooLongMessage": "A videó létrehozása túl sokáig tart. Ellenőrizze később újra.",
+    "videoCheckError": "Hiba történt a videó állapotának ellenőrzésekor.",
     "generationFailed": "A videó létrehozása sikertelen.",
     "unexpectedError": "Váratlan hiba történt a videó létrehozásakor.",
-    "noUrlYet": "Az MP4 URL nem érkezett meg.",
-    "idLabel": "ID: {{id}}"
+    "noUrlYet": "Még nem érkezett MP4 URL.",
+    "idLabel": "Azonosító: {{id}}"
   },
   "aiVoice": {
     "title": "🎤 AI Hang",
-    "subtitle": "Alakítsa szöveggé a beszédet a CREOVA AI segítségével",
-    "textPlaceholder": "Pl: Szia, CREOVA!",
+    "subtitle": "Szöveg átalakítása beszéddé a CREOVA AI segítségével",
+    "textPlaceholder": "pl. Szia, CREOVA!",
     "generateButton": "Hang létrehozása",
-    "emptyTextMessage": "Adjon meg szöveget a hanghoz.",
-    "generationFailedTitle": "A hang létrehozása sikertelen",
-    "generationFailedMessage": "Hiba történt a hang létrehozásakor.",
-    "noAudioMessage": "Az audiofájl nem érkezett meg.",
-    "readyMessage": "A hang elkészült.",
-    "unexpectedError": "Váratlan hiba történt a hang létrehozásakor.",
-    "resultTitle": "🔊 Hang kész",
-    "resultText": "A szöveg sikeresen beszéddé alakult.",
-    "play": "▶️ Lejátszás",
-    "pause": "⏸ Szünet",
-    "audioErrorTitle": "Audióhiba",
-    "audioErrorMessage": "Hiba történt az audió lejátszásakor."
+    "result": { "title": "🔊 A hang elkészült", "description": "A szöveg sikeresen beszéddé alakult." },
+    "player": { "play": "▶️ Lejátszás", "pause": "⏸ Szünet" },
+    "errors": {
+      "emptyText": "Adjon meg szöveget a hanghoz.",
+      "generationFailed": "Hiba történt a hang létrehozásakor.",
+      "audioMissing": "Nem érkezett hangfájl.",
+      "unexpected": "Váratlan hiba történt a hang létrehozásakor.",
+      "playbackFailed": "Hiba történt a hang lejátszásakor."
+    },
+    "success": { "generated": "A hang sikeresen elkészült." }
   },
   "profile": {
     "title": "Profil",
@@ -52,5 +62,68 @@
     "loadFailed": "A profil betöltése sikertelen.",
     "updateFailed": "A profil frissítése sikertelen.",
     "updateSuccess": "A profil sikeresen frissítve."
+  },
+  "aiMusic": {
+    "title": "🎶 AI Zene",
+    "subtitle": "Zene létrehozása a CREOVA AI segítségével",
+    "promptPlaceholder": "pl. Egy futurisztikus város naplementekor",
+    "generateButton": "Zene létrehozása",
+    "result": { "title": "🎶 A zene elkészült", "description": "A szöveg sikeresen zenévé alakult." },
+    "player": { "play": "▶️ Lejátszás", "pause": "⏸ Szünet" },
+    "errors": {
+      "emptyPrompt": "Adjon meg egy leírást a zenéhez.",
+      "generationFailed": "Hiba történt a zene létrehozásakor.",
+      "audioMissing": "Nem érkezett hangfájl.",
+      "unexpected": "Váratlan hiba történt a zene létrehozásakor.",
+      "playbackFailed": "Hiba történt a hang lejátszásakor."
+    },
+    "success": { "generated": "A zene sikeresen elkészült." }
+  },
+  "navigation": {
+    "home": "Kezdőlap",
+    "code_studio": "Kódstúdió",
+    "vision_studio": "Vízióstúdió",
+    "chat": "AI Chat",
+    "settings": "Beállítások"
+  },
+  "dashboard": {
+    "welcome": "CREOVA AI platform",
+    "subtitle": "Kezdéshez válasszon egy autonóm AI-ügynök munkaterületet",
+    "code_title": "AI Kódstúdió",
+    "code_desc": "Refaktoráljon, hibakeressen, generáljon kódot és tekintse meg valós időben a változásokat a Developer Agent segítségével.",
+    "vision_title": "AI Vízióstúdió",
+    "vision_desc": "Elemezzen képernyőképeket és dizájnmaketteket, és alakítsa át a felületet natív komponensekké.",
+    "chat_title": "Általános AI asszisztens",
+    "chat_desc": "Általános gondolkodás, ötletelés és architektúra-megbeszélés."
+  },
+  "code": {
+    "title": "AI Kódstúdió",
+    "workspace_editor": "Munkaterület szerkesztő",
+    "proposed_changes": "AI által javasolt változtatások",
+    "apply_changes": "Változtatások alkalmazása",
+    "prompt_placeholder": "Kérje meg az AI-t kód írására vagy refaktorálására...",
+    "file_explorer": "Projektfájlok",
+    "no_files": "Nem találhatók fájlok a munkaterületen",
+    "terminal_title": "Futtatási konzol",
+    "terminal_empty": "A konzol készen áll. Futtatási naplókra vár..."
+  },
+  "vision": {
+    "title": "AI Vízióstúdió",
+    "image_url_label": "Kép URL-je vagy forrása",
+    "url_placeholder": "Illessze be ide a kép URL-jét...",
+    "results_label": "Elemzés eredményei",
+    "ai_label": "AI Vízió",
+    "prompt_placeholder": "Írja le a képet, vagy tegyen fel kérdést róla..."
+  },
+  "chat": {
+    "you": "Ön",
+    "ai": "Asszisztens",
+    "placeholder": "Írja be az üzenetét..."
+  },
+  "settings": {
+    "title": "Beállítások",
+    "language": "Nyelv",
+    "theme": "Téma",
+    "api_key": "Supabase és AI beállítások"
   }
 }
