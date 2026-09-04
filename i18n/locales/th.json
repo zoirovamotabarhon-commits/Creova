@@ -1,56 +1,129 @@
 {
-  "common": { "appName": "CREOVA", "error": "ข้อผิดพลาด", "success": "สำเร็จ" },
+  "common": {
+    "appName": "CREOVA",
+    "error": "ข้อผิดพลาด",
+    "success": "สำเร็จ",
+    "generate": "Generate",
+    "analyze": "Analyze",
+    "apply": "Apply",
+    "cancel": "Cancel",
+    "save": "Save",
+    "loading": "Loading...",
+    "retry": "Retry",
+    "delete": "Delete"
+  },
   "aiVideo": {
     "title": "🎬 วิดีโอ AI",
     "subtitle": "สร้างวิดีโอด้วย CREOVA AI",
-    "promptPlaceholder": "เช่น: เมืองแห่งอนาคตยามพระอาทิตย์ตก",
+    "promptPlaceholder": "เช่น เมืองแห่งอนาคตยามพระอาทิตย์ตก",
     "generateButton": "สร้างวิดีโอ",
     "emptyPromptTitle": "CREOVA",
-    "emptyPromptMessage": "กรุณาใส่คำอธิบายสำหรับวิดีโอ",
+    "emptyPromptMessage": "กรุณาป้อนคำอธิบายสำหรับวิดีโอ",
     "statusTitle": "สถานะวิดีโอ",
     "progressLabel": "ความคืบหน้า",
-    "videoErrorTitle": "ข้อผิดพลาดวิดีโอ",
-    "videoStatusError": "ไม่สามารถดึงสถานะวิดีโอได้",
+    "videoErrorTitle": "ข้อผิดพลาดของวิดีโอ",
+    "videoStatusError": "ไม่สามารถรับสถานะวิดีโอได้",
     "videoReadyTitle": "CREOVA",
-    "videoReadyMessage": "วิดีโอพร้อมแล้ว",
+    "videoReadyMessage": "วิดีโอของคุณพร้อมแล้ว",
     "videoReadyNoUrl": "วิดีโอพร้อมแล้ว แต่ไม่ได้รับ URL MP4",
-    "videoFailedTitle": "การสร้างวิดีโอล้มเหลว",
+    "videoFailedTitle": "สร้างวิดีโอไม่สำเร็จ",
     "videoFailedStatus": "สถานะวิดีโอ: {{status}}",
     "videoTooLongTitle": "CREOVA",
     "videoTooLongMessage": "การสร้างวิดีโอใช้เวลานานเกินไป กรุณาตรวจสอบอีกครั้งภายหลัง",
     "videoCheckError": "เกิดข้อผิดพลาดขณะตรวจสอบสถานะวิดีโอ",
-    "generationFailed": "การสร้างวิดีโอล้มเหลว",
+    "generationFailed": "สร้างวิดีโอไม่สำเร็จ",
     "unexpectedError": "เกิดข้อผิดพลาดที่ไม่คาดคิดขณะสร้างวิดีโอ",
-    "noUrlYet": "ไม่ได้รับ URL MP4",
+    "noUrlYet": "ยังไม่ได้รับ URL MP4",
     "idLabel": "ID: {{id}}"
   },
   "aiVoice": {
     "title": "🎤 เสียง AI",
-    "subtitle": "แปลงข้อความเป็นเสียงพูดด้วย CREOVA AI",
-    "textPlaceholder": "เช่น: สวัสดี CREOVA!",
+    "subtitle": "แปลงข้อความเป็นเสียงด้วย CREOVA AI",
+    "textPlaceholder": "เช่น สวัสดี CREOVA!",
     "generateButton": "สร้างเสียง",
-    "emptyTextMessage": "กรุณาใส่ข้อความสำหรับเสียง",
-    "generationFailedTitle": "การสร้างเสียงล้มเหลว",
-    "generationFailedMessage": "เกิดข้อผิดพลาดขณะสร้างเสียง",
-    "noAudioMessage": "ไม่ได้รับไฟล์เสียง",
-    "readyMessage": "เสียงพร้อมแล้ว",
-    "unexpectedError": "เกิดข้อผิดพลาดที่ไม่คาดคิดขณะสร้างเสียง",
-    "resultTitle": "🔊 เสียงพร้อมแล้ว",
-    "resultText": "แปลงข้อความเป็นเสียงพูดสำเร็จแล้ว",
-    "play": "▶️ เล่น",
-    "pause": "⏸ หยุดชั่วคราว",
-    "audioErrorTitle": "ข้อผิดพลาดเสียง",
-    "audioErrorMessage": "เกิดข้อผิดพลาดขณะเล่นเสียง"
+    "result": { "title": "🔊 เสียงพร้อมแล้ว", "description": "ข้อความของคุณถูกแปลงเป็นเสียงเรียบร้อยแล้ว" },
+    "player": { "play": "▶️ เล่น", "pause": "⏸ หยุดชั่วคราว" },
+    "errors": {
+      "emptyText": "กรุณาป้อนข้อความสำหรับเสียง",
+      "generationFailed": "เกิดข้อผิดพลาดขณะสร้างเสียง",
+      "audioMissing": "ไม่ได้รับไฟล์เสียง",
+      "unexpected": "เกิดข้อผิดพลาดที่ไม่คาดคิดขณะสร้างเสียง",
+      "playbackFailed": "เกิดข้อผิดพลาดขณะเล่นเสียง"
+    },
+    "success": { "generated": "สร้างเสียงสำเร็จแล้ว" }
   },
   "profile": {
     "title": "โปรไฟล์",
     "nameLabel": "ชื่อ",
-    "namePlaceholder": "กรุณาใส่ชื่อของคุณ",
+    "namePlaceholder": "ป้อนชื่อของคุณ",
     "emailLabel": "อีเมล",
     "saveButton": "บันทึก",
     "nameRequired": "จำเป็นต้องระบุชื่อ",
     "loadFailed": "ไม่สามารถโหลดโปรไฟล์ได้",
     "updateFailed": "ไม่สามารถอัปเดตโปรไฟล์ได้",
     "updateSuccess": "อัปเดตโปรไฟล์สำเร็จแล้ว"
+  },
+  "aiMusic": {
+    "title": "🎶 เพลง AI",
+    "subtitle": "สร้างเพลงด้วย CREOVA AI",
+    "promptPlaceholder": "เช่น เมืองแห่งอนาคตยามพระอาทิตย์ตก",
+    "generateButton": "สร้างเพลง",
+    "result": { "title": "🎶 เพลงพร้อมแล้ว", "description": "ข้อความของคุณถูกแปลงเป็นเพลงเรียบร้อยแล้ว" },
+    "player": { "play": "▶️ เล่น", "pause": "⏸ หยุดชั่วคราว" },
+    "errors": {
+      "emptyPrompt": "กรุณาป้อนคำอธิบายสำหรับเพลง",
+      "generationFailed": "เกิดข้อผิดพลาดขณะสร้างเพลง",
+      "audioMissing": "ไม่ได้รับไฟล์เสียง",
+      "unexpected": "เกิดข้อผิดพลาดที่ไม่คาดคิดขณะสร้างเพลง",
+      "playbackFailed": "เกิดข้อผิดพลาดขณะเล่นเสียง"
+    },
+    "success": { "generated": "สร้างเพลงสำเร็จแล้ว" }
+  },
+  "navigation": {
+    "home": "หน้าหลัก",
+    "code_studio": "สตูดิโอโค้ด",
+    "vision_studio": "สตูดิโอ Vision",
+    "chat": "แชต AI",
+    "settings": "การตั้งค่า"
+  },
+  "dashboard": {
+    "welcome": "แพลตฟอร์ม Creova AI",
+    "subtitle": "เลือกพื้นที่ทำงานของเอเจนต์ AI อัตโนมัติเพื่อเริ่มต้น",
+    "code_title": "สตูดิโอโค้ด AI",
+    "code_desc": "รีแฟกเตอร์ แก้ไขข้อผิดพลาด สร้างโค้ด และดูการเปลี่ยนแปลงแบบเรียลไทม์ด้วย Developer Agent",
+    "vision_title": "สตูดิโอ Vision AI",
+    "vision_desc": "วิเคราะห์ภาพหน้าจอ แบบจำลองการออกแบบ และแปลง UI เป็นคอมโพเนนต์เนทีฟ",
+    "chat_title": "ผู้ช่วย AI ทั่วไป",
+    "chat_desc": "การให้เหตุผลทั่วไป การระดมความคิด และการพูดคุยเกี่ยวกับสถาปัตยกรรม"
+  },
+  "code": {
+    "title": "สตูดิโอโค้ด AI",
+    "workspace_editor": "ตัวแก้ไขพื้นที่ทำงาน",
+    "proposed_changes": "การเปลี่ยนแปลงที่ AI เสนอ",
+    "apply_changes": "ใช้การเปลี่ยนแปลง",
+    "prompt_placeholder": "ขอให้ AI เขียนหรือรีแฟกเตอร์โค้ด...",
+    "file_explorer": "ตัวสำรวจโปรเจกต์",
+    "no_files": "ไม่พบไฟล์ในพื้นที่ทำงาน",
+    "terminal_title": "คอนโซลการทำงาน",
+    "terminal_empty": "คอนโซลพร้อมแล้ว กำลังรอบันทึกการทำงาน..."
+  },
+  "vision": {
+    "title": "สตูดิโอ Vision AI",
+    "image_url_label": "URL รูปภาพหรือแหล่งที่มา",
+    "url_placeholder": "วาง URL รูปภาพที่นี่...",
+    "results_label": "ผลการวิเคราะห์",
+    "ai_label": "AI Vision",
+    "prompt_placeholder": "อธิบายหรือถามเกี่ยวกับรูปภาพ..."
+  },
+  "chat": {
+    "you": "คุณ",
+    "ai": "ผู้ช่วย",
+    "placeholder": "พิมพ์ข้อความของคุณ..."
+  },
+  "settings": {
+    "title": "การตั้งค่า",
+    "language": "ภาษา",
+    "theme": "ธีม",
+    "api_key": "การตั้งค่า Supabase และ AI"
   }
-}
+  }
