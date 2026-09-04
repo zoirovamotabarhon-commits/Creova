@@ -1,46 +1,56 @@
 {
-  "common": { "appName": "CREOVA", "error": "오류", "success": "성공" },
+  "common": {
+    "appName": "CREOVA",
+    "error": "오류",
+    "success": "성공",
+    "generate": "생성",
+    "analyze": "분석",
+    "apply": "적용",
+    "cancel": "취소",
+    "save": "저장",
+    "loading": "로딩 중...",
+    "retry": "다시 시도",
+    "delete": "삭제"
+  },
   "aiVideo": {
     "title": "🎬 AI 비디오",
-    "subtitle": "CREOVA AI로 비디오 생성",
-    "promptPlaceholder": "예: 석양의 미래 도시",
-    "generateButton": "비디오 생성",
+    "subtitle": "CREOVA AI로 동영상을 생성하세요",
+    "promptPlaceholder": "예: 해질녘의 미래 도시",
+    "generateButton": "동영상 생성",
     "emptyPromptTitle": "CREOVA",
-    "emptyPromptMessage": "비디오 설명을 입력하세요.",
-    "statusTitle": "비디오 상태",
+    "emptyPromptMessage": "동영상 설명을 입력하세요.",
+    "statusTitle": "동영상 상태",
     "progressLabel": "진행률",
-    "videoErrorTitle": "비디오 오류",
-    "videoStatusError": "비디오 상태를 가져오지 못했습니다.",
+    "videoErrorTitle": "동영상 오류",
+    "videoStatusError": "동영상 상태를 가져오지 못했습니다.",
     "videoReadyTitle": "CREOVA",
-    "videoReadyMessage": "비디오가 준비되었습니다.",
-    "videoReadyNoUrl": "비디오는 준비되었지만 MP4 URL을 받지 못했습니다.",
-    "videoFailedTitle": "비디오 생성 실패",
-    "videoFailedStatus": "비디오 상태: {{status}}",
+    "videoReadyMessage": "동영상이 준비되었습니다.",
+    "videoReadyNoUrl": "동영상은 준비되었지만 MP4 URL을 받지 못했습니다.",
+    "videoFailedTitle": "동영상 생성 실패",
+    "videoFailedStatus": "동영상 상태: {{status}}",
     "videoTooLongTitle": "CREOVA",
-    "videoTooLongMessage": "비디오 생성이 너무 오래 걸립니다. 나중에 다시 확인하세요.",
-    "videoCheckError": "비디오 상태 확인 중 오류가 발생했습니다.",
-    "generationFailed": "비디오 생성에 실패했습니다.",
-    "unexpectedError": "비디오 생성 중 예기치 않은 오류가 발생했습니다.",
-    "noUrlYet": "MP4 URL을 받지 못했습니다.",
+    "videoTooLongMessage": "동영상 생성에 너무 오래 걸리고 있습니다. 나중에 다시 확인하세요.",
+    "videoCheckError": "동영상 상태를 확인하는 중 오류가 발생했습니다.",
+    "generationFailed": "동영상 생성에 실패했습니다.",
+    "unexpectedError": "동영상을 생성하는 중 예기치 않은 오류가 발생했습니다.",
+    "noUrlYet": "아직 MP4 URL을 받지 못했습니다.",
     "idLabel": "ID: {{id}}"
   },
   "aiVoice": {
     "title": "🎤 AI 음성",
-    "subtitle": "CREOVA AI로 텍스트를 음성으로 변환",
+    "subtitle": "CREOVA AI로 텍스트를 음성으로 변환하세요",
     "textPlaceholder": "예: 안녕하세요, CREOVA!",
     "generateButton": "음성 생성",
-    "emptyTextMessage": "음성용 텍스트를 입력하세요.",
-    "generationFailedTitle": "음성 생성 실패",
-    "generationFailedMessage": "음성 생성 중 오류가 발생했습니다.",
-    "noAudioMessage": "오디오 파일을 받지 못했습니다.",
-    "readyMessage": "음성이 준비되었습니다.",
-    "unexpectedError": "음성 생성 중 예기치 않은 오류가 발생했습니다.",
-    "resultTitle": "🔊 음성 준비 완료",
-    "resultText": "텍스트가 음성으로 성공적으로 변환되었습니다.",
-    "play": "▶️ 재생",
-    "pause": "⏸ 일시정지",
-    "audioErrorTitle": "오디오 오류",
-    "audioErrorMessage": "오디오 재생 중 오류가 발생했습니다."
+    "result": { "title": "🔊 음성 준비 완료", "description": "텍스트가 성공적으로 음성으로 변환되었습니다." },
+    "player": { "play": "▶️ 재생", "pause": "⏸ 일시정지" },
+    "errors": {
+      "emptyText": "음성으로 변환할 텍스트를 입력하세요.",
+      "generationFailed": "음성을 생성하는 중 오류가 발생했습니다.",
+      "audioMissing": "오디오 파일을 받지 못했습니다.",
+      "unexpected": "음성을 생성하는 중 예기치 않은 오류가 발생했습니다.",
+      "playbackFailed": "오디오를 재생하는 중 오류가 발생했습니다."
+    },
+    "success": { "generated": "음성이 성공적으로 생성되었습니다." }
   },
   "profile": {
     "title": "프로필",
@@ -52,5 +62,68 @@
     "loadFailed": "프로필을 불러오지 못했습니다.",
     "updateFailed": "프로필을 업데이트하지 못했습니다.",
     "updateSuccess": "프로필이 성공적으로 업데이트되었습니다."
+  },
+  "aiMusic": {
+    "title": "🎶 AI 음악",
+    "subtitle": "CREOVA AI로 음악을 생성하세요",
+    "promptPlaceholder": "예: 해질녘의 미래 도시",
+    "generateButton": "음악 생성",
+    "result": { "title": "🎶 음악 준비 완료", "description": "텍스트가 성공적으로 음악으로 변환되었습니다." },
+    "player": { "play": "▶️ 재생", "pause": "⏸ 일시정지" },
+    "errors": {
+      "emptyPrompt": "음악 설명을 입력하세요.",
+      "generationFailed": "음악을 생성하는 중 오류가 발생했습니다.",
+      "audioMissing": "오디오 파일을 받지 못했습니다.",
+      "unexpected": "음악을 생성하는 중 예기치 않은 오류가 발생했습니다.",
+      "playbackFailed": "오디오를 재생하는 중 오류가 발생했습니다."
+    },
+    "success": { "generated": "음악이 성공적으로 생성되었습니다." }
+  },
+  "navigation": {
+    "home": "홈",
+    "code_studio": "코드 스튜디오",
+    "vision_studio": "비전 스튜디오",
+    "chat": "AI 채팅",
+    "settings": "설정"
+  },
+  "dashboard": {
+    "welcome": "CREOVA AI 플랫폼",
+    "subtitle": "시작하려면 자율 AI 에이전트 작업 공간을 선택하세요",
+    "code_title": "AI 코드 스튜디오",
+    "code_desc": "Developer Agent로 코드를 리팩터링하고 디버깅하며 생성하고 변경 사항을 실시간으로 확인하세요.",
+    "vision_title": "AI 비전 스튜디오",
+    "vision_desc": "스크린샷과 디자인 목업을 분석하고 UI를 네이티브 컴포넌트로 변환하세요.",
+    "chat_title": "일반 AI 어시스턴트",
+    "chat_desc": "일반적인 추론, 아이디어 교환 및 아키텍처 논의를 지원합니다."
+  },
+  "code": {
+    "title": "AI 코드 스튜디오",
+    "workspace_editor": "작업 공간 편집기",
+    "proposed_changes": "AI가 제안한 변경 사항",
+    "apply_changes": "변경 사항 적용",
+    "prompt_placeholder": "AI에게 코드를 작성하거나 리팩터링하도록 요청하세요...",
+    "file_explorer": "프로젝트 탐색기",
+    "no_files": "작업 공간에서 파일을 찾을 수 없습니다",
+    "terminal_title": "실행 콘솔",
+    "terminal_empty": "콘솔이 준비되었습니다. 실행 로그를 기다리는 중..."
+  },
+  "vision": {
+    "title": "AI 비전 스튜디오",
+    "image_url_label": "이미지 URL 또는 소스",
+    "url_placeholder": "여기에 이미지 URL을 붙여넣으세요...",
+    "results_label": "분석 결과",
+    "ai_label": "AI 비전",
+    "prompt_placeholder": "이미지를 설명하거나 이미지에 대해 질문하세요..."
+  },
+  "chat": {
+    "you": "나",
+    "ai": "어시스턴트",
+    "placeholder": "메시지를 입력하세요..."
+  },
+  "settings": {
+    "title": "설정",
+    "language": "언어",
+    "theme": "테마",
+    "api_key": "Supabase 및 AI 설정"
   }
 }
