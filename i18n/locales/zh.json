@@ -1,56 +1,145 @@
 {
-  "common": { "appName": "CREOVA", "error": "错误", "success": "成功" },
+  "common": {
+    "appName": "CREOVA",
+    "error": "错误",
+    "success": "成功",
+    "generate": "生成",
+    "analyze": "分析",
+    "apply": "应用",
+    "cancel": "取消",
+    "save": "保存",
+    "loading": "加载中...",
+    "retry": "重试",
+    "delete": "删除"
+  },
   "aiVideo": {
     "title": "🎬 AI 视频",
     "subtitle": "使用 CREOVA AI 生成视频",
-    "promptPlaceholder": "例如：日落时的未来城市",
+    "promptPlaceholder": "例如：日落时分的未来城市",
     "generateButton": "生成视频",
     "emptyPromptTitle": "CREOVA",
     "emptyPromptMessage": "请输入视频描述。",
     "statusTitle": "视频状态",
     "progressLabel": "进度",
     "videoErrorTitle": "视频错误",
-    "videoStatusError": "无法获取视频状态。",
+    "videoStatusError": "获取视频状态时发生错误。",
     "videoReadyTitle": "CREOVA",
-    "videoReadyMessage": "视频已就绪。",
-    "videoReadyNoUrl": "视频已就绪，但未收到 MP4 链接。",
+    "videoReadyMessage": "你的视频已准备就绪。",
+    "videoReadyNoUrl": "视频已准备就绪，但未收到 MP4 URL。",
     "videoFailedTitle": "视频生成失败",
     "videoFailedStatus": "视频状态：{{status}}",
     "videoTooLongTitle": "CREOVA",
-    "videoTooLongMessage": "视频生成耗时过长，请稍后重试。",
-    "videoCheckError": "检查视频状态时出错。",
+    "videoTooLongMessage": "视频生成耗时过长。请稍后重新检查。",
+    "videoCheckError": "检查视频状态时发生错误。",
     "generationFailed": "视频生成失败。",
     "unexpectedError": "生成视频时发生意外错误。",
-    "noUrlYet": "未收到 MP4 链接。",
+    "noUrlYet": "尚未收到 MP4 URL。",
     "idLabel": "ID：{{id}}"
   },
   "aiVoice": {
     "title": "🎤 AI 语音",
-    "subtitle": "使用 CREOVA AI 将文字转换为语音",
+    "subtitle": "使用 CREOVA AI 将文本转换为语音",
     "textPlaceholder": "例如：你好，CREOVA！",
     "generateButton": "生成语音",
-    "emptyTextMessage": "请输入语音文本。",
-    "generationFailedTitle": "语音生成失败",
-    "generationFailedMessage": "生成语音时发生错误。",
-    "noAudioMessage": "未收到音频文件。",
-    "readyMessage": "语音已就绪。",
-    "unexpectedError": "生成语音时发生意外错误。",
-    "resultTitle": "🔊 语音已就绪",
-    "resultText": "文字已成功转换为语音。",
-    "play": "▶️ 播放",
-    "pause": "⏸ 暂停",
-    "audioErrorTitle": "音频错误",
-    "audioErrorMessage": "播放音频时发生错误。"
+    "result": {
+      "title": "🔊 语音已准备就绪",
+      "description": "你的文本已成功转换为语音。"
+    },
+    "player": {
+      "play": "▶️ 播放",
+      "pause": "⏸ 暂停"
+    },
+    "errors": {
+      "emptyText": "请输入语音文本。",
+      "generationFailed": "生成语音时发生错误。",
+      "audioMissing": "未收到音频文件。",
+      "unexpected": "生成语音时发生意外错误。",
+      "playbackFailed": "播放音频时发生错误。"
+    },
+    "success": {
+      "generated": "语音生成成功。"
+    }
   },
   "profile": {
     "title": "个人资料",
     "nameLabel": "姓名",
-    "namePlaceholder": "请输入您的姓名",
-    "emailLabel": "邮箱",
+    "namePlaceholder": "请输入你的姓名",
+    "emailLabel": "电子邮箱",
     "saveButton": "保存",
     "nameRequired": "姓名为必填项。",
-    "loadFailed": "个人资料加载失败。",
-    "updateFailed": "个人资料更新失败。",
+    "loadFailed": "加载个人资料失败。",
+    "updateFailed": "更新个人资料失败。",
     "updateSuccess": "个人资料更新成功。"
+  },
+  "aiMusic": {
+    "title": "🎶 AI 音乐",
+    "subtitle": "使用 CREOVA AI 生成音乐",
+    "promptPlaceholder": "例如：日落时分的未来城市",
+    "generateButton": "生成音乐",
+    "result": {
+      "title": "🎶 音乐已准备就绪",
+      "description": "你的文本已成功转换为音乐。"
+    },
+    "player": {
+      "play": "▶️ 播放",
+      "pause": "⏸ 暂停"
+    },
+    "errors": {
+      "emptyPrompt": "请输入音乐描述。",
+      "generationFailed": "生成音乐时发生错误。",
+      "audioMissing": "未收到音频文件。",
+      "unexpected": "生成音乐时发生意外错误。",
+      "playbackFailed": "播放音频时发生错误。"
+    },
+    "success": {
+      "generated": "音乐生成成功。"
+    }
+  },
+  "navigation": {
+    "home": "首页",
+    "code_studio": "代码工作室",
+    "vision_studio": "视觉工作室",
+    "chat": "AI 聊天",
+    "settings": "设置"
+  },
+  "dashboard": {
+    "welcome": "Creova AI 平台",
+    "subtitle": "选择一个自主 AI 智能体工作区以开始",
+    "code_title": "AI 代码工作室",
+    "code_desc": "使用开发者智能体实时重构、调试、生成代码并查看差异。",
+    "vision_title": "AI 视觉工作室",
+    "vision_desc": "分析屏幕截图、设计模型，并将 UI 转换为原生组件。",
+    "chat_title": "通用 AI 助手",
+    "chat_desc": "进行通用推理、头脑风暴和架构讨论。"
+  },
+  "code": {
+    "title": "AI 代码工作室",
+    "workspace_editor": "工作区编辑器",
+    "proposed_changes": "AI 建议的更改",
+    "apply_changes": "应用更改",
+    "prompt_placeholder": "让 AI 编写或重构代码...",
+    "file_explorer": "项目文件浏览器",
+    "no_files": "工作区中未找到文件",
+    "terminal_title": "运行控制台",
+    "terminal_empty": "控制台已准备就绪，等待运行日志..."
+  },
+  "vision": {
+    "title": "AI 视觉工作室",
+    "image_url_label": "图片 URL 或来源",
+    "url_placeholder": "在此粘贴图片 URL...",
+    "results_label": "分析结果",
+    "ai_label": "视觉 AI",
+    "prompt_placeholder": "描述图片或提出有关图片的问题..."
+  },
+  "chat": {
+    "you": "你",
+    "ai": "助手",
+    "placeholder": "输入你的消息..."
+  },
+  "settings": {
+    "title": "设置",
+    "language": "语言",
+    "theme": "主题",
+    "api_key": "Supabase 和 AI 配置"
   }
 }
