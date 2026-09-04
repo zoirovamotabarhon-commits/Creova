@@ -1,46 +1,56 @@
 {
-  "common": { "appName": "CREOVA", "error": "خرابی", "success": "کامیابی" },
+  "common": {
+    "appName": "CREOVA",
+    "error": "خرابی",
+    "success": "کامیابی",
+    "generate": "Generate",
+    "analyze": "Analyze",
+    "apply": "Apply",
+    "cancel": "Cancel",
+    "save": "Save",
+    "loading": "Loading...",
+    "retry": "Retry",
+    "delete": "Delete"
+  },
   "aiVideo": {
     "title": "🎬 AI ویڈیو",
-    "subtitle": "CREOVA AI کے ساتھ ویڈیو بنائیں",
-    "promptPlaceholder": "مثال: غروب آفتاب کے وقت مستقبل کا شہر",
+    "subtitle": "CREOVA AI کے ساتھ ویڈیوز بنائیں",
+    "promptPlaceholder": "مثلاً غروب آفتاب کے وقت ایک مستقبل کا شہر",
     "generateButton": "ویڈیو بنائیں",
     "emptyPromptTitle": "CREOVA",
-    "emptyPromptMessage": "ویڈیو کے لیے تفصیل درج کریں۔",
+    "emptyPromptMessage": "ویڈیو کی وضاحت درج کریں۔",
     "statusTitle": "ویڈیو کی حیثیت",
     "progressLabel": "پیش رفت",
     "videoErrorTitle": "ویڈیو کی خرابی",
-    "videoStatusError": "ویڈیو کی حیثیت حاصل نہیں ہو سکی۔",
+    "videoStatusError": "ویڈیو کی حیثیت حاصل نہیں کی جا سکی۔",
     "videoReadyTitle": "CREOVA",
-    "videoReadyMessage": "ویڈیو تیار ہے۔",
+    "videoReadyMessage": "آپ کی ویڈیو تیار ہے۔",
     "videoReadyNoUrl": "ویڈیو تیار ہے، لیکن MP4 URL موصول نہیں ہوا۔",
-    "videoFailedTitle": "ویڈیو نہیں بن سکی",
+    "videoFailedTitle": "ویڈیو بنانا ناکام رہا",
     "videoFailedStatus": "ویڈیو کی حیثیت: {{status}}",
     "videoTooLongTitle": "CREOVA",
-    "videoTooLongMessage": "ویڈیو بنانے میں کافی وقت لگ رہا ہے۔ براہ کرم بعد میں چیک کریں۔",
-    "videoCheckError": "ویڈیو کی حیثیت چیک کرنے میں خرابی۔",
-    "generationFailed": "ویڈیو بنانا ناکام ہوا۔",
-    "unexpectedError": "ویڈیو بناتے وقت غیر متوقع خرابی پیش آئی۔",
-    "noUrlYet": "MP4 URL موصول نہیں ہوا۔",
+    "videoTooLongMessage": "ویڈیو بنانے میں بہت زیادہ وقت لگ رہا ہے۔ بعد میں دوبارہ چیک کریں۔",
+    "videoCheckError": "ویڈیو کی حیثیت چیک کرتے وقت خرابی پیش آئی۔",
+    "generationFailed": "ویڈیو بنانا ناکام رہا۔",
+    "unexpectedError": "ویڈیو بناتے وقت ایک غیر متوقع خرابی پیش آئی۔",
+    "noUrlYet": "ابھی تک MP4 URL موصول نہیں ہوا۔",
     "idLabel": "ID: {{id}}"
   },
   "aiVoice": {
     "title": "🎤 AI آواز",
     "subtitle": "CREOVA AI کے ساتھ متن کو آواز میں تبدیل کریں",
-    "textPlaceholder": "مثال: سلام، CREOVA!",
+    "textPlaceholder": "مثلاً ہیلو، CREOVA!",
     "generateButton": "آواز بنائیں",
-    "emptyTextMessage": "آواز کے لیے متن درج کریں۔",
-    "generationFailedTitle": "آواز بنانا ناکام ہوا",
-    "generationFailedMessage": "آواز بناتے وقت خرابی پیش آئی۔",
-    "noAudioMessage": "آڈیو فائل موصول نہیں ہوئی۔",
-    "readyMessage": "آواز تیار ہے۔",
-    "unexpectedError": "آواز بناتے وقت غیر متوقع خرابی پیش آئی۔",
-    "resultTitle": "🔊 آواز تیار ہے",
-    "resultText": "متن کامیابی سے آواز میں تبدیل ہو گیا۔",
-    "play": "▶️ چلائیں",
-    "pause": "⏸ روکیں",
-    "audioErrorTitle": "آڈیو خرابی",
-    "audioErrorMessage": "آڈیو چلاتے وقت خرابی پیش آئی۔"
+    "result": { "title": "🔊 آواز تیار ہے", "description": "آپ کا متن کامیابی سے آواز میں تبدیل ہو گیا ہے۔" },
+    "player": { "play": "▶️ چلائیں", "pause": "⏸ روکیں" },
+    "errors": {
+      "emptyText": "آواز کے لیے متن درج کریں۔",
+      "generationFailed": "آواز بناتے وقت خرابی پیش آئی۔",
+      "audioMissing": "آڈیو فائل موصول نہیں ہوئی۔",
+      "unexpected": "آواز بناتے وقت ایک غیر متوقع خرابی پیش آئی۔",
+      "playbackFailed": "آڈیو چلاتے وقت خرابی پیش آئی۔"
+    },
+    "success": { "generated": "آواز کامیابی سے بنائی گئی۔" }
   },
   "profile": {
     "title": "پروفائل",
@@ -48,9 +58,72 @@
     "namePlaceholder": "اپنا نام درج کریں",
     "emailLabel": "ای میل",
     "saveButton": "محفوظ کریں",
-    "nameRequired": "نام درکار ہے۔",
-    "loadFailed": "پروفائل لوڈ نہیں ہو سکی۔",
-    "updateFailed": "پروفائل اپ ڈیٹ نہیں ہو سکی۔",
-    "updateSuccess": "پروفائل کامیابی سے اپ ڈیٹ ہو گئی۔"
+    "nameRequired": "نام ضروری ہے۔",
+    "loadFailed": "پروفائل لوڈ نہیں ہو سکا۔",
+    "updateFailed": "پروفائل اپ ڈیٹ نہیں ہو سکا۔",
+    "updateSuccess": "پروفائل کامیابی سے اپ ڈیٹ ہو گیا۔"
+  },
+  "aiMusic": {
+    "title": "🎶 AI موسیقی",
+    "subtitle": "CREOVA AI کے ساتھ موسیقی بنائیں",
+    "promptPlaceholder": "مثلاً غروب آفتاب کے وقت ایک مستقبل کا شہر",
+    "generateButton": "موسیقی بنائیں",
+    "result": { "title": "🎶 موسیقی تیار ہے", "description": "آپ کا متن کامیابی سے موسیقی میں تبدیل ہو گیا ہے۔" },
+    "player": { "play": "▶️ چلائیں", "pause": "⏸ روکیں" },
+    "errors": {
+      "emptyPrompt": "موسیقی کی وضاحت درج کریں۔",
+      "generationFailed": "موسیقی بناتے وقت خرابی پیش آئی۔",
+      "audioMissing": "آڈیو فائل موصول نہیں ہوئی۔",
+      "unexpected": "موسیقی بناتے وقت ایک غیر متوقع خرابی پیش آئی۔",
+      "playbackFailed": "آڈیو چلاتے وقت خرابی پیش آئی۔"
+    },
+    "success": { "generated": "موسیقی کامیابی سے بنائی گئی۔" }
+  },
+  "navigation": {
+    "home": "ہوم",
+    "code_studio": "کوڈ اسٹوڈیو",
+    "vision_studio": "Vision اسٹوڈیو",
+    "chat": "AI چیٹ",
+    "settings": "ترتیبات"
+  },
+  "dashboard": {
+    "welcome": "Creova AI پلیٹ فارم",
+    "subtitle": "شروع کرنے کے لیے خودکار AI ایجنٹ کی ورک اسپیس منتخب کریں",
+    "code_title": "AI کوڈ اسٹوڈیو",
+    "code_desc": "Developer Agent کے ساتھ کوڈ ریفیکٹر، ڈیبگ، جنریٹ کریں اور تبدیلیاں حقیقی وقت میں دیکھیں۔",
+    "vision_title": "AI Vision اسٹوڈیو",
+    "vision_desc": "اسکرین شاٹس اور ڈیزائن ماک اپس کا تجزیہ کریں اور UI کو مقامی اجزاء میں تبدیل کریں۔",
+    "chat_title": "عمومی AI معاون",
+    "chat_desc": "عمومی استدلال، خیالات کا تبادلہ اور آرکیٹیکچر پر گفتگو۔"
+  },
+  "code": {
+    "title": "AI کوڈ اسٹوڈیو",
+    "workspace_editor": "ورک اسپیس ایڈیٹر",
+    "proposed_changes": "AI کی تجویز کردہ تبدیلیاں",
+    "apply_changes": "تبدیلیاں لاگو کریں",
+    "prompt_placeholder": "AI سے کوڈ لکھنے یا ریفیکٹر کرنے کو کہیں...",
+    "file_explorer": "پروجیکٹ ایکسپلورر",
+    "no_files": "ورک اسپیس میں کوئی فائل نہیں ملی",
+    "terminal_title": "ایگزیکیوشن کنسول",
+    "terminal_empty": "کنسول تیار ہے۔ ایگزیکیوشن لاگز کا انتظار ہے..."
+  },
+  "vision": {
+    "title": "AI Vision اسٹوڈیو",
+    "image_url_label": "تصویر کا URL یا ذریعہ",
+    "url_placeholder": "تصویر کا URL یہاں پیسٹ کریں...",
+    "results_label": "تجزیے کے نتائج",
+    "ai_label": "AI Vision",
+    "prompt_placeholder": "تصویر کی وضاحت کریں یا اس کے بارے میں سوال کریں..."
+  },
+  "chat": {
+    "you": "آپ",
+    "ai": "معاون",
+    "placeholder": "اپنا پیغام لکھیں..."
+  },
+  "settings": {
+    "title": "ترتیبات",
+    "language": "زبان",
+    "theme": "تھیم",
+    "api_key": "Supabase اور AI کی ترتیبات"
   }
-}
+  }
