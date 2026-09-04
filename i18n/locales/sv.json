@@ -1,46 +1,56 @@
 {
-  "common": { "appName": "CREOVA", "error": "Fel", "success": "Lyckades" },
+  "common": {
+    "appName": "CREOVA",
+    "error": "Fel",
+    "success": "Lyckades",
+    "generate": "Generate",
+    "analyze": "Analyze",
+    "apply": "Apply",
+    "cancel": "Cancel",
+    "save": "Save",
+    "loading": "Loading...",
+    "retry": "Retry",
+    "delete": "Delete"
+  },
   "aiVideo": {
     "title": "🎬 AI-video",
     "subtitle": "Skapa videor med CREOVA AI",
-    "promptPlaceholder": "T.ex: En futuristisk stad vid solnedgången",
+    "promptPlaceholder": "t.ex. En futuristisk stad i skymningen",
     "generateButton": "Skapa video",
     "emptyPromptTitle": "CREOVA",
     "emptyPromptMessage": "Ange en beskrivning för videon.",
     "statusTitle": "Videostatus",
-    "progressLabel": "Framsteg",
+    "progressLabel": "Förlopp",
     "videoErrorTitle": "Videofel",
-    "videoStatusError": "Kunde inte hämta videostatus.",
+    "videoStatusError": "Det gick inte att hämta videostatus.",
     "videoReadyTitle": "CREOVA",
-    "videoReadyMessage": "Videon är klar.",
-    "videoReadyNoUrl": "Videon är klar, men MP4-URL:en togs inte emot.",
-    "videoFailedTitle": "Videoskapande misslyckades",
+    "videoReadyMessage": "Din video är klar.",
+    "videoReadyNoUrl": "Videon är klar, men ingen MP4-URL togs emot.",
+    "videoFailedTitle": "Videogenereringen misslyckades",
     "videoFailedStatus": "Videostatus: {{status}}",
     "videoTooLongTitle": "CREOVA",
-    "videoTooLongMessage": "Videoskapandet tar för lång tid. Försök igen senare.",
-    "videoCheckError": "Fel vid kontroll av videostatus.",
-    "generationFailed": "Videoskapande misslyckades.",
-    "unexpectedError": "Ett oväntat fel uppstod vid videoskapande.",
-    "noUrlYet": "MP4-URL:en togs inte emot.",
+    "videoTooLongMessage": "Videogenereringen tar för lång tid. Kontrollera igen senare.",
+    "videoCheckError": "Ett fel uppstod när videostatus kontrollerades.",
+    "generationFailed": "Videogenereringen misslyckades.",
+    "unexpectedError": "Ett oväntat fel uppstod när videon skapades.",
+    "noUrlYet": "Ingen MP4-URL har tagits emot ännu.",
     "idLabel": "ID: {{id}}"
   },
   "aiVoice": {
     "title": "🎤 AI-röst",
     "subtitle": "Omvandla text till tal med CREOVA AI",
-    "textPlaceholder": "T.ex: Hej, CREOVA!",
+    "textPlaceholder": "t.ex. Hej, CREOVA!",
     "generateButton": "Skapa röst",
-    "emptyTextMessage": "Ange text för rösten.",
-    "generationFailedTitle": "Röstskapande misslyckades",
-    "generationFailedMessage": "Ett fel uppstod vid röstskapande.",
-    "noAudioMessage": "Ljudfilen togs inte emot.",
-    "readyMessage": "Rösten är klar.",
-    "unexpectedError": "Ett oväntat fel uppstod vid röstskapande.",
-    "resultTitle": "🔊 Röst klar",
-    "resultText": "Texten omvandlades till tal.",
-    "play": "▶️ Spela upp",
-    "pause": "⏸ Pausa",
-    "audioErrorTitle": "Ljudfel",
-    "audioErrorMessage": "Ett fel uppstod vid uppspelning av ljudet."
+    "result": { "title": "🔊 Rösten är klar", "description": "Din text har omvandlats till tal." },
+    "player": { "play": "▶️ Spela", "pause": "⏸ Pausa" },
+    "errors": {
+      "emptyText": "Ange text för rösten.",
+      "generationFailed": "Ett fel uppstod när rösten skapades.",
+      "audioMissing": "Ingen ljudfil togs emot.",
+      "unexpected": "Ett oväntat fel uppstod när rösten skapades.",
+      "playbackFailed": "Ett fel uppstod vid uppspelning av ljudet."
+    },
+    "success": { "generated": "Rösten skapades." }
   },
   "profile": {
     "title": "Profil",
@@ -49,8 +59,71 @@
     "emailLabel": "E-post",
     "saveButton": "Spara",
     "nameRequired": "Namn krävs.",
-    "loadFailed": "Kunde inte ladda profilen.",
-    "updateFailed": "Kunde inte uppdatera profilen.",
-    "updateSuccess": "Profilen uppdaterades."
+    "loadFailed": "Det gick inte att läsa in profilen.",
+    "updateFailed": "Det gick inte att uppdatera profilen.",
+    "updateSuccess": "Profilen har uppdaterats."
+  },
+  "aiMusic": {
+    "title": "🎶 AI-musik",
+    "subtitle": "Skapa musik med CREOVA AI",
+    "promptPlaceholder": "t.ex. En futuristisk stad i skymningen",
+    "generateButton": "Skapa musik",
+    "result": { "title": "🎶 Musiken är klar", "description": "Din text har omvandlats till musik." },
+    "player": { "play": "▶️ Spela", "pause": "⏸ Pausa" },
+    "errors": {
+      "emptyPrompt": "Ange en beskrivning för musiken.",
+      "generationFailed": "Fel vid skapande av musik.",
+      "audioMissing": "Ingen ljudfil togs emot.",
+      "unexpected": "Ett oväntat fel uppstod när musiken skapades.",
+      "playbackFailed": "Ett fel uppstod vid uppspelning av ljudet."
+    },
+    "success": { "generated": "Musiken skapades." }
+  },
+  "navigation": {
+    "home": "Hem",
+    "code_studio": "Kodstudio",
+    "vision_studio": "Visionstudio",
+    "chat": "AI-chatt",
+    "settings": "Inställningar"
+  },
+  "dashboard": {
+    "welcome": "Creova AI-plattform",
+    "subtitle": "Välj en arbetsyta för en autonom AI-agent för att börja",
+    "code_title": "AI-kodstudio",
+    "code_desc": "Refaktorera, felsök, generera kod och visa ändringar i realtid med Developer Agent.",
+    "vision_title": "AI Visionstudio",
+    "vision_desc": "Analysera skärmdumpar, designmockuper och omvandla UI till inbyggda komponenter.",
+    "chat_title": "Allmän AI-assistent",
+    "chat_desc": "Allmänt resonemang, idéutbyte och arkitekturdiskussion."
+  },
+  "code": {
+    "title": "AI-kodstudio",
+    "workspace_editor": "Arbetsytans editor",
+    "proposed_changes": "AI-föreslagna ändringar",
+    "apply_changes": "Tillämpa ändringar",
+    "prompt_placeholder": "Be AI skriva eller refaktorera kod...",
+    "file_explorer": "Projektutforskaren",
+    "no_files": "Inga filer hittades i arbetsytan",
+    "terminal_title": "Körningskonsol",
+    "terminal_empty": "Konsolen är redo. Väntar på körningsloggar..."
+  },
+  "vision": {
+    "title": "AI Visionstudio",
+    "image_url_label": "Bild-URL eller källa",
+    "url_placeholder": "Klistra in bildens URL här...",
+    "results_label": "Analysresultat",
+    "ai_label": "AI Vision",
+    "prompt_placeholder": "Beskriv eller fråga om bilden..."
+  },
+  "chat": {
+    "you": "Du",
+    "ai": "Assistent",
+    "placeholder": "Skriv ditt meddelande..."
+  },
+  "settings": {
+    "title": "Inställningar",
+    "language": "Språk",
+    "theme": "Tema",
+    "api_key": "Supabase- och AI-inställningar"
   }
-}
+  }
