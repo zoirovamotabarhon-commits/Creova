@@ -40,12 +40,25 @@ export default function DashboardScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.headerTitle}>
-        {t('dashboard.welcome', 'Creova AI Platform')}
-      </Text>
-      <Text style={styles.subtitle}>
-        {t('dashboard.subtitle', 'Select an autonomous AI agent workspace to begin')}
-      </Text>
+      <View style={styles.headerRow}>
+        <View style={styles.headerTextGroup}>
+          <Text style={styles.headerTitle}>
+            {t('dashboard.welcome', 'Creova AI Platform')}
+          </Text>
+          <Text style={styles.subtitle}>
+            {t('dashboard.subtitle', 'Select an autonomous AI agent workspace to begin')}
+          </Text>
+        </View>
+
+        <TouchableOpacity
+          style={styles.settingsButton}
+          onPress={() => router.push('/settings')}
+          activeOpacity={0.8}
+          accessibilityLabel={t('navigation.settings', 'Settings')}
+        >
+          <Text style={styles.settingsIcon}>⚙</Text>
+        </TouchableOpacity>
+      </View>
 
       <View style={styles.grid}>
         {cards.map((card, index) => (
@@ -73,6 +86,16 @@ const styles = StyleSheet.create({
   content: {
     padding: 20,
   },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    marginBottom: 24,
+  },
+  headerTextGroup: {
+    flex: 1,
+    paddingRight: 12,
+  },
   headerTitle: {
     fontSize: 26,
     fontWeight: 'bold',
@@ -82,7 +105,20 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 14,
     color: '#9ca3af',
-    marginBottom: 24,
+  },
+  settingsButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#1e1e1e',
+    borderWidth: 1,
+    borderColor: '#2e2e2e',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  settingsIcon: {
+    fontSize: 18,
+    color: '#ffffff',
   },
   grid: {
     gap: 16,
