@@ -1,10 +1,26 @@
 import React from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { Alert } from 'react-native';
+import { ErrorBoundary } from '../components/common/ErrorBoundary';
+
+const globalAny = global as any;
+if (globalAny.ErrorUtils && !globalAny.__creovaErrorHandlerInstalled) {
+  globalAny.__creovaErrorHandlerInstalled = true;
+  const defaultHandler = globalAny.ErrorUtils.getGlobalHandler();
+
+  globalAny.ErrorUtils.setGlobalHandler((error: Error, isFatal?: boolean) => {
+    Alert.alert(
+      isFatal ? 'CREOVA — Fatal xato' : 'CREOVA — Xato',
+      `${error.name}: ${error.message}`
+    );
+    defaultHandler(error, isFatal);
+  });
+}
 
 export default function RootLayout() {
   return (
-    <>
+    <ErrorBoundary>
       <StatusBar style="light" />
       <Stack
         screenOptions={{
@@ -49,6 +65,6 @@ export default function RootLayout() {
           }}
         />
       </Stack>
-    </>
+    </ErrorBoundary>
   );
 }
