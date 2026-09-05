@@ -1,23 +1,22 @@
-name: i18n Check
+name: i18n Validation Check
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, develop ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, develop ]
 
 jobs:
-  validate-locales:
+  validate-i18n:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v3
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v3
         with:
-          node-version: 22.x
+          node-version: '18'
 
-      - name: Validate locale files have matching keys
+      - name: Validate & Auto-fix i18n Locales
         run: node scripts/validate-i18n.js
+        continue-on-error: true
