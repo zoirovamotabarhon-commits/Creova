@@ -1,70 +1,62 @@
-import React from 'react';
 import { Stack } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import { Alert } from 'react-native';
-import { ErrorBoundary } from '../components/common/ErrorBoundary';
+import { Component, ReactNode } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 
-const globalAny = global as any;
-if (globalAny.ErrorUtils && !globalAny.__creovaErrorHandlerInstalled) {
-  globalAny.__creovaErrorHandlerInstalled = true;
-  const defaultHandler = globalAny.ErrorUtils.getGlobalHandler();
+class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
+  state = { hasError: false };
 
-  globalAny.ErrorUtils.setGlobalHandler((error: Error, isFatal?: boolean) => {
-    Alert.alert(
-      isFatal ? 'CREOVA — Fatal xato' : 'CREOVA — Xato',
-      `${error.name}: ${error.message}`
-    );
-    defaultHandler(error, isFatal);
-  });
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: any) {
+    console.error('App Crash Error:', error);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorTitle}>Xatolik yuz berdi</Text>
+          <Text style={styles.errorText}>
+            Sahifa yuklanishida xatolik bo'ldi. Dasturni qayta ishga tushiring.
+          </Text>
+          <TouchableOpacity
+            style={styles.button}
+            onPress={() => this.setState({ hasError: false })}
+          >
+            <Text style={styles.buttonText}>Qayta urinish</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+    return this.props.children;
+  }
 }
 
 export default function RootLayout() {
   return (
     <ErrorBoundary>
-      <StatusBar style="light" />
-      <Stack
-        screenOptions={{
-          headerStyle: {
-            backgroundColor: '#121212',
-          },
-          headerTintColor: '#ffffff',
-          headerTitleStyle: {
-            fontWeight: 'bold',
-          },
-          contentStyle: {
-            backgroundColor: '#121212',
-          },
-        }}
-      >
-        <Stack.Screen
-          name="index"
-          options={{
-            title: 'Creova AI Dashboard',
-            headerShown: true,
-          }}
-        />
-        <Stack.Screen
-          name="ai-chat"
-          options={{
-            title: 'AI Chat',
-            headerBackTitle: 'Back',
-          }}
-        />
-        <Stack.Screen
-          name="ai-code"
-          options={{
-            title: 'Code Studio',
-            headerBackTitle: 'Back',
-          }}
-        />
-        <Stack.Screen
-          name="ai-vision"
-          options={{
-            title: 'Vision Studio',
-            headerBackTitle: 'Back',
-          }}
-        />
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="code-studio" />
+        <Stack.Screen name="vision-studio" />
+        <Stack.Screen name="general-assistant" />
       </Stack>
     </ErrorBoundary>
   );
 }
+
+const styles = StyleSheet.create({
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#0D0D0D',
+    padding: 20,
+  },
+  errorTitle: { fontSize: 22, color: '#EF4444', fontWeight: 'bold', marginBottom: 10 },
+  errorText: { fontSize: 14, color: '#A1A1AA', textAlign: 'center', marginBottom: 20 },
+  button: { backgroundColor: '#3B82F6', paddingHorizontal: 20, paddingVertical: 10, borderRadius: 8 },
+  buttonText: { color: '#FFFFFF', fontWeight: 'bold' },
+});
