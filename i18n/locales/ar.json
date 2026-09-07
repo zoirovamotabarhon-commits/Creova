@@ -41,8 +41,14 @@
     "subtitle": "حوّل النص إلى صوت باستخدام CREOVA AI",
     "textPlaceholder": "مثال: مرحبًا، CREOVA!",
     "generateButton": "إنشاء صوت",
-    "result": { "title": "🔊 الصوت جاهز", "description": "تم تحويل النص إلى صوت بنجاح." },
-    "player": { "play": "▶️ تشغيل", "pause": "⏸ إيقاف مؤقت" },
+    "result": {
+      "title": "🔊 الصوت جاهز",
+      "description": "تم تحويل النص إلى صوت بنجاح."
+    },
+    "player": {
+      "play": "▶️ تشغيل",
+      "pause": "⏸ إيقاف مؤقت"
+    },
     "errors": {
       "emptyText": "أدخل نصًا للصوت.",
       "generationFailed": "حدث خطأ أثناء إنشاء الصوت.",
@@ -50,7 +56,9 @@
       "unexpected": "حدث خطأ غير متوقع أثناء إنشاء الصوت.",
       "playbackFailed": "حدث خطأ أثناء تشغيل الصوت."
     },
-    "success": { "generated": "تم إنشاء الصوت بنجاح." }
+    "success": {
+      "generated": "تم إنشاء الصوت بنجاح."
+    }
   },
   "profile": {
     "title": "الملف الشخصي",
@@ -68,8 +76,14 @@
     "subtitle": "أنشئ موسيقى باستخدام CREOVA AI",
     "promptPlaceholder": "مثال: مدينة مستقبلية عند غروب الشمس",
     "generateButton": "إنشاء موسيقى",
-    "result": { "title": "🎶 الموسيقى جاهزة", "description": "تم تحويل النص إلى موسيقى بنجاح." },
-    "player": { "play": "▶️ تشغيل", "pause": "⏸ إيقاف مؤقت" },
+    "result": {
+      "title": "🎶 الموسيقى جاهزة",
+      "description": "تم تحويل النص إلى موسيقى بنجاح."
+    },
+    "player": {
+      "play": "▶️ تشغيل",
+      "pause": "⏸ إيقاف مؤقت"
+    },
     "errors": {
       "emptyPrompt": "أدخل وصفًا للموسيقى.",
       "generationFailed": "فشل إنشاء الموسيقى.",
@@ -77,7 +91,9 @@
       "unexpected": "حدث خطأ غير متوقع أثناء إنشاء الموسيقى.",
       "playbackFailed": "حدث خطأ أثناء تشغيل الصوت."
     },
-    "success": { "generated": "تم إنشاء الموسيقى بنجاح." }
+    "success": {
+      "generated": "تم إنشاء الموسيقى بنجاح."
+    }
   },
   "navigation": {
     "home": "الرئيسية",
@@ -126,3 +142,4 @@
     "theme": "المظهر",
     "api_key": "إعدادات Supabase والذكاء الاصطناعي"
   }
+}
