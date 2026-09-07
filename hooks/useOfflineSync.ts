@@ -46,7 +46,10 @@ export function useOfflineSync<T>(processAction: (payload: T) => Promise<void>) 
   const [queue, setQueue] = useState<QueuedAction<T>[]>([]);
   const [isSyncing, setIsSyncing] = useState(false);
   const processActionRef = useRef(processAction);
-  processActionRef.current = processAction;
+
+  useEffect(() => {
+    processActionRef.current = processAction;
+  }, [processAction]);
 
   useEffect(() => {
     readQueue<T>().then(setQueue);

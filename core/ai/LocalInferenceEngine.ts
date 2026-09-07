@@ -24,7 +24,7 @@ const GREETING_PATTERNS = [
   /^\s*(hi|hello|hey|salom|assalomu\s*alaykum)\s*[!.?]*\s*$/i,
 ];
 
-const FAQ_TABLE: Array<{ pattern: RegExp; answer: string }> = [
+const FAQ_TABLE: { pattern: RegExp; answer: string }[] = [
   {
     pattern: /what\s+can\s+you\s+do|nima\s+qila\s+olasan/i,
     answer:

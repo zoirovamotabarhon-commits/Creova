@@ -19,7 +19,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
         <View style={styles.errorContainer}>
           <Text style={styles.errorTitle}>Xatolik yuz berdi</Text>
           <Text style={styles.errorText}>
-            Sahifa yuklanishida xatolik bo'ldi. Dasturni qayta ishga tushiring.
+            Sahifa yuklanishida xatolik bo\xatolik bo\xatolik bo&apos;ldiapos;ldiapos;ldi. Dasturni qayta ishga tushiring.
           </Text>
           <TouchableOpacity
             style={styles.button}

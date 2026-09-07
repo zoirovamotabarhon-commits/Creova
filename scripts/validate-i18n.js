@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const LOCALES_DIR = path.join(__dirname, '../locales'); // yoki i18n fayllaringiz joylashgan papka yo'li
+const LOCALES_DIR = path.join(process.cwd(), 'i18n', 'locales'); // yoki i18n fayllaringiz joylashgan papka yo'li
 const BASE_LOCALE = 'en.json';
 
 function syncLocales() {
@@ -22,7 +22,7 @@ function syncLocales() {
     
     try {
       fileData = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-    } catch (e) {
+    } catch {
       console.warn(`[WARNING] ${file} faylini o'qishda xatolik, yangi obyekt yaratilmoqda.`);
     }
 
