@@ -1,0 +1,37 @@
+{
+  "cli": {
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "node": "22.22.0",
+      "env": {
+        "NPM_CONFIG_REGISTRY": "https://registry.npmjs.org/",
+        "npm_config_registry": "https://registry.npmjs.org/"
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "node": "22.22.0",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "NPM_CONFIG_REGISTRY": "https://registry.npmjs.org/",
+        "npm_config_registry": "https://registry.npmjs.org/"
+      }
+    },
+    "production": {
+      "node": "22.22.0",
+      "env": {
+        "NPM_CONFIG_REGISTRY": "https://registry.npmjs.org/",
+        "npm_config_registry": "https://registry.npmjs.org/"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}
