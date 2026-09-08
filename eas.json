@@ -6,20 +6,17 @@
     "development": {
       "developmentClient": true,
       "distribution": "internal",
-      "node": "20.20.0",
-      "env": {}
+      "node": "22.23.1"
     },
     "preview": {
       "distribution": "internal",
-      "node": "20.20.0",
+      "node": "22.23.1",
       "android": {
         "buildType": "apk"
-      },
-      "env": {}
+      }
     },
     "production": {
-      "node": "20.20.0",
-      "env": {}
+      "node": "22.23.1"
     }
   },
   "submit": {
