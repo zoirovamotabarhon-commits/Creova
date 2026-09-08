@@ -7,10 +7,7 @@
       "developmentClient": true,
       "distribution": "internal",
       "node": "20.20.0",
-      "env": {
-        "NPM_CONFIG_REGISTRY": "https://registry.npmjs.org/",
-        "npm_config_registry": "https://registry.npmjs.org/"
-      }
+      "env": {}
     },
     "preview": {
       "distribution": "internal",
@@ -18,17 +15,11 @@
       "android": {
         "buildType": "apk"
       },
-      "env": {
-        "NPM_CONFIG_REGISTRY": "https://registry.npmjs.org/",
-        "npm_config_registry": "https://registry.npmjs.org/"
-      }
+      "env": {}
     },
     "production": {
       "node": "20.20.0",
-      "env": {
-        "NPM_CONFIG_REGISTRY": "https://registry.npmjs.org/",
-        "npm_config_registry": "https://registry.npmjs.org/"
-      }
+      "env": {}
     }
   },
   "submit": {
