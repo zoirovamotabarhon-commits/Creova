@@ -11,6 +11,9 @@
     "preview": {
       "distribution": "internal",
       "node": "22.22.0",
+      "env": {
+        "EAS_BUILD_DISABLE_NPM_CACHE": "1"
+      },
       "android": {
         "buildType": "apk"
       }
