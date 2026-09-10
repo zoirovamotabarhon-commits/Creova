@@ -1,62 +1,249 @@
-import { Stack } from 'expo-router';
-import { Component, ReactNode } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import {
+  Stack,
+  usePathname,
+  useRouter,
+} from "expo-router";
 
-class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
-  state = { hasError: false };
+import {
+  useEffect,
+  useState,
+} from "react";
 
-  static getDerivedStateFromError() {
-    return { hasError: true };
-  }
+import {
+  ActivityIndicator,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 
-  componentDidCatch(error: any) {
-    console.error('App Crash Error:', error);
-  }
+import {
+  AuthProvider,
+  useAuthContext,
+} from "../providers/AuthProvider";
 
-  render() {
-    if (this.state.hasError) {
-      return (
-        <View style={styles.errorContainer}>
-          <Text style={styles.errorTitle}>Xatolik yuz berdi</Text>
-          <Text style={styles.errorText}>
-            Sahifa yuklanishida xatolik bo\xatolik bo\xatolik bo&apos;ldiapos;ldiapos;ldi. Dasturni qayta ishga tushiring.
-          </Text>
-          <TouchableOpacity
-            style={styles.button}
-            onPress={() => this.setState({ hasError: false })}
-          >
-            <Text style={styles.buttonText}>Qayta urinish</Text>
-          </TouchableOpacity>
-        </View>
+import {
+  initializeI18n,
+} from "../i18n";
+
+function AppNavigator() {
+  const router =
+    useRouter();
+
+  const pathname =
+    usePathname();
+
+  const {
+    isAuthenticated,
+    loading,
+  } =
+    useAuthContext();
+
+  const [
+    i18nReady,
+    setI18nReady,
+  ] =
+    useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+
+    void initializeI18n()
+      .catch((error) => {
+        console.error(
+          "CREOVA i18n initialization failed:",
+          error,
+        );
+      })
+      .finally(() => {
+        if (mounted) {
+          setI18nReady(true);
+        }
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (
+      loading ||
+      !i18nReady
+    ) {
+      return;
+    }
+
+    const isAuthRoute =
+      pathname === "/login" ||
+      pathname === "/register" ||
+      pathname ===
+        "/forgot-password" ||
+      pathname ===
+        "/reset-password";
+
+    if (
+      !isAuthenticated &&
+      !isAuthRoute
+    ) {
+      router.replace(
+        "/login",
+      );
+
+      return;
+    }
+
+    if (
+      isAuthenticated &&
+      isAuthRoute &&
+      pathname !==
+        "/reset-password"
+    ) {
+      router.replace(
+        "/dashboard",
       );
     }
-    return this.props.children;
+  }, [
+    i18nReady,
+    isAuthenticated,
+    loading,
+    pathname,
+    router,
+  ]);
+
+  if (
+    loading ||
+    !i18nReady
+  ) {
+    return (
+      <View
+        style={
+          styles.loadingContainer
+        }
+      >
+        <ActivityIndicator
+          size="large"
+        />
+
+        <Text
+          style={
+            styles.loadingText
+          }
+        >
+          CREOVA
+        </Text>
+      </View>
+    );
   }
+
+  return (
+    <Stack
+      screenOptions={{
+        headerShown: false,
+      }}
+    >
+      <Stack.Screen
+        name="index"
+      />
+
+      <Stack.Screen
+        name="login"
+      />
+
+      <Stack.Screen
+        name="register"
+      />
+
+      <Stack.Screen
+        name="forgot-password"
+      />
+
+      <Stack.Screen
+        name="reset-password"
+      />
+
+      <Stack.Screen
+        name="dashboard"
+      />
+
+      <Stack.Screen
+        name="profile"
+      />
+
+      <Stack.Screen
+        name="settings"
+      />
+
+      <Stack.Screen
+        name="ai-chat"
+      />
+
+      <Stack.Screen
+        name="ai-code"
+      />
+
+      <Stack.Screen
+        name="ai-image"
+      />
+
+      <Stack.Screen
+        name="ai-video"
+      />
+
+      <Stack.Screen
+        name="ai-music"
+      />
+
+      <Stack.Screen
+        name="ai-voice"
+      />
+
+      <Stack.Screen
+        name="ai-vision"
+      />
+
+      <Stack.Screen
+        name="code-studio"
+      />
+
+      <Stack.Screen
+        name="vision-studio"
+      />
+
+      <Stack.Screen
+        name="general-assistant"
+      />
+
+      <Stack.Screen
+        name="(tabs)"
+      />
+    </Stack>
+  );
 }
 
 export default function RootLayout() {
   return (
-    <ErrorBoundary>
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="code-studio" />
-        <Stack.Screen name="vision-studio" />
-        <Stack.Screen name="general-assistant" />
-      </Stack>
-    </ErrorBoundary>
+    <AuthProvider>
+      <AppNavigator />
+    </AuthProvider>
   );
 }
 
-const styles = StyleSheet.create({
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#0D0D0D',
-    padding: 20,
-  },
-  errorTitle: { fontSize: 22, color: '#EF4444', fontWeight: 'bold', marginBottom: 10 },
-  errorText: { fontSize: 14, color: '#A1A1AA', textAlign: 'center', marginBottom: 20 },
-  button: { backgroundColor: '#3B82F6', paddingHorizontal: 20, paddingVertical: 10, borderRadius: 8 },
-  buttonText: { color: '#FFFFFF', fontWeight: 'bold' },
-});
+const styles =
+  StyleSheet.create({
+    loadingContainer: {
+      flex: 1,
+      alignItems:
+        "center",
+      justifyContent:
+        "center",
+      backgroundColor:
+        "#0D0D0D",
+    },
+
+    loadingText: {
+      marginTop: 12,
+      color: "#FFFFFF",
+      fontSize: 16,
+      fontWeight: "700",
+    },
+  });
