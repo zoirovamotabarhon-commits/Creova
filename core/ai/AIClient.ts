@@ -1,52 +1,48 @@
-import { AIMessage, AIOptions, AIResponse } from './AIProvider';
 import { supabase } from '../../services/supabase';
+import { AI_MODELS } from '../../constants/ai';
+
+export type AIGenerationType =
+  | 'chat'
+  | 'code'
+  | 'vision';
+
+export interface AIGenerateInput {
+  type: AIGenerationType;
+  prompt: string;
+  generationId: string;
+  imageUrl?: string;
+}
 
 export class AIClient {
-  private static instance: AIClient;
-
-  private constructor() {}
-
-  public static getInstance(): AIClient {
-    if (!AIClient.instance) {
-      AIClient.instance = new AIClient();
+  async generate(input: AIGenerateInput) {
+    if (!input.generationId) {
+      throw new Error('generationId is required');
     }
-    return AIClient.instance;
-  }
 
-  /**
-   * Executes a chat completion call via Supabase Edge Function without breaking existing services.
-   */
-  public async chat(
-    messages: AIMessage[],
-    options: AIOptions = {}
-  ): Promise<AIResponse> {
-    try {
-      const { data, error } = await supabase.functions.invoke('openai-chat', {
+    if (!input.prompt.trim()) {
+      throw new Error('Prompt is required');
+    }
+
+    const { data, error } = await supabase.functions.invoke(
+      'openai-chat',
+      {
         body: {
-          messages,
-          temperature: options.temperature ?? 0.7,
-          max_tokens: options.maxTokens ?? 2000,
+          type: input.type,
+          prompt: input.prompt,
+          generationId: input.generationId,
+          imageUrl: input.imageUrl,
+          model:
+            input.type === 'vision'
+              ? AI_MODELS.vision
+              : AI_MODELS.chat,
         },
-      });
+      },
+    );
 
-      if (error) {
-        throw new Error(`AIClient Request Failed: ${error.message}`);
-      }
-
-      return {
-        content: data?.choices?.[0]?.message?.content || data?.content || '',
-        model: data?.model || 'gpt-4o',
-        usage: data?.usage
-          ? {
-              promptTokens: data.usage.prompt_tokens,
-              completionTokens: data.usage.completion_tokens,
-              totalTokens: data.usage.total_tokens,
-            }
-          : undefined,
-      };
-    } catch (err: any) {
-      console.error('AIClient Error:', err);
-      throw err;
+    if (error) {
+      throw error;
     }
+
+    return data;
   }
 }
