@@ -17,12 +17,14 @@ const CODE_SYSTEM_PROMPT =
 export async function generateCode(
   prompt: string,
 ): Promise<CodeGenerationResult> {
-  const cleanPrompt = prompt.trim();
+  const cleanPrompt =
+    prompt.trim();
 
   if (!cleanPrompt) {
     return {
       success: false,
-      error: "Code prompt is required.",
+      error:
+        "Code prompt is required.",
     };
   }
 
@@ -63,7 +65,8 @@ export async function generateCode(
           messages: [
             {
               role: "user",
-              content: cleanPrompt,
+              content:
+                cleanPrompt,
             },
           ],
         },
@@ -75,7 +78,8 @@ export async function generateCode(
       success: false,
       generationId:
         generation.generationId,
-      error: error.message,
+      error:
+        error.message,
     };
   }
 
@@ -99,4 +103,4 @@ export async function generateCode(
       data.message ??
       "",
   };
-      }
+}
