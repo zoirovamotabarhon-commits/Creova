@@ -1,31 +1,26 @@
-import { Agent } from '../Agent';
-import { AgentContext } from '../AgentContext';
-import { AIResponse, AIMessage } from '../../ai/AIProvider';
-import { FileTool } from '../../tools/code/FileTool';
-import { ProjectTool } from '../../tools/code/ProjectTool';
+import { AIClient } from '../../ai/AIClient';
+import type { AgentContext } from '../AgentContext';
 
-export class DeveloperAgent extends Agent {
-  readonly id = 'developer-agent';
-  readonly name = 'Developer Agent';
-  readonly description = 'Handles code generation, refactoring, file inspection, and debugging.';
-  readonly systemPrompt = `You are an expert AI software engineer. You analyze code structure, assist in editing files, and output full, working TypeScript/React Native code without breaking existing conventions.`;
+export class DeveloperAgent {
+  private readonly client = new AIClient();
 
-  constructor() {
-    super();
-    // Registering developer specific tools including ProjectTool
-    this.registerTool(new FileTool());
-    this.registerTool(new ProjectTool());
-  }
+  async execute(context: AgentContext) {
+    if (!context.userId) {
+      throw new Error('Authentication required');
+    }
 
-  async process(input: string, context: AgentContext): Promise<AIResponse> {
-    const messages: AIMessage[] = [
-      { role: 'system', content: this.systemPrompt },
-      ...context.history,
-      { role: 'user', content: input },
-    ];
+    if (!context.generationId) {
+      throw new Error('generationId is required');
+    }
 
-    return await this.aiClient.chat(messages, {
-      temperature: 0.2, // Lower temperature for accurate coding
+    if (!context.input?.trim()) {
+      throw new Error('Code prompt is required');
+    }
+
+    return this.client.generate({
+      type: 'code',
+      prompt: context.input.trim(),
+      generationId: context.generationId,
     });
   }
 }
