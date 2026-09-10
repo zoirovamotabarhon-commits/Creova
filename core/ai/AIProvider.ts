@@ -1,29 +1,13 @@
-export type AIModelType = 
-  | 'gpt-4o'
-  | 'gpt-4o-mini'
-  | 'claude-3-5-sonnet'
-  | 'gemini-1.5-pro';
+export type AIProviderName = 'openai';
 
-export interface AIMessage {
-  role: 'system' | 'user' | 'assistant' | 'tool';
-  content: string;
-  name?: string;
-  tool_call_id?: string;
-}
-
-export interface AIOptions {
-  temperature?: number;
-  maxTokens?: number;
-  topP?: number;
-  stream?: boolean;
-}
-
-export interface AIResponse {
-  content: string;
+export interface AIProviderConfig {
+  name: AIProviderName;
   model: string;
-  usage?: {
-    promptTokens: number;
-    completionTokens: number;
-    totalTokens: number;
-  };
 }
+
+export const AI_PROVIDERS: Record<AIProviderName, AIProviderConfig> = {
+  openai: {
+    name: 'openai',
+    model: 'gpt-4o-mini',
+  },
+};
