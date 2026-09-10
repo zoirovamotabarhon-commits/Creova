@@ -2,6 +2,7 @@ import {
   useEffect,
   useState,
 } from "react";
+
 import {
   ActivityIndicator,
   Alert,
@@ -11,14 +12,28 @@ import {
   Text,
   View,
 } from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { router } from "expo-router";
 
-import { STORAGE_KEYS } from "../utils/storageKeys";
-import { useTheme } from "../hooks/useTheme";
-import { logout } from "../services/auth";
+import AsyncStorage from
+  "@react-native-async-storage/async-storage";
 
-const DEFAULT_NOTIFICATIONS = true;
+import {
+  router,
+} from "expo-router";
+
+import {
+  STORAGE_KEYS,
+} from "../utils/storageKeys";
+
+import {
+  useTheme,
+} from "../hooks/useTheme";
+
+import {
+  logout,
+} from "../services/auth";
+
+const DEFAULT_NOTIFICATIONS =
+  true;
 
 export default function SettingsScreen() {
   const {
@@ -31,19 +46,22 @@ export default function SettingsScreen() {
   const [
     notifications,
     setNotifications,
-  ] = useState(
-    DEFAULT_NOTIFICATIONS
-  );
+  ] =
+    useState(
+      DEFAULT_NOTIFICATIONS,
+    );
 
   const [
     notificationsLoading,
     setNotificationsLoading,
-  ] = useState(true);
+  ] =
+    useState(true);
 
   const [
     logoutLoading,
     setLogoutLoading,
-  ] = useState(false);
+  ] =
+    useState(false);
 
   useEffect(() => {
     const loadNotifications =
@@ -51,22 +69,25 @@ export default function SettingsScreen() {
         try {
           const saved =
             await AsyncStorage.getItem(
-              STORAGE_KEYS.NOTIFICATIONS
+              STORAGE_KEYS.NOTIFICATIONS,
             );
 
-          if (saved !== null) {
+          if (
+            saved !== null
+          ) {
             setNotifications(
-              saved === "true"
+              saved ===
+                "true",
             );
           }
         } catch {
           Alert.alert(
             "CREOVA",
-            "Созламаларни юклашда хато юз берди."
+            "Созламаларни юклашда хато юз берди.",
           );
         } finally {
           setNotificationsLoading(
-            false
+            false,
           );
         }
       };
@@ -74,61 +95,84 @@ export default function SettingsScreen() {
     void loadNotifications();
   }, []);
 
-  const handleThemeChange = (
-    value: boolean
-  ) => {
-    void setThemeMode(
-      value ? "dark" : "light"
-    );
-  };
+  const handleThemeChange =
+    (
+      value: boolean,
+    ) => {
+      void setThemeMode(
+        value
+          ? "dark"
+          : "light",
+      );
+    };
 
   const handleNotificationsChange =
-    async (value: boolean) => {
-      setNotifications(value);
+    async (
+      value: boolean,
+    ) => {
+      setNotifications(
+        value,
+      );
 
       try {
         await AsyncStorage.setItem(
           STORAGE_KEYS.NOTIFICATIONS,
-          String(value)
+          String(value),
         );
       } catch {
         Alert.alert(
           "CREOVA",
-          "Notification созламасини сақлашда хато юз берди."
+          "Notification созламасини сақлашда хато юз берди.",
         );
       }
     };
 
-  const handleLogout = async () => {
-    if (logoutLoading) {
-      return;
-    }
-
-    setLogoutLoading(true);
-
-    try {
-      const result = await logout();
-
-      if (!result.success) {
-        Alert.alert(
-          "CREOVA",
-          result.message
-        );
+  const handleLogout =
+    async () => {
+      if (
+        logoutLoading
+      ) {
         return;
       }
 
-      router.replace("/login");
-    } catch (error) {
-      Alert.alert(
-        "CREOVA",
-        error instanceof Error
-          ? error.message
-          : "Logout vaqtida xatolik yuz berdi."
+      setLogoutLoading(
+        true,
       );
-    } finally {
-      setLogoutLoading(false);
-    }
-  };
+
+      try {
+        const result =
+          await logout();
+
+        if (
+          !result.success
+        ) {
+          Alert.alert(
+            "CREOVA",
+            result.message,
+          );
+
+          return;
+        }
+
+        router.replace(
+          "/login",
+        );
+      } catch (
+        error,
+      ) {
+        Alert.alert(
+          "CREOVA",
+          error instanceof
+            Error
+            ? error.message
+            : "Logout vaqtida xatolik yuz berdi.",
+        );
+      } finally {
+        setLogoutLoading(
+          false,
+        );
+      }
+    };
 
   if (
     themeLoading ||
@@ -146,7 +190,9 @@ export default function SettingsScreen() {
       >
         <ActivityIndicator
           size="large"
-          color={colors.primary}
+          color={
+            colors.primary
+          }
         />
       </View>
     );
@@ -166,7 +212,8 @@ export default function SettingsScreen() {
         style={[
           styles.title,
           {
-            color: colors.text,
+            color:
+              colors.text,
           },
         ]}
       >
@@ -184,9 +231,13 @@ export default function SettingsScreen() {
           },
         ]}
       >
-        <View style={styles.row}>
+        <View
+          style={styles.row}
+        >
           <View
-            style={styles.textBlock}
+            style={
+              styles.textBlock
+            }
           >
             <Text
               style={[
@@ -214,13 +265,17 @@ export default function SettingsScreen() {
           </View>
 
           <Switch
-            value={darkMode}
+            value={
+              darkMode
+            }
             onValueChange={
               handleThemeChange
             }
             trackColor={{
-              false: colors.border,
-              true: colors.primary,
+              false:
+                colors.border,
+              true:
+                colors.primary,
             }}
             thumbColor="#FFFFFF"
           />
@@ -236,9 +291,13 @@ export default function SettingsScreen() {
           ]}
         />
 
-        <View style={styles.row}>
+        <View
+          style={styles.row}
+        >
           <View
-            style={styles.textBlock}
+            style={
+              styles.textBlock
+            }
           >
             <Text
               style={[
@@ -266,13 +325,17 @@ export default function SettingsScreen() {
           </View>
 
           <Switch
-            value={notifications}
+            value={
+              notifications
+            }
             onValueChange={
               handleNotificationsChange
             }
             trackColor={{
-              false: colors.border,
-              true: colors.primary,
+              false:
+                colors.border,
+              true:
+                colors.primary,
             }}
             thumbColor="#FFFFFF"
           />
@@ -292,18 +355,23 @@ export default function SettingsScreen() {
         onPress={() => {
           void handleLogout();
         }}
-        disabled={logoutLoading}
+        disabled={
+          logoutLoading
+        }
       >
         {logoutLoading ? (
           <ActivityIndicator
-            color={colors.text}
+            color={
+              colors.text
+            }
           />
         ) : (
           <Text
             style={[
               styles.logoutText,
               {
-                color: colors.text,
+                color:
+                  colors.text,
               },
             ]}
           >
@@ -315,72 +383,80 @@ export default function SettingsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 20,
-    paddingTop: 60,
-  },
+const styles =
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      padding: 20,
+      paddingTop: 60,
+    },
 
-  loading: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
+    loading: {
+      flex: 1,
+      alignItems:
+        "center",
+      justifyContent:
+        "center",
+    },
 
-  title: {
-    fontSize: 30,
-    fontWeight: "800",
-    marginBottom: 24,
-  },
+    title: {
+      fontSize: 30,
+      fontWeight: "800",
+      marginBottom: 24,
+    },
 
-  card: {
-    borderRadius: 16,
-    borderWidth: 1,
-    paddingHorizontal: 18,
-  },
+    card: {
+      borderRadius: 16,
+      borderWidth: 1,
+      paddingHorizontal: 18,
+    },
 
-  row: {
-    minHeight: 80,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
+    row: {
+      minHeight: 80,
+      flexDirection:
+        "row",
+      alignItems:
+        "center",
+      justifyContent:
+        "space-between",
+    },
 
-  textBlock: {
-    flex: 1,
-    paddingRight: 15,
-  },
+    textBlock: {
+      flex: 1,
+      paddingRight: 15,
+    },
 
-  label: {
-    fontSize: 17,
-    fontWeight: "700",
-  },
+    label: {
+      fontSize: 17,
+      fontWeight: "700",
+    },
 
-  description: {
-    fontSize: 13,
-    marginTop: 5,
-  },
+    description: {
+      fontSize: 13,
+      marginTop: 5,
+    },
 
-  divider: {
-    height: 1,
-  },
+    divider: {
+      height: 1,
+    },
 
-  logoutButton: {
-    minHeight: 52,
-    marginTop: 24,
-    borderRadius: 12,
-    borderWidth: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
+    logoutButton: {
+      minHeight: 52,
+      marginTop: 24,
+      borderRadius: 12,
+      borderWidth: 1,
+      alignItems:
+        "center",
+      justifyContent:
+        "center",
+    },
 
-  logoutText: {
-    fontSize: 16,
-    fontWeight: "700",
-  },
+    logoutText: {
+      fontSize: 16,
+      fontWeight: "700",
+    },
 
-  disabledButton: {
-    opacity: 0.6,
-  },
-});
+    disabledButton: {
+      opacity: 0.6,
+    },
+  });
