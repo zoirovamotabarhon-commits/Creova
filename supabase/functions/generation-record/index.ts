@@ -1,507 +1,313 @@
-import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import {
-  createClient,
-} from "npm:@supabase/supabase-js@2.57.0";
+  checkRateLimit,
+  rateLimitResponse,
+} from "../_shared/rateLimiter.ts";
 
-const SUPABASE_URL =
-  Deno.env.get("SUPABASE_URL") ?? "";
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
-const SERVICE_ROLE_KEY =
-  Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ??
-  Deno.env.get("SUPABASE_SECRET_KEY") ??
-  "";
+if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+  throw new Error("Missing Supabase environment variables");
+}
 
-const COSTS = {
-  chat: 1,
-  code: 2,
-  image: 5,
-  video: 15,
-  music: 10,
-  voice: 5,
-} as const;
+const supabaseAdmin = createClient(
+  SUPABASE_URL,
+  SUPABASE_SERVICE_ROLE_KEY,
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  },
+);
 
-type GenerationType =
-  keyof typeof COSTS;
-
-const CORS_HEADERS = {
+const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods":
-    "POST, OPTIONS",
-  "Content-Type":
-    "application/json",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Content-Type": "application/json",
 };
 
-function json(
-  body: Record<string, unknown>,
+type GenerationType =
+  | "chat"
+  | "code"
+  | "image"
+  | "video"
+  | "music"
+  | "voice";
+
+interface RequestBody {
+  generationId: string;
+  type: GenerationType;
+  prompt?: string;
+  metadata?: Record<string, unknown>;
+}
+
+function jsonResponse(
+  body: unknown,
   status = 200,
-) {
-  return new Response(
-    JSON.stringify(body),
-    {
-      status,
-      headers:
-        CORS_HEADERS,
+  extraHeaders: Record<string, string> = {},
+): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: {
+      ...corsHeaders,
+      ...extraHeaders,
     },
-  );
+  });
 }
 
-function isValidUuid(
-  value: unknown,
-): value is string {
+function isValidGenerationId(value: unknown): value is string {
   return (
     typeof value === "string" &&
-    /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
-      value,
-    )
+    value.length >= 10 &&
+    value.length <= 100
   );
 }
 
-function isGenerationType(
-  value: unknown,
-): value is GenerationType {
-  return (
-    typeof value === "string" &&
-    Object.prototype.hasOwnProperty.call(
-      COSTS,
-      value,
-    )
-  );
+function isValidType(value: unknown): value is GenerationType {
+  return [
+    "chat",
+    "code",
+    "image",
+    "video",
+    "music",
+    "voice",
+  ].includes(value as string);
 }
 
-function normalizeMetadata(
-  value: unknown,
-): Record<string, unknown> {
-  if (
-    !value ||
-    typeof value !== "object" ||
-    Array.isArray(value)
-  ) {
-    return {};
-  }
+async function getUserFromRequest(
+  request: Request,
+): Promise<{ id: string } | null> {
+  const authorization = request.headers.get("Authorization");
 
-  return value as Record<
-    string,
-    unknown
-  >;
-}
-
-function getAdminClient() {
-  if (
-    !SUPABASE_URL ||
-    !SERVICE_ROLE_KEY
-  ) {
-    throw new Error(
-      "Supabase server configuration is missing.",
-    );
-  }
-
-  return createClient(
-    SUPABASE_URL,
-    SERVICE_ROLE_KEY,
-    {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-      },
-    },
-  );
-}
-
-async function requireUser(
-  req: Request,
-) {
-  const authorization =
-    req.headers.get(
-      "Authorization",
-    );
-
-  if (
-    !authorization?.startsWith(
-      "Bearer ",
-    )
-  ) {
+  if (!authorization?.startsWith("Bearer ")) {
     return null;
   }
 
-  const token =
-    authorization
-      .slice("Bearer ".length)
-      .trim();
+  const token = authorization.replace("Bearer ", "").trim();
 
   if (!token) {
     return null;
   }
 
-  const admin =
-    getAdminClient();
+  const { data, error } = await supabaseAdmin.auth.getUser(token);
 
-  const {
-    data,
-    error,
-  } =
-    await admin.auth.getUser(
-      token,
-    );
-
-  if (
-    error ||
-    !data.user
-  ) {
+  if (error || !data.user) {
     return null;
   }
 
-  return data.user;
+  return {
+    id: data.user.id,
+  };
 }
 
-Deno.serve(
-  async (req) => {
-    if (
-      req.method === "OPTIONS"
-    ) {
-      return new Response(
-        "ok",
-        {
-          headers:
-            CORS_HEADERS,
-        },
-      );
-    }
+Deno.serve(async (request) => {
+  if (request.method === "OPTIONS") {
+    return new Response("ok", {
+      status: 200,
+      headers: corsHeaders,
+    });
+  }
 
-    if (
-      req.method !== "POST"
-    ) {
-      return json(
+  if (request.method !== "POST") {
+    return jsonResponse(
+      {
+        success: false,
+        error: "Method not allowed",
+      },
+      405,
+    );
+  }
+
+  try {
+    const user = await getUserFromRequest(request);
+
+    if (!user) {
+      return jsonResponse(
         {
           success: false,
-          error:
-            "Method not allowed.",
+          error: "Unauthorized",
         },
-        405,
+        401,
       );
     }
 
-    let generationId = "";
-    let userId = "";
+    let body: RequestBody;
 
     try {
-      const user =
-        await requireUser(
-          req,
-        );
+      body = await request.json();
+    } catch {
+      return jsonResponse(
+        {
+          success: false,
+          error: "Invalid JSON body",
+        },
+        400,
+      );
+    }
 
-      if (!user) {
-        return json(
-          {
-            success: false,
-            error:
-              "Authentication required.",
-          },
-          401,
-        );
-      }
+    if (!isValidGenerationId(body.generationId)) {
+      return jsonResponse(
+        {
+          success: false,
+          error: "Invalid generationId",
+        },
+        400,
+      );
+    }
 
-      userId = user.id;
+    if (!isValidType(body.type)) {
+      return jsonResponse(
+        {
+          success: false,
+          error: "Invalid generation type",
+        },
+        400,
+      );
+    }
 
-      let body: Record<
-        string,
-        unknown
-      >;
+    const prompt =
+      typeof body.prompt === "string"
+        ? body.prompt.trim()
+        : "";
 
-      try {
-        body =
-          (await req.json()) as Record<
-            string,
-            unknown
-          >;
-      } catch {
-        return json(
-          {
-            success: false,
-            error:
-              "Invalid JSON request body.",
-          },
-          400,
-        );
-      }
+    if (prompt.length > 50000) {
+      return jsonResponse(
+        {
+          success: false,
+          error: "Prompt is too long",
+        },
+        400,
+      );
+    }
 
-      generationId =
-        typeof body.generationId ===
-        "string"
-          ? body.generationId.trim()
-          : "";
+    /*
+     * Rate-limit generation CREATION.
+     *
+     * The provider functions do not rate-limit again because doing so
+     * could double-charge/block an already-created generation.
+     */
+    const rateLimit = await checkRateLimit(
+      user.id,
+      "generation-create",
+      20,
+      60,
+    );
 
-      if (
-        !isValidUuid(
-          generationId,
-        )
-      ) {
-        return json(
-          {
-            success: false,
-            error:
-              "Valid generation ID is required.",
-          },
-          400,
-        );
-      }
+    if (!rateLimit.allowed) {
+      return rateLimitResponse(rateLimit);
+    }
 
-      const type =
-        body.type;
+    const metadata =
+      body.metadata &&
+      typeof body.metadata === "object" &&
+      !Array.isArray(body.metadata)
+        ? body.metadata
+        : {};
 
-      if (
-        !isGenerationType(type)
-      ) {
-        return json(
-          {
-            success: false,
-            error:
-              "Invalid generation type.",
-          },
-          400,
-        );
-      }
+    /*
+     * All charging happens inside the SECURITY DEFINER SQL function.
+     *
+     * This keeps wallet deduction + generation creation atomic.
+     */
+    const { data, error } = await supabaseAdmin.rpc(
+      "create_generation_with_charge",
+      {
+        p_generation_id: body.generationId,
+        p_user_id: user.id,
+        p_type: body.type,
+        p_prompt: prompt || null,
+        p_metadata: metadata,
+      },
+    );
 
-      const prompt =
-        typeof body.prompt ===
-        "string"
-          ? body.prompt.trim()
-          : "";
+    if (error) {
+      console.error(
+        "create_generation_with_charge failed:",
+        error,
+      );
 
-      if (!prompt) {
-        return json(
-          {
-            success: false,
-            error:
-              "Prompt is required.",
-          },
-          400,
-        );
-      }
-
-      if (
-        prompt.length > 12000
-      ) {
-        return json(
-          {
-            success: false,
-            error:
-              "Prompt is too long.",
-          },
-          400,
-        );
-      }
-
-      const admin =
-        getAdminClient();
-
-      const {
-        data: existing,
-        error:
-          existingError,
-      } =
-        await admin
-          .from(
-            "generation_history",
+      /*
+       * If the generation already exists, return it only when it belongs
+       * to this authenticated user. Never expose another user's record.
+       */
+      const { data: existing, error: existingError } =
+        await supabaseAdmin
+          .from("generations")
+          .select(
+            "id,user_id,type,status,prompt,metadata,created_at,updated_at",
           )
-          .select("*")
-          .eq("id", generationId)
+          .eq("id", body.generationId)
+          .eq("user_id", user.id)
           .maybeSingle();
 
-      if (existingError) {
-        throw existingError;
-      }
-
-      if (existing) {
-        if (
-          existing.user_id !==
-          userId
-        ) {
-          return json(
+      if (!existingError && existing) {
+        if (existing.type !== body.type) {
+          return jsonResponse(
             {
               success: false,
-              error:
-                "Generation does not belong to the authenticated user.",
-            },
-            403,
-          );
-        }
-
-        if (
-          existing.type !== type
-        ) {
-          return json(
-            {
-              success: false,
-              error:
-                "Generation type does not match the existing record.",
+              error: "Generation type mismatch",
             },
             409,
           );
         }
 
-        return json({
+        return jsonResponse({
           success: true,
-          generationId,
-          generation:
-            existing,
-          reused: true,
+          existing: true,
+          generation: existing,
         });
       }
 
-      const cost =
-        COSTS[type];
-
-      const metadata = {
-        ...normalizeMetadata(
-          body.metadata,
-        ),
-        coinCost: cost,
-      };
-
-      const {
-        data: chargeData,
-        error:
-          chargeError,
-      } =
-        await admin.rpc(
-          "change_wallet_balance",
-          {
-            p_user_id: userId,
-            p_amount: cost,
-            p_transaction_type:
-              "debit",
-            p_reason:
-              "generation",
-            p_reference_id:
-              generationId,
-            p_description:
-              `CREOVA ${type} generation`,
-            p_metadata: {
-              source:
-                "generation-record",
-              generationType:
-                type,
-            },
-          },
-        );
-
-      if (chargeError) {
-        return json(
-          {
-            success: false,
-            error:
-              chargeError.message,
-          },
-          400,
-        );
-      }
-
-      const charge =
-        Array.isArray(chargeData)
-          ? chargeData[0]
-          : chargeData;
-
-      if (!charge) {
-        throw new Error(
-          "Coin operation returned no result.",
-        );
-      }
-
-      const {
-        data: generation,
-        error:
-          insertError,
-      } =
-        await admin
-          .from(
-            "generation_history",
-          )
-          .insert({
-            id:
-              generationId,
-            user_id:
-              userId,
-            type,
-            prompt,
-            status:
-              "queued",
-            metadata,
-          })
-          .select()
-          .single();
-
-      if (insertError) {
-        try {
-          await admin.rpc(
-            "change_wallet_balance",
-            {
-              p_user_id:
-                userId,
-              p_amount:
-                cost,
-              p_transaction_type:
-                "credit",
-              p_reason:
-                "refund",
-              p_reference_id:
-                generationId,
-              p_description:
-                "Automatic refund after generation record creation failed.",
-              p_metadata: {
-                source:
-                  "generation-record",
-                reason:
-                  "record-insert-failed",
-              },
-            },
-          );
-        } catch (
-          refundError
-        ) {
-          console.error(
-            "Automatic refund failed:",
-            refundError,
-          );
-        }
-
-        throw insertError;
-      }
-
-      return json(
-        {
-          success: true,
-          generationId,
-          generation,
-          coinCost: cost,
-          newBalance:
-            Number(
-              charge.new_balance,
-            ),
-        },
-        201,
-      );
-    } catch (error) {
-      console.error(
-        "generation-record error:",
-        error,
-      );
-
-      return json(
+      return jsonResponse(
         {
           success: false,
-          generationId:
-            generationId ||
-            undefined,
-          error:
-            error instanceof Error
-              ? error.message
-              : "Generation record creation failed.",
+          error: error.message || "Unable to create generation",
+        },
+        400,
+      );
+    }
+
+    let generation = data;
+
+    /*
+     * Supabase RPC can return either a single object or an array depending
+     * on the SQL function definition/client behavior.
+     */
+    if (Array.isArray(data)) {
+      generation = data[0] ?? null;
+    }
+
+    if (!generation) {
+      return jsonResponse(
+        {
+          success: false,
+          error: "Generation was not created",
         },
         500,
       );
     }
-  },
-);
+
+    return jsonResponse({
+      success: true,
+      existing: false,
+      generation,
+    });
+  } catch (error) {
+    console.error("generation-record error:", error);
+
+    return jsonResponse(
+      {
+        success: false,
+        error:
+          error instanceof Error
+            ? error.message
+            : "Internal server error",
+      },
+      500,
+    );
+  }
+});
