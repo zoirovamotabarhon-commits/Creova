@@ -1,6 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 
 import {
+  getGenerationForUser,
   updateGeneration,
 } from "../_shared/generation.ts";
 
@@ -9,23 +10,15 @@ import {
 } from "npm:@supabase/supabase-js@2.57.0";
 
 const SUPABASE_URL =
-  Deno.env.get(
-    "SUPABASE_URL",
-  ) ?? "";
+  Deno.env.get("SUPABASE_URL") ?? "";
 
 const SUPABASE_SERVICE_ROLE_KEY =
-  Deno.env.get(
-    "SUPABASE_SERVICE_ROLE_KEY",
-  ) ??
-  Deno.env.get(
-    "SUPABASE_SECRET_KEY",
-  ) ??
+  Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ??
+  Deno.env.get("SUPABASE_SECRET_KEY") ??
   "";
 
 const OPENAI_API_KEY =
-  Deno.env.get(
-    "OPENAI_API_KEY",
-  ) ?? "";
+  Deno.env.get("OPENAI_API_KEY") ?? "";
 
 const DEFAULT_SYSTEM_PROMPT =
   "You are CREOVA AI Assistant. Give clear, useful and accurate answers.";
@@ -44,14 +37,12 @@ interface ChatMessage {
 }
 
 const CORS_HEADERS = {
-  "Access-Control-Allow-Origin":
-    "*",
+  "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods":
     "POST, OPTIONS",
-  "Content-Type":
-    "application/json",
+  "Content-Type": "application/json",
 };
 
 function json(
@@ -62,8 +53,7 @@ function json(
     JSON.stringify(body),
     {
       status,
-      headers:
-        CORS_HEADERS,
+      headers: CORS_HEADERS,
     },
   );
 }
@@ -188,6 +178,7 @@ function normalizeMessages(
         return {
           role:
             item.role as MessageRole,
+
           content:
             String(
               item.content,
@@ -200,6 +191,14 @@ function normalizeMessages(
         };
       },
     );
+}
+
+function getGenerationType(
+  value: unknown,
+): "chat" | "code" {
+  return value === "code"
+    ? "code"
+    : "chat";
 }
 
 Deno.serve(
@@ -233,6 +232,9 @@ Deno.serve(
 
     let generationId = "";
     let userId = "";
+    let generationType:
+      | "chat"
+      | "code" = "chat";
 
     try {
       if (!OPENAI_API_KEY) {
@@ -264,10 +266,11 @@ Deno.serve(
 
       userId = user.id;
 
-      let body: Record<
-        string,
-        unknown
-      >;
+      let body:
+        Record<
+          string,
+          unknown
+        >;
 
       try {
         body =
@@ -303,6 +306,28 @@ Deno.serve(
         );
       }
 
+      generationType =
+        getGenerationType(
+          body.generationType,
+        );
+
+      /*
+       * Verify that the generation:
+       *
+       * 1. belongs to the authenticated user
+       * 2. has the expected type
+       * 3. can legally move into processing
+       *
+       * This prevents another user from using a generation ID
+       * and prevents a completed/failed generation from being
+       * charged/provider-called again.
+       */
+      await getGenerationForUser(
+        generationId,
+        userId,
+        generationType,
+      );
+
       const messages =
         normalizeMessages(
           body.messages,
@@ -334,24 +359,131 @@ Deno.serve(
               )
           : DEFAULT_SYSTEM_PROMPT;
 
+      const requestedModel =
+        typeof body.model ===
+        "string"
+          ? body.model.trim()
+          : "";
+
       const model =
+        requestedModel ||
         (
-          typeof body.model ===
-            "string"
-            ? body.model.trim()
-            : ""
+          generationType ===
+          "code"
+            ? Deno.env.get(
+                "OPENAI_CODE_MODEL",
+              )
+            : Deno.env.get(
+                "OPENAI_CHAT_MODEL",
+              )
         ) ||
         Deno.env.get(
           "OPENAI_MODEL",
         ) ||
         "gpt-5.5";
 
+      const temperature =
+        typeof body.temperature ===
+          "number" &&
+        Number.isFinite(
+          body.temperature,
+        )
+          ? Math.max(
+              0,
+              Math.min(
+                2,
+                body.temperature,
+              ),
+            )
+          : undefined;
+
+      const maxTokens =
+        typeof body.max_tokens ===
+          "number" &&
+        Number.isInteger(
+          body.max_tokens,
+        )
+          ? Math.max(
+              1,
+              Math.min(
+                32000,
+                body.max_tokens,
+              ),
+            )
+          : undefined;
+
+      const topP =
+        typeof body.top_p ===
+          "number" &&
+        Number.isFinite(
+          body.top_p,
+        )
+          ? Math.max(
+              0,
+              Math.min(
+                1,
+                body.top_p,
+              ),
+            )
+          : undefined;
+
+      /*
+       * Atomically claim the generation.
+       *
+       * If another request already claimed it, updateGeneration()
+       * will reject the transition and the provider will NOT be called.
+       */
       await updateGeneration({
         generationId,
         userId,
         status:
           "processing",
+        expectedType:
+          generationType,
       });
+
+      const openAIMessages = [
+        {
+          role:
+            "system" as const,
+          content:
+            systemPrompt,
+        },
+        ...messages,
+      ];
+
+      const requestBody: Record<
+        string,
+        unknown
+      > = {
+        model,
+        messages:
+          openAIMessages,
+      };
+
+      if (
+        temperature !==
+        undefined
+      ) {
+        requestBody.temperature =
+          temperature;
+      }
+
+      if (
+        maxTokens !==
+        undefined
+      ) {
+        requestBody.max_tokens =
+          maxTokens;
+      }
+
+      if (
+        topP !==
+        undefined
+      ) {
+        requestBody.top_p =
+          topP;
+      }
 
       const response =
         await fetch(
@@ -359,25 +491,19 @@ Deno.serve(
           {
             method:
               "POST",
+
             headers: {
               "Content-Type":
                 "application/json",
+
               Authorization:
                 `Bearer ${OPENAI_API_KEY}`,
             },
+
             body:
-              JSON.stringify({
-                model,
-                messages: [
-                  {
-                    role:
-                      "system",
-                    content:
-                      systemPrompt,
-                  },
-                  ...messages,
-                ],
-              }),
+              JSON.stringify(
+                requestBody,
+              ),
           },
         );
 
@@ -471,6 +597,13 @@ Deno.serve(
         );
       }
 
+      const usage =
+        result.usage &&
+        typeof result.usage ===
+          "object"
+          ? result.usage
+          : undefined;
+
       await updateGeneration({
         generationId,
         userId,
@@ -481,16 +614,33 @@ Deno.serve(
         model,
         resultText:
           text.trim(),
+        usage,
+        expectedType:
+          generationType,
       });
 
       return json({
         success: true,
+
         generationId,
+
         text:
           text.trim(),
+
         model,
+
+        usage,
       });
     } catch (error) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "OpenAI generation failed.";
+
+      /*
+       * Refund is handled by updateGeneration() when a generation
+       * transitions from processing to failed.
+       */
       if (
         generationId &&
         userId
@@ -501,10 +651,9 @@ Deno.serve(
             userId,
             status:
               "failed",
-            errorMessage:
-              error instanceof Error
-                ? error.message
-                : "OpenAI generation failed.",
+            errorMessage,
+            expectedType:
+              generationType,
           });
         } catch (
           updateError
@@ -524,13 +673,13 @@ Deno.serve(
       return json(
         {
           success: false,
+
           generationId:
             generationId ||
             undefined,
+
           error:
-            error instanceof Error
-              ? error.message
-              : "OpenAI generation failed.",
+            errorMessage,
         },
         500,
       );
