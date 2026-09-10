@@ -1,111 +1,37 @@
-import {
-  useCallback,
-  useMemo,
-  useState,
-} from "react";
+import { useCallback, useState } from 'react';
+import { AIClient, AIGenerateInput } from '../core/ai/AIClient';
 
-import { AIRouter } from "../core/router/AIRouter";
-import { AgentContext } from "../core/agents/AgentContext";
-import { AIMessage } from "../core/ai/AIProvider";
+export function useAI() {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
 
-export interface UseAIOptions {
-  projectId?: string;
-  conversationId?: string;
-}
+  const client = new AIClient();
 
-export function useAI(
-  options: UseAIOptions = {}
-) {
-  const [loading, setLoading] =
-    useState<boolean>(false);
-
-  const [error, setError] =
-    useState<string | null>(null);
-
-  const [messages, setMessages] =
-    useState<AIMessage[]>([]);
-
-  const router = useMemo(
-    () => new AIRouter(),
-    []
-  );
-
-  const sendMessage = useCallback(
-    async (input: string) => {
-      if (!input.trim()) return;
-
+  const generate = useCallback(
+    async (input: AIGenerateInput) => {
       setLoading(true);
       setError(null);
 
-      const userMessage: AIMessage = {
-        role: "user",
-        content: input,
-      };
-
-      const updatedHistory = [
-        ...messages,
-        userMessage,
-      ];
-
-      setMessages(updatedHistory);
-
       try {
-        const context: AgentContext = {
-          projectId: options.projectId,
-          conversationId: options.conversationId,
-          history: messages,
-        };
-
-        const response =
-          await router.routeAndExecute(
-            input,
-            context
-          );
-
-        const assistantMessage: AIMessage = {
-          role: "assistant",
-          content: response.content,
-        };
-
-        setMessages((prev) => [
-          ...prev,
-          assistantMessage,
-        ]);
-
-        return response;
-      } catch (err: unknown) {
-        const errorMessage =
+        return await client.generate(input);
+      } catch (err) {
+        const normalized =
           err instanceof Error
-            ? err.message
-            : "An error occurred while processing AI request.";
+            ? err
+            : new Error('AI request failed');
 
-        setError(errorMessage);
-        console.error(
-          "useAI Error:",
-          err
-        );
+        setError(normalized);
+        throw normalized;
       } finally {
         setLoading(false);
       }
     },
-    [
-      messages,
-      options.projectId,
-      options.conversationId,
-      router,
-    ]
+    [],
   );
 
-  const clearMessages = useCallback(() => {
-    setMessages([]);
-    setError(null);
-  }, []);
-
   return {
-    messages,
+    generate,
     loading,
     error,
-    sendMessage,
-    clearMessages,
   };
 }
