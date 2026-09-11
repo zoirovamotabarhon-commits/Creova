@@ -3,52 +3,52 @@
     "appName": "CREOVA",
     "error": "შეცდომა",
     "success": "წარმატება",
-    "generate": "გენერირება",
-    "analyze": "ანალიზი",
-    "apply": "გამოყენება",
-    "cancel": "გაუქმება",
-    "save": "შენახვა",
-    "loading": "იტვირთება...",
-    "retry": "ხელახლა ცდა",
-    "delete": "წაშლა"
+    "generate": "Generate",
+    "analyze": "Analyze",
+    "apply": "Apply",
+    "cancel": "Cancel",
+    "save": "Save",
+    "loading": "Loading...",
+    "retry": "Retry",
+    "delete": "Delete"
   },
   "aiVideo": {
     "title": "🎬 AI ვიდეო",
-    "subtitle": "შექმენით ვიდეოები CREOVA AI-ით",
+    "subtitle": "შექმენით ვიდეო CREOVA AI-ით",
     "promptPlaceholder": "მაგ. ფუტურისტული ქალაქი მზის ჩასვლისას",
-    "generateButton": "ვიდეოს შექმნა",
+    "generateButton": "ვიდეოს გენერაცია",
     "emptyPromptTitle": "CREOVA",
-    "emptyPromptMessage": "შეიყვანეთ ვიდეოს აღწერა.",
+    "emptyPromptMessage": "გთხოვთ, შეიყვანოთ აღწერა ვიდეოსთვის.",
     "statusTitle": "ვიდეოს სტატუსი",
     "progressLabel": "პროგრესი",
     "videoErrorTitle": "ვიდეოს შეცდომა",
-    "videoStatusError": "ვიდეოს სტატუსის მიღება ვერ მოხერხდა.",
+    "videoStatusError": "ვიდეოს სტატუსის მიღებისას მოხდა შეცდომა.",
     "videoReadyTitle": "CREOVA",
-    "videoReadyMessage": "თქვენი ვიდეო მზად არის.",
-    "videoReadyNoUrl": "ვიდეო მზად არის, მაგრამ MP4 URL არ მიღებულა.",
-    "videoFailedTitle": "ვიდეოს გენერირება ვერ მოხერხდა",
+    "videoReadyMessage": "თქვენი ვიდეო მზადაა.",
+    "videoReadyNoUrl": "ვიდეო მზადაა, მაგრამ MP4 URL ვერ იქნა მიღებული.",
+    "videoFailedTitle": "ვიდეოს გენერაცია ვერ მოხერხდა",
     "videoFailedStatus": "ვიდეოს სტატუსი: {{status}}",
     "videoTooLongTitle": "CREOVA",
-    "videoTooLongMessage": "ვიდეოს შექმნას ძალიან დიდი დრო სჭირდება. მოგვიანებით კვლავ შეამოწმეთ.",
-    "videoCheckError": "ვიდეოს სტატუსის შემოწმებისას შეცდომა მოხდა.",
-    "generationFailed": "ვიდეოს გენერირება ვერ მოხერხდა.",
-    "unexpectedError": "ვიდეოს გენერირებისას მოულოდნელი შეცდომა მოხდა.",
-    "noUrlYet": "MP4 URL ჯერ არ მიღებულა.",
+    "videoTooLongMessage": "ვიდეოს გენერაცია დიდხანს გრძელდება. გთხოვთ, მოგვიანებით სცადოთ ისევ.",
+    "videoCheckError": "ვიდეოს სტატუსის შემოწმებისას მოხდა შეცდომა.",
+    "generationFailed": "ვიდეოს გენერაცია ვერ მოხერხდა.",
+    "unexpectedError": "ვიდეოს შექმნისას მოხდა მოულოდნელი შეცდომა.",
+    "noUrlYet": "MP4 URL ჯერ არ არის მიღებული.",
     "idLabel": "ID: {{id}}"
   },
   "aiVoice": {
     "title": "🎤 AI ხმა",
-    "subtitle": "გადააქციეთ ტექსტი ხმოვანებად CREOVA AI-ით",
+    "subtitle": "გადაიყვანეთ ტექსტი მეტყველებად CREOVA AI-ით",
     "textPlaceholder": "მაგ. გამარჯობა, CREOVA!",
-    "generateButton": "ხმის შექმნა",
-    "result": { "title": "🔊 ხმა მზად არის", "description": "თქვენი ტექსტი წარმატებით გადაკეთდა ხმად." },
-    "player": { "play": "▶️ დაკვრა", "pause": "⏸ შეჩერება" },
+    "generateButton": "ხმის გენერაცია",
+    "result": { "title": "🔊 ხმა მზადაა", "description": "თქვენი ტექსტი წარმატებით გარდაიქმნა მეტყველებად." },
+    "player": { "play": "▶️ დაკვრა", "pause": "⏸ პაუზა" },
     "errors": {
-      "emptyText": "შეიყვანეთ ტექსტი ხმისთვის.",
-      "generationFailed": "ხმის გენერირებისას შეცდომა მოხდა.",
-      "audioMissing": "აუდიოფაილი არ მიღებულა.",
-      "unexpected": "ხმის გენერირებისას მოულოდნელი შეცდომა მოხდა.",
-      "playbackFailed": "აუდიოს დაკვრისას შეცდომა მოხდა."
+      "emptyText": "გთხოვთ, შეიყვანოთ ტექსტი ხმისთვის.",
+      "generationFailed": "ხმის გენერაციისას მოხდა შეცდომა.",
+      "audioMissing": "აუდიო ფაილი ვერ მიღებულ იქნა.",
+      "unexpected": "ხმის შექმნისას მოხდა მოულოდნელი შეცდომა.",
+      "playbackFailed": "აუდიოს დაკვრისას მოხდა შეცდომა."
     },
     "success": { "generated": "ხმა წარმატებით შეიქმნა." }
   },
@@ -58,7 +58,7 @@
     "namePlaceholder": "შეიყვანეთ თქვენი სახელი",
     "emailLabel": "ელფოსტა",
     "saveButton": "შენახვა",
-    "nameRequired": "სახელი აუცილებელია.",
+    "nameRequired": "სახელი სავალდებულოა.",
     "loadFailed": "პროფილის ჩატვირთვა ვერ მოხერხდა.",
     "updateFailed": "პროფილის განახლება ვერ მოხერხდა.",
     "updateSuccess": "პროფილი წარმატებით განახლდა."
@@ -67,15 +67,15 @@
     "title": "🎶 AI მუსიკა",
     "subtitle": "შექმენით მუსიკა CREOVA AI-ით",
     "promptPlaceholder": "მაგ. ფუტურისტული ქალაქი მზის ჩასვლისას",
-    "generateButton": "მუსიკის შექმნა",
-    "result": { "title": "🎶 მუსიკა მზად არის", "description": "თქვენი ტექსტი წარმატებით გადაკეთდა მუსიკად." },
-    "player": { "play": "▶️ დაკვრა", "pause": "⏸ შეჩერება" },
+    "generateButton": "მუსიკის გენერაცია",
+    "result": { "title": "🎶 მუსიკა მზადაა", "description": "თქვენი ტექსტი წარმატებით გარდაიქმნა მუსიკად." },
+    "player": { "play": "▶️ დაკვრა", "pause": "⏸ პაუზა" },
     "errors": {
-      "emptyPrompt": "შეიყვანეთ მუსიკის აღწერა.",
-      "generationFailed": "მუსიკის გენერირებისას შეცდომა მოხდა.",
-      "audioMissing": "აუდიოფაილი არ მიღებულა.",
-      "unexpected": "მუსიკის გენერირებისას მოულოდნელი შეცდომა მოხდა.",
-      "playbackFailed": "აუდიოს დაკვრისას შეცდომა მოხდა."
+      "emptyPrompt": "გთხოვთ, შეიყვანოთ აღწერა მუსიკისთვის.",
+      "generationFailed": "მუსიკის გენერაცია ვერ მოხერხდა.",
+      "audioMissing": "აუდიო ფაილი ვერ მიღებულ იქნა.",
+      "unexpected": "მუსიკის შექმნისას მოხდა მოულოდნელი შეცდომა.",
+      "playbackFailed": "აუდიოს დაკვრისას მოხდა შეცდომა."
     },
     "success": { "generated": "მუსიკა წარმატებით შეიქმნა." }
   },
@@ -87,43 +87,43 @@
     "settings": "პარამეტრები"
   },
   "dashboard": {
-    "welcome": "CREOVA AI პლატფორმა",
+    "welcome": "Creova AI პლატფორმა",
     "subtitle": "დასაწყებად აირჩიეთ ავტონომიური AI აგენტის სამუშაო სივრცე",
     "code_title": "AI კოდის სტუდია",
-    "code_desc": "Developer Agent-ით გადააკეთეთ, გამოასწორეთ და შექმენით კოდი და რეალურ დროში იხილეთ ცვლილებები.",
+    "code_desc": "გადააკეთეთ, გაასწორეთ შეცდომები, შექმენით კოდი და ნახეთ ცვლილებები რეალურ დროში Developer Agent-ით.",
     "vision_title": "AI ხედვის სტუდია",
-    "vision_desc": "გააანალიზეთ ეკრანის სურათები, დიზაინის მაკეტები და UI გადააქციეთ ნატიურ კომპონენტებად.",
-    "chat_title": "ზოგადი AI ასისტენტი",
-    "chat_desc": "ზოგადი მსჯელობა, იდეების გაცვლა და არქიტექტურის განხილვა."
+    "vision_desc": "გაანალიზეთ სქრინშოტები, დიზაინის მაკეტები და გადაიყვანეთ UI ნატიურ კომპონენტებად.",
+    "chat_title": "AI ზოგადი ასისტენტი",
+    "chat_desc": "ზოგადი მსჯელობა, იდეების გაზიარება და არქიტექტურის განხილვა."
   },
   "code": {
     "title": "AI კოდის სტუდია",
     "workspace_editor": "სამუშაო სივრცის რედაქტორი",
-    "proposed_changes": "AI-ის მიერ შემოთავაზებული ცვლილებები",
+    "proposed_changes": "შემოთავაზებული AI ცვლილებები",
     "apply_changes": "ცვლილებების გამოყენება",
     "prompt_placeholder": "სთხოვეთ AI-ს დაწეროს ან გადააკეთოს კოდი...",
-    "file_explorer": "პროექტის ფაილები",
+    "file_explorer": "პროექტის ბრაუზერი",
     "no_files": "სამუშაო სივრცეში ფაილები ვერ მოიძებნა",
     "terminal_title": "შესრულების კონსოლი",
-    "terminal_empty": "კონსოლი მზად არის. შესრულების ჟურნალებს ელოდება..."
+    "terminal_empty": "კონსოლი მზადაა. ელოდება შესრულების ჟურნალებს..."
   },
   "vision": {
     "title": "AI ხედვის სტუდია",
     "image_url_label": "სურათის URL ან წყარო",
     "url_placeholder": "ჩასვით სურათის URL აქ...",
     "results_label": "ანალიზის შედეგები",
-    "ai_label": "AI ხედვა",
-    "prompt_placeholder": "აღწერეთ სურათი ან დასვით კითხვა მის შესახებ..."
+    "ai_label": "ხედვის AI",
+    "prompt_placeholder": "აღწერეთ ან იკითხეთ სურათის შესახებ..."
   },
   "chat": {
     "you": "თქვენ",
     "ai": "ასისტენტი",
-    "placeholder": "დაწერეთ თქვენი შეტყობინება..."
+    "placeholder": "აკრიფეთ თქვენი შეტყობინება..."
   },
   "settings": {
     "title": "პარამეტრები",
     "language": "ენა",
     "theme": "თემა",
-    "api_key": "Supabase-ისა და AI-ის პარამეტრები"
+    "api_key": "Supabase და AI კონფიგურაცია"
   }
-}
+  }
