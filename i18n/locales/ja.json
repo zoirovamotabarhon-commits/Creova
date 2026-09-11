@@ -3,52 +3,52 @@
     "appName": "CREOVA",
     "error": "エラー",
     "success": "成功",
-    "generate": "生成",
-    "analyze": "分析",
-    "apply": "適用",
-    "cancel": "キャンセル",
-    "save": "保存",
-    "loading": "読み込み中...",
-    "retry": "再試行",
-    "delete": "削除"
+    "generate": "Generate",
+    "analyze": "Analyze",
+    "apply": "Apply",
+    "cancel": "Cancel",
+    "save": "Save",
+    "loading": "Loading...",
+    "retry": "Retry",
+    "delete": "Delete"
   },
   "aiVideo": {
-    "title": "🎬 AIビデオ",
+    "title": "🎬 AI動画",
     "subtitle": "CREOVA AIで動画を生成",
     "promptPlaceholder": "例：夕暮れの未来都市",
     "generateButton": "動画を生成",
     "emptyPromptTitle": "CREOVA",
-    "emptyPromptMessage": "動画の説明を入力してください。",
-    "statusTitle": "動画の状態",
+    "emptyPromptMessage": "動画のプロンプトを入力してください。",
+    "statusTitle": "動画のステータス",
     "progressLabel": "進行状況",
     "videoErrorTitle": "動画エラー",
-    "videoStatusError": "動画の状態を取得できませんでした。",
+    "videoStatusError": "動画ステータスの取得中にエラーが発生しました。",
     "videoReadyTitle": "CREOVA",
     "videoReadyMessage": "動画の準備ができました。",
-    "videoReadyNoUrl": "動画は準備できましたが、MP4 URLを受信できませんでした。",
+    "videoReadyNoUrl": "動画は準備できましたが、MP4のURLを受信できませんでした。",
     "videoFailedTitle": "動画の生成に失敗しました",
-    "videoFailedStatus": "動画の状態：{{status}}",
+    "videoFailedStatus": "動画ステータス：{{status}}",
     "videoTooLongTitle": "CREOVA",
     "videoTooLongMessage": "動画の生成に時間がかかりすぎています。後でもう一度確認してください。",
-    "videoCheckError": "動画の状態を確認中にエラーが発生しました。",
+    "videoCheckError": "動画ステータスの確認中にエラーが発生しました。",
     "generationFailed": "動画の生成に失敗しました。",
     "unexpectedError": "動画の生成中に予期しないエラーが発生しました。",
-    "noUrlYet": "まだMP4 URLを受信していません。",
+    "noUrlYet": "まだMP4のURLを受信していません。",
     "idLabel": "ID：{{id}}"
   },
   "aiVoice": {
-    "title": "🎤 AI音声",
+    "title": "🎤 AIボイス",
     "subtitle": "CREOVA AIでテキストを音声に変換",
-    "textPlaceholder": "例：こんにちは、CREOVA!",
+    "textPlaceholder": "例：こんにちは、CREOVA！",
     "generateButton": "音声を生成",
-    "result": { "title": "🔊 音声の準備完了", "description": "テキストが正常に音声へ変換されました。" },
+    "result": { "title": "🔊 音声の準備完了", "description": "テキストが正常に音声に変換されました。" },
     "player": { "play": "▶️ 再生", "pause": "⏸ 一時停止" },
     "errors": {
-      "emptyText": "音声に変換するテキストを入力してください。",
+      "emptyText": "音声用のテキストを入力してください。",
       "generationFailed": "音声の生成中にエラーが発生しました。",
       "audioMissing": "音声ファイルを受信できませんでした。",
       "unexpected": "音声の生成中に予期しないエラーが発生しました。",
-      "playbackFailed": "音声の再生中にエラーが発生しました。"
+      "playbackFailed": "音声再生中にエラーが発生しました。"
     },
     "success": { "generated": "音声が正常に生成されました。" }
   },
@@ -56,26 +56,26 @@
     "title": "プロフィール",
     "nameLabel": "名前",
     "namePlaceholder": "名前を入力してください",
-    "emailLabel": "メールアドレス",
+    "emailLabel": "メール",
     "saveButton": "保存",
     "nameRequired": "名前は必須です。",
     "loadFailed": "プロフィールの読み込みに失敗しました。",
     "updateFailed": "プロフィールの更新に失敗しました。",
-    "updateSuccess": "プロフィールを正常に更新しました。"
+    "updateSuccess": "プロフィールが正常に更新されました。"
   },
   "aiMusic": {
     "title": "🎶 AI音楽",
     "subtitle": "CREOVA AIで音楽を生成",
     "promptPlaceholder": "例：夕暮れの未来都市",
     "generateButton": "音楽を生成",
-    "result": { "title": "🎶 音楽の準備完了", "description": "テキストが正常に音楽へ変換されました。" },
+    "result": { "title": "🎶 音楽の準備完了", "description": "テキストが正常に音楽に変換されました。" },
     "player": { "play": "▶️ 再生", "pause": "⏸ 一時停止" },
     "errors": {
-      "emptyPrompt": "音楽の説明を入力してください。",
-      "generationFailed": "音楽の生成中にエラーが発生しました。",
+      "emptyPrompt": "音楽のプロンプトを入力してください。",
+      "generationFailed": "音楽の生成に失敗しました。",
       "audioMissing": "音声ファイルを受信できませんでした。",
-      "unexpected": "音楽の生成中に予期しないエラーが発生しました。",
-      "playbackFailed": "音声の再生中にエラーが発生しました。"
+      "unexpected": "音楽生成中に予期しないエラーが発生しました。",
+      "playbackFailed": "音声再生中にエラーが発生しました。"
     },
     "success": { "generated": "音楽が正常に生成されました。" }
   },
@@ -87,32 +87,32 @@
     "settings": "設定"
   },
   "dashboard": {
-    "welcome": "CREOVA AIプラットフォーム",
+    "welcome": "Creova AI プラットフォーム",
     "subtitle": "開始するには自律型AIエージェントのワークスペースを選択してください",
     "code_title": "AIコードスタジオ",
-    "code_desc": "Developer Agentでコードのリファクタリング、デバッグ、生成、変更のリアルタイム確認を行えます。",
+    "code_desc": "Developer Agentでコードのリファクタリング、デバッグ、生成を行い、リアルタイムの差分を確認します。",
     "vision_title": "AIビジョンスタジオ",
     "vision_desc": "スクリーンショットやデザインモックアップを分析し、UIをネイティブコンポーネントに変換します。",
-    "chat_title": "汎用AIアシスタント",
-    "chat_desc": "一般的な推論、ブレインストーミング、アーキテクチャに関する議論を行います。"
+    "chat_title": "AI汎用アシスタント",
+    "chat_desc": "一般的な推論、アイデアの共有、アーキテクチャの議論。"
   },
   "code": {
     "title": "AIコードスタジオ",
     "workspace_editor": "ワークスペースエディター",
-    "proposed_changes": "AIが提案した変更",
+    "proposed_changes": "提案されたAIの変更",
     "apply_changes": "変更を適用",
-    "prompt_placeholder": "AIにコードの作成またはリファクタリングを依頼...",
-    "file_explorer": "プロジェクトファイル",
+    "prompt_placeholder": "AIにコードの記述やリファクタリングを依頼...",
+    "file_explorer": "プロジェクトエクスプローラー",
     "no_files": "ワークスペースにファイルが見つかりません",
     "terminal_title": "実行コンソール",
-    "terminal_empty": "コンソールの準備ができました。実行ログを待っています..."
+    "terminal_empty": "コンソール準備完了。実行ログを待機中..."
   },
   "vision": {
     "title": "AIビジョンスタジオ",
     "image_url_label": "画像URLまたはソース",
     "url_placeholder": "ここに画像URLを貼り付けてください...",
     "results_label": "分析結果",
-    "ai_label": "AIビジョン",
+    "ai_label": "ビジョンAI",
     "prompt_placeholder": "画像について説明または質問してください..."
   },
   "chat": {
@@ -124,6 +124,6 @@
     "title": "設定",
     "language": "言語",
     "theme": "テーマ",
-    "api_key": "SupabaseとAIの設定"
+    "api_key": "Supabase・AI設定"
   }
 }
