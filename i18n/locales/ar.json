@@ -3,14 +3,14 @@
     "appName": "CREOVA",
     "error": "خطأ",
     "success": "نجاح",
-    "generate": "إنشاء",
-    "analyze": "تحليل",
-    "apply": "تطبيق",
-    "cancel": "إلغاء",
-    "save": "حفظ",
-    "loading": "جارٍ التحميل...",
-    "retry": "إعادة المحاولة",
-    "delete": "حذف"
+    "generate": "Generate",
+    "analyze": "Analyze",
+    "apply": "Apply",
+    "cancel": "Cancel",
+    "save": "Save",
+    "loading": "Loading...",
+    "retry": "Retry",
+    "delete": "Delete"
   },
   "aiVideo": {
     "title": "🎬 فيديو الذكاء الاصطناعي",
@@ -22,28 +22,28 @@
     "statusTitle": "حالة الفيديو",
     "progressLabel": "التقدم",
     "videoErrorTitle": "خطأ في الفيديو",
-    "videoStatusError": "حدث خطأ أثناء الحصول على حالة الفيديو.",
+    "videoStatusError": "فشل في جلب حالة الفيديو.",
     "videoReadyTitle": "CREOVA",
     "videoReadyMessage": "الفيديو جاهز.",
-    "videoReadyNoUrl": "الفيديو جاهز، ولكن لم يتم استلام رابط MP4.",
+    "videoReadyNoUrl": "الفيديو جاهز، لكن لم يتم استلام رابط MP4.",
     "videoFailedTitle": "فشل إنشاء الفيديو",
     "videoFailedStatus": "حالة الفيديو: {{status}}",
     "videoTooLongTitle": "CREOVA",
-    "videoTooLongMessage": "يستغرق إنشاء الفيديو وقتًا طويلاً. تحقق مرة أخرى لاحقًا.",
-    "videoCheckError": "حدث خطأ أثناء التحقق من حالة الفيديو.",
+    "videoTooLongMessage": "يستغرق إنشاء الفيديو وقتًا طويلاً. يرجى المحاولة لاحقًا.",
+    "videoCheckError": "خطأ أثناء التحقق من حالة الفيديو.",
     "generationFailed": "فشل إنشاء الفيديو.",
     "unexpectedError": "حدث خطأ غير متوقع أثناء إنشاء الفيديو.",
-    "noUrlYet": "لم يتم استلام رابط MP4 بعد.",
+    "noUrlYet": "لم يتم استلام رابط MP4.",
     "idLabel": "المعرف: {{id}}"
   },
   "aiVoice": {
     "title": "🎤 صوت الذكاء الاصطناعي",
-    "subtitle": "حوّل النص إلى صوت باستخدام CREOVA AI",
+    "subtitle": "حوّل النص إلى كلام باستخدام CREOVA AI",
     "textPlaceholder": "مثال: مرحبًا، CREOVA!",
     "generateButton": "إنشاء صوت",
     "result": {
       "title": "🔊 الصوت جاهز",
-      "description": "تم تحويل النص إلى صوت بنجاح."
+      "description": "تم تحويل النص إلى كلام بنجاح."
     },
     "player": {
       "play": "▶️ تشغيل",
@@ -52,12 +52,12 @@
     "errors": {
       "emptyText": "أدخل نصًا للصوت.",
       "generationFailed": "حدث خطأ أثناء إنشاء الصوت.",
-      "audioMissing": "لم يتم استلام ملف الصوت.",
+      "audioMissing": "لم يتم استلام الملف الصوتي.",
       "unexpected": "حدث خطأ غير متوقع أثناء إنشاء الصوت.",
       "playbackFailed": "حدث خطأ أثناء تشغيل الصوت."
     },
     "success": {
-      "generated": "تم إنشاء الصوت بنجاح."
+      "generated": "الصوت جاهز."
     }
   },
   "profile": {
@@ -87,7 +87,7 @@
     "errors": {
       "emptyPrompt": "أدخل وصفًا للموسيقى.",
       "generationFailed": "فشل إنشاء الموسيقى.",
-      "audioMissing": "لم يتم استلام ملف الصوت.",
+      "audioMissing": "لم يتم استلام الملف الصوتي.",
       "unexpected": "حدث خطأ غير متوقع أثناء إنشاء الموسيقى.",
       "playbackFailed": "حدث خطأ أثناء تشغيل الصوت."
     },
@@ -97,39 +97,39 @@
   },
   "navigation": {
     "home": "الرئيسية",
-    "code_studio": "استوديو الأكواد",
+    "code_studio": "استوديو الكود",
     "vision_studio": "استوديو الرؤية",
-    "chat": "الدردشة",
+    "chat": "محادثة الذكاء الاصطناعي",
     "settings": "الإعدادات"
   },
   "dashboard": {
-    "welcome": "منصة Creova AI",
-    "subtitle": "اختر مساحة عمل لوكيل ذكاء اصطناعي مستقل للبدء",
-    "code_title": "استوديو الأكواد بالذكاء الاصطناعي",
-    "code_desc": "أعد هيكلة التعليمات البرمجية وصححها وأنشئها واعرض الفروقات في الوقت الفعلي باستخدام Developer Agent.",
+    "welcome": "منصة Creova للذكاء الاصطناعي",
+    "subtitle": "اختر مساحة عمل وكيل ذكاء اصطناعي مستقل للبدء",
+    "code_title": "استوديو الكود بالذكاء الاصطناعي",
+    "code_desc": "أعد هيكلة الكود، صحّح الأخطاء، أنشئ كودًا جديدًا، وشاهد الفروقات الفورية مع وكيل المطوّر.",
     "vision_title": "استوديو الرؤية بالذكاء الاصطناعي",
-    "vision_desc": "حلل لقطات الشاشة ونماذج التصميم وحوّل واجهة المستخدم إلى مكونات أصلية.",
+    "vision_desc": "حلّل لقطات الشاشة وتصاميم الواجهات وحوّلها إلى مكوّنات أصلية.",
     "chat_title": "المساعد العام للذكاء الاصطناعي",
-    "chat_desc": "التفكير العام وتبادل الأفكار ومناقشة البنية."
+    "chat_desc": "تفكير عام، شريك في الأفكار، ومناقشة الهيكلة المعمارية."
   },
   "code": {
-    "title": "استوديو الأكواد بالذكاء الاصطناعي",
+    "title": "استوديو الكود بالذكاء الاصطناعي",
     "workspace_editor": "محرر مساحة العمل",
     "proposed_changes": "التغييرات المقترحة من الذكاء الاصطناعي",
     "apply_changes": "تطبيق التغييرات",
-    "prompt_placeholder": "اطلب من الذكاء الاصطناعي كتابة أو إعادة هيكلة التعليمات البرمجية...",
+    "prompt_placeholder": "اطلب من الذكاء الاصطناعي كتابة أو إعادة هيكلة الكود...",
     "file_explorer": "مستكشف المشروع",
     "no_files": "لم يتم العثور على ملفات في مساحة العمل",
-    "terminal_title": "وحدة تنفيذ الأوامر",
-    "terminal_empty": "الوحدة جاهزة. في انتظار سجلات التنفيذ..."
+    "terminal_title": "وحدة تحكم التنفيذ",
+    "terminal_empty": "وحدة التحكم جاهزة. بانتظار سجلات التنفيذ..."
   },
   "vision": {
     "title": "استوديو الرؤية بالذكاء الاصطناعي",
     "image_url_label": "رابط الصورة أو المصدر",
-    "url_placeholder": "ألصق رابط الصورة هنا...",
+    "url_placeholder": "الصق رابط الصورة هنا...",
     "results_label": "نتائج التحليل",
-    "ai_label": "رؤية الذكاء الاصطناعي",
-    "prompt_placeholder": "صف الصورة أو اطرح سؤالًا عنها..."
+    "ai_label": "ذكاء الرؤية الاصطناعي",
+    "prompt_placeholder": "صف الصورة أو اسأل عنها..."
   },
   "chat": {
     "you": "أنت",
@@ -142,4 +142,4 @@
     "theme": "المظهر",
     "api_key": "إعدادات Supabase والذكاء الاصطناعي"
   }
-}
+  }
