@@ -158,7 +158,7 @@ export default function SettingsScreen() {
           "/login",
         );
       } catch (
-        error,
+        error
       ) {
         Alert.alert(
           "CREOVA",
