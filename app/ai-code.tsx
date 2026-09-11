@@ -47,10 +47,18 @@ import {
   getOrCreateDefaultProject,
 } from "../services/projects";
 
+import {
+  useAuthContext,
+} from "../providers/AuthProvider";
+
 export default function AICodeScreen() {
   const {
     t,
   } = useTranslation();
+
+  const {
+    user,
+  } = useAuthContext();
 
   const [
     prompt,
@@ -155,20 +163,32 @@ export default function AICodeScreen() {
     let mounted =
       true;
 
-    void getOrCreateDefaultProject()
+    if (!user) {
+      return;
+    }
+
+    void getOrCreateDefaultProject(
+      user.id,
+    )
       .then(
         (
-          result,
+          project,
         ) => {
-          if (
-            mounted &&
-            result.success &&
-            result.data
-          ) {
+          if (mounted) {
             setProjectId(
-              result.data.id,
+              project.id,
             );
           }
+        },
+      )
+      .catch(
+        (
+          error,
+        ) => {
+          console.error(
+            "Failed to load default project:",
+            error,
+          );
         },
       );
 
@@ -176,7 +196,7 @@ export default function AICodeScreen() {
       mounted =
         false;
     };
-  }, []);
+  }, [user]);
 
   const addLog = (
     message: string,
