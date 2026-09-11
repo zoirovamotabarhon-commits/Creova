@@ -3,46 +3,46 @@
     "appName": "CREOVA",
     "error": "Klaida",
     "success": "Sėkmė",
-    "generate": "Generuoti",
-    "analyze": "Analizuoti",
-    "apply": "Taikyti",
-    "cancel": "Atšaukti",
-    "save": "Išsaugoti",
-    "loading": "Kraunama...",
-    "retry": "Bandyti dar kartą",
-    "delete": "Ištrinti"
+    "generate": "Generate",
+    "analyze": "Analyze",
+    "apply": "Apply",
+    "cancel": "Cancel",
+    "save": "Save",
+    "loading": "Loading...",
+    "retry": "Retry",
+    "delete": "Delete"
   },
   "aiVideo": {
-    "title": "🎬 AI vaizdo įrašas",
-    "subtitle": "Kurkite vaizdo įrašus naudodami CREOVA AI",
-    "promptPlaceholder": "pvz. Futuristinis miestas saulėlydžio metu",
+    "title": "🎬 AI Vaizdo įrašas",
+    "subtitle": "Generuokite vaizdo įrašus su CREOVA AI",
+    "promptPlaceholder": "Pvz.: Futuristinis miestas saulėlydžio metu",
     "generateButton": "Generuoti vaizdo įrašą",
     "emptyPromptTitle": "CREOVA",
-    "emptyPromptMessage": "Įveskite vaizdo įrašo aprašymą.",
+    "emptyPromptMessage": "Įveskite užklausą vaizdo įrašui.",
     "statusTitle": "Vaizdo įrašo būsena",
     "progressLabel": "Eiga",
     "videoErrorTitle": "Vaizdo įrašo klaida",
-    "videoStatusError": "Nepavyko gauti vaizdo įrašo būsenos.",
+    "videoStatusError": "Gaunant vaizdo įrašo būseną įvyko klaida.",
     "videoReadyTitle": "CREOVA",
     "videoReadyMessage": "Jūsų vaizdo įrašas paruoštas.",
-    "videoReadyNoUrl": "Vaizdo įrašas paruoštas, tačiau MP4 URL negautas.",
-    "videoFailedTitle": "Vaizdo įrašo generavimas nepavyko",
+    "videoReadyNoUrl": "Vaizdo įrašas paruoštas, bet MP4 nuoroda negauta.",
+    "videoFailedTitle": "Nepavyko sukurti vaizdo įrašo",
     "videoFailedStatus": "Vaizdo įrašo būsena: {{status}}",
     "videoTooLongTitle": "CREOVA",
     "videoTooLongMessage": "Vaizdo įrašo generavimas užtrunka per ilgai. Patikrinkite vėliau.",
     "videoCheckError": "Tikrinant vaizdo įrašo būseną įvyko klaida.",
-    "generationFailed": "Vaizdo įrašo generavimas nepavyko.",
+    "generationFailed": "Nepavyko sugeneruoti vaizdo įrašo.",
     "unexpectedError": "Generuojant vaizdo įrašą įvyko netikėta klaida.",
-    "noUrlYet": "MP4 URL dar negautas.",
+    "noUrlYet": "MP4 nuoroda dar negauta.",
     "idLabel": "ID: {{id}}"
   },
   "aiVoice": {
-    "title": "🎤 AI balsas",
-    "subtitle": "Paverskite tekstą balsu naudodami CREOVA AI",
-    "textPlaceholder": "pvz. Sveiki, CREOVA!",
+    "title": "🎤 AI Balsas",
+    "subtitle": "Konvertuokite tekstą į kalbą su CREOVA AI",
+    "textPlaceholder": "Pvz.: Sveiki, CREOVA!",
     "generateButton": "Generuoti balsą",
-    "result": { "title": "🔊 Balsas paruoštas", "description": "Jūsų tekstas sėkmingai paverstas balsu." },
-    "player": { "play": "▶️ Leisti", "pause": "⏸ Pauzė" },
+    "result": { "title": "🔊 Balsas paruoštas", "description": "Jūsų tekstas sėkmingai konvertuotas į kalbą." },
+    "player": { "play": "▶️ Groti", "pause": "⏸ Pristabdyti" },
     "errors": {
       "emptyText": "Įveskite tekstą balsui.",
       "generationFailed": "Generuojant balsą įvyko klaida.",
@@ -51,6 +51,22 @@
       "playbackFailed": "Atkuriant garsą įvyko klaida."
     },
     "success": { "generated": "Balsas sėkmingai sugeneruotas." }
+  },
+  "aiMusic": {
+    "title": "🎶 AI Muzika",
+    "subtitle": "Generuokite muziką su CREOVA AI",
+    "promptPlaceholder": "Pvz.: Futuristinis miestas saulėlydžio metu",
+    "generateButton": "Generuoti muziką",
+    "result": { "title": "🎶 Muzika paruošta", "description": "Jūsų tekstas sėkmingai paverstas muzika." },
+    "player": { "play": "▶️ Groti", "pause": "⏸ Pristabdyti" },
+    "errors": {
+      "emptyPrompt": "Įveskite užklausą muzikai.",
+      "generationFailed": "Nepavyko sugeneruoti muzikos.",
+      "audioMissing": "Garso failas negautas.",
+      "unexpected": "Generuojant muziką įvyko netikėta klaida.",
+      "playbackFailed": "Atkuriant garsą įvyko klaida."
+    },
+    "success": { "generated": "Muzika sėkmingai sugeneruota." }
   },
   "profile": {
     "title": "Profilis",
@@ -63,57 +79,41 @@
     "updateFailed": "Nepavyko atnaujinti profilio.",
     "updateSuccess": "Profilis sėkmingai atnaujintas."
   },
-  "aiMusic": {
-    "title": "🎶 AI muzika",
-    "subtitle": "Kurkite muziką naudodami CREOVA AI",
-    "promptPlaceholder": "pvz. Futuristinis miestas saulėlydžio metu",
-    "generateButton": "Generuoti muziką",
-    "result": { "title": "🎶 Muzika paruošta", "description": "Jūsų tekstas sėkmingai paverstas muzika." },
-    "player": { "play": "▶️ Leisti", "pause": "⏸ Pauzė" },
-    "errors": {
-      "emptyPrompt": "Įveskite muzikos aprašymą.",
-      "generationFailed": "Generuojant muziką įvyko klaida.",
-      "audioMissing": "Garso failas negautas.",
-      "unexpected": "Generuojant muziką įvyko netikėta klaida.",
-      "playbackFailed": "Atkuriant garsą įvyko klaida."
-    },
-    "success": { "generated": "Muzika sėkmingai sugeneruota." }
-  },
   "navigation": {
-    "home": "Pagrindinis",
+    "home": "Pradžia",
     "code_studio": "Kodo studija",
-    "vision_studio": "Vaizdo studija",
+    "vision_studio": "Vizijos studija",
     "chat": "AI pokalbis",
     "settings": "Nustatymai"
   },
   "dashboard": {
-    "welcome": "CREOVA AI platforma",
-    "subtitle": "Norėdami pradėti, pasirinkite autonominio AI agento darbo sritį",
-    "code_title": "AI kodo studija",
-    "code_desc": "Naudodami Developer Agent pertvarkykite, derinkite, generuokite kodą ir realiuoju laiku peržiūrėkite pakeitimus.",
-    "vision_title": "AI vaizdo studija",
-    "vision_desc": "Analizuokite ekrano kopijas, dizaino maketus ir paverskite UI vietiniais komponentais.",
-    "chat_title": "Bendrasis AI asistentas",
-    "chat_desc": "Bendrasis samprotavimas, idėjų mainai ir architektūros aptarimas."
+    "welcome": "Creova AI platforma",
+    "subtitle": "Pasirinkite autonominio AI agento darbo erdvę, kad pradėtumėte",
+    "code_title": "AI Kodo studija",
+    "code_desc": "Perdarykite, derinkite, generuokite kodą ir stebėkite pakeitimus realiuoju laiku su Developer Agent.",
+    "vision_title": "AI Vizijos studija",
+    "vision_desc": "Analizuokite ekrano nuotraukas, dizaino maketus ir konvertuokite UI į natyvius komponentus.",
+    "chat_title": "AI Bendrasis asistentas",
+    "chat_desc": "Bendras samprotavimas, idėjų dalijimasis ir architektūros aptarimas."
   },
   "code": {
-    "title": "AI kodo studija",
-    "workspace_editor": "Darbo srities redaktorius",
-    "proposed_changes": "AI pasiūlyti pakeitimai",
+    "title": "AI Kodo studija",
+    "workspace_editor": "Darbo erdvės redaktorius",
+    "proposed_changes": "Siūlomi AI pakeitimai",
     "apply_changes": "Taikyti pakeitimus",
-    "prompt_placeholder": "Paprašykite AI parašyti arba pertvarkyti kodą...",
-    "file_explorer": "Projekto failai",
-    "no_files": "Darbo srityje failų nerasta",
+    "prompt_placeholder": "Paprašykite AI parašyti ar perdaryti kodą...",
+    "file_explorer": "Projekto naršyklė",
+    "no_files": "Darbo erdvėje failų nerasta",
     "terminal_title": "Vykdymo konsolė",
     "terminal_empty": "Konsolė paruošta. Laukiama vykdymo žurnalų..."
   },
   "vision": {
-    "title": "AI vaizdo studija",
+    "title": "AI Vizijos studija",
     "image_url_label": "Vaizdo URL arba šaltinis",
     "url_placeholder": "Įklijuokite vaizdo URL čia...",
     "results_label": "Analizės rezultatai",
-    "ai_label": "AI vaizdas",
-    "prompt_placeholder": "Aprašykite vaizdą arba užduokite apie jį klausimą..."
+    "ai_label": "Vizijos AI",
+    "prompt_placeholder": "Aprašykite arba paklauskite apie vaizdą..."
   },
   "chat": {
     "you": "Jūs",
@@ -124,6 +124,6 @@
     "title": "Nustatymai",
     "language": "Kalba",
     "theme": "Tema",
-    "api_key": "Supabase ir AI nustatymai"
+    "api_key": "Supabase ir AI konfigūracija"
   }
-}
+  }
