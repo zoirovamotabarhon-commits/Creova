@@ -14,41 +14,41 @@
   },
   "aiVideo": {
     "title": "🎬 Video ya AI",
-    "subtitle": "Tengeneza video kwa CREOVA AI",
-    "promptPlaceholder": "mf. Mji wa baadaye wakati wa machweo",
-    "generateButton": "Tengeneza video",
+    "subtitle": "Tengeneza video na CREOVA AI",
+    "promptPlaceholder": "mfano: Jiji la kisasa wakati wa machweo",
+    "generateButton": "Tengeneza Video",
     "emptyPromptTitle": "CREOVA",
     "emptyPromptMessage": "Weka maelezo ya video.",
     "statusTitle": "Hali ya video",
     "progressLabel": "Maendeleo",
     "videoErrorTitle": "Hitilafu ya video",
-    "videoStatusError": "Imeshindikana kupata hali ya video.",
+    "videoStatusError": "Hitilafu ilitokea wakati wa kupata hali ya video.",
     "videoReadyTitle": "CREOVA",
     "videoReadyMessage": "Video yako iko tayari.",
     "videoReadyNoUrl": "Video iko tayari, lakini URL ya MP4 haikupokelewa.",
-    "videoFailedTitle": "Utengenezaji wa video umeshindikana",
+    "videoFailedTitle": "Utengenezaji wa video umeshindwa",
     "videoFailedStatus": "Hali ya video: {{status}}",
     "videoTooLongTitle": "CREOVA",
-    "videoTooLongMessage": "Utengenezaji wa video unachukua muda mrefu sana. Angalia tena baadaye.",
-    "videoCheckError": "Hitilafu imetokea wakati wa kuangalia hali ya video.",
-    "generationFailed": "Utengenezaji wa video umeshindikana.",
-    "unexpectedError": "Hitilafu isiyotarajiwa imetokea wakati wa kutengeneza video.",
-    "noUrlYet": "URL ya MP4 bado haijapokelewa.",
+    "videoTooLongMessage": "Utengenezaji wa video unachukua muda mrefu sana. Tafadhali angalia tena baadaye.",
+    "videoCheckError": "Hitilafu ilitokea wakati wa kukagua hali ya video.",
+    "generationFailed": "Utengenezaji wa video umeshindwa.",
+    "unexpectedError": "Hitilafu isiyotarajiwa ilitokea wakati wa kutengeneza video.",
+    "noUrlYet": "Bado hakuna URL ya MP4 iliyopokelewa.",
     "idLabel": "ID: {{id}}"
   },
   "aiVoice": {
     "title": "🎤 Sauti ya AI",
-    "subtitle": "Badilisha maandishi kuwa sauti kwa CREOVA AI",
-    "textPlaceholder": "mf. Habari, CREOVA!",
-    "generateButton": "Tengeneza sauti",
-    "result": { "title": "🔊 Sauti iko tayari", "description": "Maandishi yako yamebadilishwa kuwa sauti kwa mafanikio." },
-    "player": { "play": "▶️ Cheza", "pause": "⏸ Sitisha" },
+    "subtitle": "Badilisha maandishi kuwa sauti na CREOVA AI",
+    "textPlaceholder": "mfano: Habari, CREOVA!",
+    "generateButton": "Tengeneza Sauti",
+    "result": { "title": "🔊 Sauti Iko Tayari", "description": "Maandishi yako yamebadilishwa kwa mafanikio kuwa sauti." },
+    "player": { "play": "▶️ Cheza", "pause": "⏸ Simamisha" },
     "errors": {
-      "emptyText": "Weka maandishi ya sauti.",
-      "generationFailed": "Hitilafu imetokea wakati wa kutengeneza sauti.",
-      "audioMissing": "Faili ya sauti haikupokelewa.",
-      "unexpected": "Hitilafu isiyotarajiwa imetokea wakati wa kutengeneza sauti.",
-      "playbackFailed": "Hitilafu imetokea wakati wa kucheza sauti."
+      "emptyText": "Weka maandishi kwa ajili ya sauti.",
+      "generationFailed": "Hitilafu ilitokea wakati wa kutengeneza sauti.",
+      "audioMissing": "Faili la sauti halikupokelewa.",
+      "unexpected": "Hitilafu isiyotarajiwa ilitokea wakati wa kutengeneza sauti.",
+      "playbackFailed": "Hitilafu ilitokea wakati wa kucheza sauti."
     },
     "success": { "generated": "Sauti imetengenezwa kwa mafanikio." }
   },
@@ -59,61 +59,61 @@
     "emailLabel": "Barua pepe",
     "saveButton": "Hifadhi",
     "nameRequired": "Jina linahitajika.",
-    "loadFailed": "Imeshindikana kupakia wasifu.",
-    "updateFailed": "Imeshindikana kusasisha wasifu.",
+    "loadFailed": "Imeshindwa kupakia wasifu.",
+    "updateFailed": "Imeshindwa kusasisha wasifu.",
     "updateSuccess": "Wasifu umesasishwa kwa mafanikio."
   },
   "aiMusic": {
     "title": "🎶 Muziki wa AI",
-    "subtitle": "Tengeneza muziki kwa CREOVA AI",
-    "promptPlaceholder": "mf. Mji wa baadaye wakati wa machweo",
-    "generateButton": "Tengeneza muziki",
-    "result": { "title": "🎶 Muziki uko tayari", "description": "Maandishi yako yamebadilishwa kuwa muziki kwa mafanikio." },
-    "player": { "play": "▶️ Cheza", "pause": "⏸ Sitisha" },
+    "subtitle": "Tengeneza muziki na CREOVA AI",
+    "promptPlaceholder": "mfano: Jiji la kisasa wakati wa machweo",
+    "generateButton": "Tengeneza Muziki",
+    "result": { "title": "🎶 Muziki Uko Tayari", "description": "Maandishi yako yamebadilishwa kuwa muziki kwa mafanikio." },
+    "player": { "play": "▶️ Cheza", "pause": "⏸ Simamisha" },
     "errors": {
       "emptyPrompt": "Weka maelezo ya muziki.",
-      "generationFailed": "Hitilafu wakati wa kutengeneza muziki.",
-      "audioMissing": "Faili ya sauti haikupokelewa.",
-      "unexpected": "Hitilafu isiyotarajiwa imetokea wakati wa kutengeneza muziki.",
-      "playbackFailed": "Hitilafu imetokea wakati wa kucheza sauti."
+      "generationFailed": "Utengenezaji wa muziki umeshindwa.",
+      "audioMissing": "Faili la sauti halikupokelewa.",
+      "unexpected": "Hitilafu isiyotarajiwa ilitokea wakati wa kutengeneza muziki.",
+      "playbackFailed": "Hitilafu ilitokea wakati wa kucheza sauti."
     },
     "success": { "generated": "Muziki umetengenezwa kwa mafanikio." }
   },
   "navigation": {
     "home": "Nyumbani",
     "code_studio": "Studio ya Msimbo",
-    "vision_studio": "Studio ya Vision",
-    "chat": "Mazungumzo ya AI",
+    "vision_studio": "Studio ya Maono",
+    "chat": "Gumzo la AI",
     "settings": "Mipangilio"
   },
   "dashboard": {
     "welcome": "Jukwaa la Creova AI",
-    "subtitle": "Chagua nafasi ya kazi ya wakala wa AI anayejitegemea ili kuanza",
-    "code_title": "Studio ya Msimbo ya AI",
-    "code_desc": "Fanya refactor, rekebisha hitilafu, tengeneza msimbo na uone mabadiliko kwa wakati halisi kwa Developer Agent.",
-    "vision_title": "Studio ya Vision ya AI",
-    "vision_desc": "Changanua picha za skrini, miundo ya usanifu na ubadilishe UI kuwa vipengele asilia.",
-    "chat_title": "Msaidizi Mkuu wa AI",
-    "chat_desc": "Hoja za jumla, kubadilishana mawazo na majadiliano ya usanifu."
+    "subtitle": "Chagua nafasi ya kazi ya wakala wa AI unaojitegemea ili kuanza",
+    "code_title": "Studio ya Msimbo wa AI",
+    "code_desc": "Rekebisha, safisha hitilafu, tengeneza msimbo na uone tofauti za wakati halisi na Developer Agent.",
+    "vision_title": "Studio ya Maono ya AI",
+    "vision_desc": "Changanua picha za skrini, michoro ya muundo na badilisha UI kuwa vipengele asili.",
+    "chat_title": "Msaidizi wa Jumla wa AI",
+    "chat_desc": "Mantiki ya jumla, kubadilishana mawazo na majadiliano ya usanifu."
   },
   "code": {
-    "title": "Studio ya Msimbo ya AI",
-    "workspace_editor": "Kihariri cha nafasi ya kazi",
-    "proposed_changes": "Mabadiliko yaliyopendekezwa na AI",
-    "apply_changes": "Tekeleza mabadiliko",
-    "prompt_placeholder": "Uliza AI iandike au ifanye refactor ya msimbo...",
-    "file_explorer": "Kichunguzi cha mradi",
+    "title": "Studio ya Msimbo wa AI",
+    "workspace_editor": "Kihariri cha Nafasi ya Kazi",
+    "proposed_changes": "Mabadiliko Yanayopendekezwa na AI",
+    "apply_changes": "Tumia Mabadiliko",
+    "prompt_placeholder": "Muombe AI aandike au arekebishe msimbo...",
+    "file_explorer": "Kivinjari cha Mradi",
     "no_files": "Hakuna faili zilizopatikana katika nafasi ya kazi",
-    "terminal_title": "Konsoli ya utekelezaji",
-    "terminal_empty": "Konsoli iko tayari. Inasubiri kumbukumbu za utekelezaji..."
+    "terminal_title": "Console ya Utekelezaji",
+    "terminal_empty": "Console iko tayari. Inasubiri kumbukumbu za utekelezaji..."
   },
   "vision": {
-    "title": "Studio ya Vision ya AI",
+    "title": "Studio ya Maono ya AI",
     "image_url_label": "URL ya picha au chanzo",
     "url_placeholder": "Bandika URL ya picha hapa...",
-    "results_label": "Matokeo ya uchanganuzi",
-    "ai_label": "AI Vision",
-    "prompt_placeholder": "Eleza picha au uliza kuhusu picha..."
+    "results_label": "Matokeo ya Uchambuzi",
+    "ai_label": "AI ya Maono",
+    "prompt_placeholder": "Eleza au uliza kuhusu picha..."
   },
   "chat": {
     "you": "Wewe",
@@ -124,6 +124,6 @@
     "title": "Mipangilio",
     "language": "Lugha",
     "theme": "Mandhari",
-    "api_key": "Mipangilio ya Supabase na AI"
+    "api_key": "Usanidi wa Supabase na AI"
   }
-  }
+}
