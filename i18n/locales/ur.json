@@ -14,34 +14,34 @@
   },
   "aiVideo": {
     "title": "🎬 AI ویڈیو",
-    "subtitle": "CREOVA AI کے ساتھ ویڈیوز بنائیں",
-    "promptPlaceholder": "مثلاً غروب آفتاب کے وقت ایک مستقبل کا شہر",
+    "subtitle": "CREOVA AI کے ساتھ ویڈیو بنائیں",
+    "promptPlaceholder": "مثال: غروب آفتاب کے وقت ایک مستقبل کا شہر",
     "generateButton": "ویڈیو بنائیں",
     "emptyPromptTitle": "CREOVA",
-    "emptyPromptMessage": "ویڈیو کی وضاحت درج کریں۔",
+    "emptyPromptMessage": "ویڈیو کے لیے تفصیل درج کریں۔",
     "statusTitle": "ویڈیو کی حیثیت",
     "progressLabel": "پیش رفت",
     "videoErrorTitle": "ویڈیو کی خرابی",
-    "videoStatusError": "ویڈیو کی حیثیت حاصل نہیں کی جا سکی۔",
+    "videoStatusError": "ویڈیو کی حیثیت حاصل کرتے وقت خرابی پیش آئی۔",
     "videoReadyTitle": "CREOVA",
     "videoReadyMessage": "آپ کی ویڈیو تیار ہے۔",
     "videoReadyNoUrl": "ویڈیو تیار ہے، لیکن MP4 URL موصول نہیں ہوا۔",
-    "videoFailedTitle": "ویڈیو بنانا ناکام رہا",
+    "videoFailedTitle": "ویڈیو بنانے میں ناکامی",
     "videoFailedStatus": "ویڈیو کی حیثیت: {{status}}",
     "videoTooLongTitle": "CREOVA",
-    "videoTooLongMessage": "ویڈیو بنانے میں بہت زیادہ وقت لگ رہا ہے۔ بعد میں دوبارہ چیک کریں۔",
+    "videoTooLongMessage": "ویڈیو بنانے میں بہت زیادہ وقت لگ رہا ہے۔ براہ کرم بعد میں دوبارہ چیک کریں۔",
     "videoCheckError": "ویڈیو کی حیثیت چیک کرتے وقت خرابی پیش آئی۔",
-    "generationFailed": "ویڈیو بنانا ناکام رہا۔",
+    "generationFailed": "ویڈیو بنانے میں ناکامی ہوئی۔",
     "unexpectedError": "ویڈیو بناتے وقت ایک غیر متوقع خرابی پیش آئی۔",
     "noUrlYet": "ابھی تک MP4 URL موصول نہیں ہوا۔",
     "idLabel": "ID: {{id}}"
   },
   "aiVoice": {
     "title": "🎤 AI آواز",
-    "subtitle": "CREOVA AI کے ساتھ متن کو آواز میں تبدیل کریں",
-    "textPlaceholder": "مثلاً ہیلو، CREOVA!",
+    "subtitle": "CREOVA AI کے ساتھ متن کو تقریر میں تبدیل کریں",
+    "textPlaceholder": "مثال: ہیلو، CREOVA!",
     "generateButton": "آواز بنائیں",
-    "result": { "title": "🔊 آواز تیار ہے", "description": "آپ کا متن کامیابی سے آواز میں تبدیل ہو گیا ہے۔" },
+    "result": { "title": "🔊 آواز تیار ہے", "description": "آپ کا متن کامیابی سے تقریر میں تبدیل ہو گیا۔" },
     "player": { "play": "▶️ چلائیں", "pause": "⏸ روکیں" },
     "errors": {
       "emptyText": "آواز کے لیے متن درج کریں۔",
@@ -58,21 +58,21 @@
     "namePlaceholder": "اپنا نام درج کریں",
     "emailLabel": "ای میل",
     "saveButton": "محفوظ کریں",
-    "nameRequired": "نام ضروری ہے۔",
-    "loadFailed": "پروفائل لوڈ نہیں ہو سکا۔",
-    "updateFailed": "پروفائل اپ ڈیٹ نہیں ہو سکا۔",
+    "nameRequired": "نام درکار ہے۔",
+    "loadFailed": "پروفائل لوڈ کرنے میں ناکامی۔",
+    "updateFailed": "پروفائل اپ ڈیٹ کرنے میں ناکامی۔",
     "updateSuccess": "پروفائل کامیابی سے اپ ڈیٹ ہو گیا۔"
   },
   "aiMusic": {
     "title": "🎶 AI موسیقی",
     "subtitle": "CREOVA AI کے ساتھ موسیقی بنائیں",
-    "promptPlaceholder": "مثلاً غروب آفتاب کے وقت ایک مستقبل کا شہر",
+    "promptPlaceholder": "مثال: غروب آفتاب کے وقت ایک مستقبل کا شہر",
     "generateButton": "موسیقی بنائیں",
-    "result": { "title": "🎶 موسیقی تیار ہے", "description": "آپ کا متن کامیابی سے موسیقی میں تبدیل ہو گیا ہے۔" },
+    "result": { "title": "🎶 موسیقی تیار ہے", "description": "آپ کا متن کامیابی سے موسیقی میں تبدیل ہو گیا۔" },
     "player": { "play": "▶️ چلائیں", "pause": "⏸ روکیں" },
     "errors": {
-      "emptyPrompt": "موسیقی کی وضاحت درج کریں۔",
-      "generationFailed": "موسیقی بناتے وقت خرابی پیش آئی۔",
+      "emptyPrompt": "براہ کرم موسیقی کے لیے ایک تفصیل درج کریں۔",
+      "generationFailed": "موسیقی بنانے میں ناکامی ہوئی۔",
       "audioMissing": "آڈیو فائل موصول نہیں ہوئی۔",
       "unexpected": "موسیقی بناتے وقت ایک غیر متوقع خرابی پیش آئی۔",
       "playbackFailed": "آڈیو چلاتے وقت خرابی پیش آئی۔"
@@ -82,48 +82,48 @@
   "navigation": {
     "home": "ہوم",
     "code_studio": "کوڈ اسٹوڈیو",
-    "vision_studio": "Vision اسٹوڈیو",
+    "vision_studio": "ویژن اسٹوڈیو",
     "chat": "AI چیٹ",
     "settings": "ترتیبات"
   },
   "dashboard": {
     "welcome": "Creova AI پلیٹ فارم",
-    "subtitle": "شروع کرنے کے لیے خودکار AI ایجنٹ کی ورک اسپیس منتخب کریں",
+    "subtitle": "شروع کرنے کے لیے ایک خودمختار AI ایجنٹ ورک اسپیس منتخب کریں",
     "code_title": "AI کوڈ اسٹوڈیو",
-    "code_desc": "Developer Agent کے ساتھ کوڈ ریفیکٹر، ڈیبگ، جنریٹ کریں اور تبدیلیاں حقیقی وقت میں دیکھیں۔",
-    "vision_title": "AI Vision اسٹوڈیو",
-    "vision_desc": "اسکرین شاٹس اور ڈیزائن ماک اپس کا تجزیہ کریں اور UI کو مقامی اجزاء میں تبدیل کریں۔",
-    "chat_title": "عمومی AI معاون",
-    "chat_desc": "عمومی استدلال، خیالات کا تبادلہ اور آرکیٹیکچر پر گفتگو۔"
+    "code_desc": "Developer Agent کے ساتھ کوڈ کو دوبارہ ترتیب دیں، ڈی بگ کریں، بنائیں اور حقیقی وقت کے فرق دیکھیں۔",
+    "vision_title": "AI ویژن اسٹوڈیو",
+    "vision_desc": "اسکرین شاٹس، ڈیزائن ماک اپس کا تجزیہ کریں اور UI کو مقامی اجزاء میں تبدیل کریں۔",
+    "chat_title": "AI عمومی معاون",
+    "chat_desc": "عمومی استدلال، خیالات کا تبادلہ اور فن تعمیر پر بحث۔"
   },
   "code": {
     "title": "AI کوڈ اسٹوڈیو",
     "workspace_editor": "ورک اسپیس ایڈیٹر",
-    "proposed_changes": "AI کی تجویز کردہ تبدیلیاں",
+    "proposed_changes": "تجویز کردہ AI تبدیلیاں",
     "apply_changes": "تبدیلیاں لاگو کریں",
-    "prompt_placeholder": "AI سے کوڈ لکھنے یا ریفیکٹر کرنے کو کہیں...",
+    "prompt_placeholder": "AI سے کوڈ لکھنے یا دوبارہ ترتیب دینے کو کہیں...",
     "file_explorer": "پروجیکٹ ایکسپلورر",
     "no_files": "ورک اسپیس میں کوئی فائل نہیں ملی",
     "terminal_title": "ایگزیکیوشن کنسول",
     "terminal_empty": "کنسول تیار ہے۔ ایگزیکیوشن لاگز کا انتظار ہے..."
   },
   "vision": {
-    "title": "AI Vision اسٹوڈیو",
-    "image_url_label": "تصویر کا URL یا ذریعہ",
-    "url_placeholder": "تصویر کا URL یہاں پیسٹ کریں...",
-    "results_label": "تجزیے کے نتائج",
-    "ai_label": "AI Vision",
-    "prompt_placeholder": "تصویر کی وضاحت کریں یا اس کے بارے میں سوال کریں..."
+    "title": "AI ویژن اسٹوڈیو",
+    "image_url_label": "تصویر کا URL یا ماخذ",
+    "url_placeholder": "یہاں تصویر کا URL پیسٹ کریں...",
+    "results_label": "تجزیہ کے نتائج",
+    "ai_label": "ویژن AI",
+    "prompt_placeholder": "تصویر کی وضاحت کریں یا اس کے بارے میں پوچھیں..."
   },
   "chat": {
     "you": "آپ",
     "ai": "معاون",
-    "placeholder": "اپنا پیغام لکھیں..."
+    "placeholder": "اپنا پیغام ٹائپ کریں..."
   },
   "settings": {
     "title": "ترتیبات",
     "language": "زبان",
     "theme": "تھیم",
-    "api_key": "Supabase اور AI کی ترتیبات"
+    "api_key": "Supabase اور AI کنفیگریشن"
   }
   }
