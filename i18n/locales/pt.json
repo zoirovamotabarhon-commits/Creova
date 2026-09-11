@@ -3,50 +3,50 @@
     "appName": "CREOVA",
     "error": "Erro",
     "success": "Sucesso",
-    "generate": "Gerar",
-    "analyze": "Analisar",
-    "apply": "Aplicar",
-    "cancel": "Cancelar",
-    "save": "Salvar",
-    "loading": "Carregando...",
-    "retry": "Tentar novamente",
-    "delete": "Excluir"
+    "generate": "Generate",
+    "analyze": "Analyze",
+    "apply": "Apply",
+    "cancel": "Cancel",
+    "save": "Save",
+    "loading": "Loading...",
+    "retry": "Retry",
+    "delete": "Delete"
   },
   "aiVideo": {
     "title": "🎬 Vídeo IA",
-    "subtitle": "Gere vídeos com o CREOVA AI",
+    "subtitle": "Gere vídeos com CREOVA AI",
     "promptPlaceholder": "ex. Uma cidade futurista ao pôr do sol",
     "generateButton": "Gerar vídeo",
     "emptyPromptTitle": "CREOVA",
-    "emptyPromptMessage": "Digite uma descrição para o vídeo.",
+    "emptyPromptMessage": "Insira uma descrição para o vídeo.",
     "statusTitle": "Status do vídeo",
     "progressLabel": "Progresso",
-    "videoErrorTitle": "Erro de vídeo",
-    "videoStatusError": "Não foi possível obter o status do vídeo.",
+    "videoErrorTitle": "Erro no vídeo",
+    "videoStatusError": "Ocorreu um erro ao buscar o status do vídeo.",
     "videoReadyTitle": "CREOVA",
     "videoReadyMessage": "Seu vídeo está pronto.",
-    "videoReadyNoUrl": "O vídeo está pronto, mas nenhuma URL MP4 foi recebida.",
-    "videoFailedTitle": "A geração do vídeo falhou",
+    "videoReadyNoUrl": "O vídeo está pronto, mas nenhuma URL de MP4 foi recebida.",
+    "videoFailedTitle": "Falha na geração do vídeo",
     "videoFailedStatus": "Status do vídeo: {{status}}",
     "videoTooLongTitle": "CREOVA",
     "videoTooLongMessage": "A geração do vídeo está demorando muito. Verifique novamente mais tarde.",
     "videoCheckError": "Ocorreu um erro ao verificar o status do vídeo.",
-    "generationFailed": "A geração do vídeo falhou.",
+    "generationFailed": "Falha na geração do vídeo.",
     "unexpectedError": "Ocorreu um erro inesperado ao gerar o vídeo.",
-    "noUrlYet": "Uma URL MP4 ainda não foi recebida.",
+    "noUrlYet": "Nenhuma URL de MP4 recebida ainda.",
     "idLabel": "ID: {{id}}"
   },
   "aiVoice": {
     "title": "🎤 Voz IA",
-    "subtitle": "Converta texto em voz com o CREOVA AI",
+    "subtitle": "Converta texto em fala com CREOVA AI",
     "textPlaceholder": "ex. Olá, CREOVA!",
     "generateButton": "Gerar voz",
-    "result": { "title": "🔊 Voz pronta", "description": "Seu texto foi convertido em voz com sucesso." },
+    "result": { "title": "🔊 Voz pronta", "description": "Seu texto foi convertido com sucesso em fala." },
     "player": { "play": "▶️ Reproduzir", "pause": "⏸ Pausar" },
     "errors": {
-      "emptyText": "Digite um texto para a voz.",
+      "emptyText": "Insira texto para a voz.",
       "generationFailed": "Ocorreu um erro ao gerar a voz.",
-      "audioMissing": "Nenhum arquivo de áudio foi recebido.",
+      "audioMissing": "O arquivo de áudio não foi recebido.",
       "unexpected": "Ocorreu um erro inesperado ao gerar a voz.",
       "playbackFailed": "Ocorreu um erro ao reproduzir o áudio."
     },
@@ -55,7 +55,7 @@
   "profile": {
     "title": "Perfil",
     "nameLabel": "Nome",
-    "namePlaceholder": "Digite seu nome",
+    "namePlaceholder": "Insira seu nome",
     "emailLabel": "E-mail",
     "saveButton": "Salvar",
     "nameRequired": "O nome é obrigatório.",
@@ -65,15 +65,15 @@
   },
   "aiMusic": {
     "title": "🎶 Música IA",
-    "subtitle": "Gere música com o CREOVA AI",
+    "subtitle": "Gere música com CREOVA AI",
     "promptPlaceholder": "ex. Uma cidade futurista ao pôr do sol",
     "generateButton": "Gerar música",
-    "result": { "title": "🎶 Música pronta", "description": "Seu texto foi convertido em música com sucesso." },
+    "result": { "title": "🎶 Música pronta", "description": "Seu texto foi convertido com sucesso em música." },
     "player": { "play": "▶️ Reproduzir", "pause": "⏸ Pausar" },
     "errors": {
-      "emptyPrompt": "Digite uma descrição para a música.",
-      "generationFailed": "Ocorreu um erro ao gerar a música.",
-      "audioMissing": "Nenhum arquivo de áudio foi recebido.",
+      "emptyPrompt": "Insira uma descrição para a música.",
+      "generationFailed": "Falha na geração de música.",
+      "audioMissing": "O arquivo de áudio não foi recebido.",
       "unexpected": "Ocorreu um erro inesperado ao gerar a música.",
       "playbackFailed": "Ocorreu um erro ao reproduzir o áudio."
     },
@@ -87,13 +87,13 @@
     "settings": "Configurações"
   },
   "dashboard": {
-    "welcome": "Plataforma CREOVA AI",
+    "welcome": "Plataforma Creova AI",
     "subtitle": "Selecione um espaço de trabalho de agente de IA autônomo para começar",
     "code_title": "Estúdio de Código IA",
-    "code_desc": "Refatore, depure, gere código e visualize alterações em tempo real com o Developer Agent.",
+    "code_desc": "Refatore, depure, gere código e veja diferenças em tempo real com o Developer Agent.",
     "vision_title": "Estúdio de Visão IA",
-    "vision_desc": "Analise capturas de tela, modelos de design e converta a UI em componentes nativos.",
-    "chat_title": "Assistente Geral de IA",
+    "vision_desc": "Analise capturas de tela, mockups de design e converta a UI em componentes nativos.",
+    "chat_title": "Assistente Geral IA",
     "chat_desc": "Raciocínio geral, troca de ideias e discussão de arquitetura."
   },
   "code": {
@@ -102,18 +102,18 @@
     "proposed_changes": "Alterações propostas pela IA",
     "apply_changes": "Aplicar alterações",
     "prompt_placeholder": "Peça à IA para escrever ou refatorar código...",
-    "file_explorer": "Explorador do projeto",
+    "file_explorer": "Explorador de projeto",
     "no_files": "Nenhum arquivo encontrado no espaço de trabalho",
     "terminal_title": "Console de execução",
-    "terminal_empty": "Console pronto. Aguardando registros de execução..."
+    "terminal_empty": "Console pronto. Aguardando logs de execução..."
   },
   "vision": {
     "title": "Estúdio de Visão IA",
-    "image_url_label": "URL ou fonte da imagem",
+    "image_url_label": "URL da imagem ou fonte",
     "url_placeholder": "Cole a URL da imagem aqui...",
     "results_label": "Resultados da análise",
-    "ai_label": "Visão IA",
-    "prompt_placeholder": "Descreva ou faça uma pergunta sobre a imagem..."
+    "ai_label": "IA de Visão",
+    "prompt_placeholder": "Descreva ou pergunte sobre a imagem..."
   },
   "chat": {
     "you": "Você",
@@ -124,6 +124,6 @@
     "title": "Configurações",
     "language": "Idioma",
     "theme": "Tema",
-    "api_key": "Configurações do Supabase e IA"
+    "api_key": "Configuração do Supabase e IA"
   }
 }
