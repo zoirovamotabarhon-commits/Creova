@@ -191,6 +191,7 @@ Deno.serve(async (request) => {
      * could double-charge/block an already-created generation.
      */
     const rateLimit = await checkRateLimit(
+      supabaseAdmin,
       user.id,
       "generation-create",
       20,
