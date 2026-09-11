@@ -40,3 +40,26 @@ export async function checkRateLimit(
     remaining: Number(result?.remaining ?? 0),
   };
 }
+
+/**
+ * Builds the standard 429 response returned by edge functions when
+ * checkRateLimit() reports the caller is over their limit. Kept here (next
+ * to checkRateLimit) so every function that rate-limits returns an
+ * identically-shaped response.
+ */
+export function rateLimitResponse(result: RateLimitResult): Response {
+  return new Response(
+    JSON.stringify({
+      success: false,
+      error: 'Rate limit exceeded. Please try again later.',
+      remaining: result.remaining,
+    }),
+    {
+      status: 429,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+      },
+    },
+  );
+  }
