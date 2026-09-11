@@ -1,7 +1,7 @@
 {
   "common": {
     "appName": "CREOVA",
-    "error": "Xatolik",
+    "error": "Xato",
     "success": "Muvaffaqiyat",
     "generate": "Generate",
     "analyze": "Analyze",
@@ -14,8 +14,8 @@
   },
   "aiVideo": {
     "title": "🎬 AI Video",
-    "subtitle": "CREOVA AI yordamida videolar yarating",
-    "promptPlaceholder": "masalan, Quyosh botishidagi futuristik shahar",
+    "subtitle": "CREOVA AI bilan video yarating",
+    "promptPlaceholder": "Masalan: Quyosh botayotgan futuristik shahar",
     "generateButton": "Video yaratish",
     "emptyPromptTitle": "CREOVA",
     "emptyPromptMessage": "Video uchun tavsif kiriting.",
@@ -25,30 +25,30 @@
     "videoStatusError": "Video holatini olishda xatolik yuz berdi.",
     "videoReadyTitle": "CREOVA",
     "videoReadyMessage": "Videongiz tayyor.",
-    "videoReadyNoUrl": "Video tayyor, ammo MP4 URL olinmadi.",
-    "videoFailedTitle": "Video yaratish amalga oshmadi",
+    "videoReadyNoUrl": "Video tayyor, lekin MP4 URL qabul qilinmadi.",
+    "videoFailedTitle": "Video yaratish muvaffaqiyatsiz tugadi",
     "videoFailedStatus": "Video holati: {{status}}",
     "videoTooLongTitle": "CREOVA",
-    "videoTooLongMessage": "Video yaratish juda uzoq davom etmoqda. Keyinroq qayta tekshiring.",
+    "videoTooLongMessage": "Video yaratish juda uzoq vaqt olmoqda. Iltimos, keyinroq qayta tekshiring.",
     "videoCheckError": "Video holatini tekshirishda xatolik yuz berdi.",
-    "generationFailed": "Video yaratish amalga oshmadi.",
+    "generationFailed": "Video yaratish muvaffaqiyatsiz tugadi.",
     "unexpectedError": "Video yaratishda kutilmagan xatolik yuz berdi.",
-    "noUrlYet": "Hali MP4 URL olinmadi.",
+    "noUrlYet": "Hali MP4 URL qabul qilinmadi.",
     "idLabel": "ID: {{id}}"
   },
   "aiVoice": {
     "title": "🎤 AI Ovoz",
-    "subtitle": "CREOVA AI yordamida matnni ovozga aylantiring",
-    "textPlaceholder": "masalan, Salom, CREOVA!",
+    "subtitle": "CREOVA AI bilan matnni nutqqa aylantiring",
+    "textPlaceholder": "Masalan: Salom, CREOVA!",
     "generateButton": "Ovoz yaratish",
-    "result": { "title": "🔊 Ovoz tayyor", "description": "Matningiz muvaffaqiyatli ovozga aylantirildi." },
+    "result": { "title": "🔊 Ovoz tayyor", "description": "Matningiz muvaffaqiyatli nutqqa aylantirildi." },
     "player": { "play": "▶️ Ijro etish", "pause": "⏸ Pauza" },
     "errors": {
       "emptyText": "Ovoz uchun matn kiriting.",
       "generationFailed": "Ovoz yaratishda xatolik yuz berdi.",
-      "audioMissing": "Audio fayl olinmadi.",
+      "audioMissing": "Audio fayl qabul qilinmadi.",
       "unexpected": "Ovoz yaratishda kutilmagan xatolik yuz berdi.",
-      "playbackFailed": "Audioni ijro etishda xatolik yuz berdi."
+      "playbackFailed": "Audio ijro etishda xatolik yuz berdi."
     },
     "success": { "generated": "Ovoz muvaffaqiyatli yaratildi." }
   },
@@ -56,64 +56,64 @@
     "title": "Profil",
     "nameLabel": "Ism",
     "namePlaceholder": "Ismingizni kiriting",
-    "emailLabel": "Elektron pochta",
+    "emailLabel": "Email",
     "saveButton": "Saqlash",
-    "nameRequired": "Ism kiritilishi shart.",
-    "loadFailed": "Profilni yuklashda xatolik yuz berdi.",
-    "updateFailed": "Profilni yangilashda xatolik yuz berdi.",
+    "nameRequired": "Ism talab qilinadi.",
+    "loadFailed": "Profilni yuklashda xatolik.",
+    "updateFailed": "Profilni yangilashda xatolik.",
     "updateSuccess": "Profil muvaffaqiyatli yangilandi."
   },
   "aiMusic": {
     "title": "🎶 AI Musiqa",
-    "subtitle": "CREOVA AI yordamida musiqa yarating",
-    "promptPlaceholder": "masalan, Quyosh botishidagi futuristik shahar",
+    "subtitle": "CREOVA AI bilan musiqa yarating",
+    "promptPlaceholder": "masalan: Quyosh botayotgan futuristik shahar",
     "generateButton": "Musiqa yaratish",
     "result": { "title": "🎶 Musiqa tayyor", "description": "Matningiz muvaffaqiyatli musiqaga aylantirildi." },
     "player": { "play": "▶️ Ijro etish", "pause": "⏸ Pauza" },
     "errors": {
       "emptyPrompt": "Musiqa uchun tavsif kiriting.",
-      "generationFailed": "Musiqa yaratishda xatolik yuz berdi.",
-      "audioMissing": "Audio fayl olinmadi.",
+      "generationFailed": "Musiqa yaratish muvaffaqiyatsiz tugadi.",
+      "audioMissing": "Audio fayl qabul qilinmadi.",
       "unexpected": "Musiqa yaratishda kutilmagan xatolik yuz berdi.",
-      "playbackFailed": "Audioni ijro etishda xatolik yuz berdi."
+      "playbackFailed": "Audio ijro etishda xatolik yuz berdi."
     },
     "success": { "generated": "Musiqa muvaffaqiyatli yaratildi." }
   },
   "navigation": {
     "home": "Bosh sahifa",
     "code_studio": "Kod studiyasi",
-    "vision_studio": "Vision studiyasi",
+    "vision_studio": "Ko'rish studiyasi",
     "chat": "AI Chat",
     "settings": "Sozlamalar"
   },
   "dashboard": {
-    "welcome": "Creova AI platformasi",
-    "subtitle": "Boshlash uchun avtonom AI agentining ish maydonini tanlang",
+    "welcome": "Creova AI Platformasi",
+    "subtitle": "Boshlash uchun avtonom AI agent ish maydonini tanlang",
     "code_title": "AI Kod studiyasi",
-    "code_desc": "Developer Agent yordamida kodni refaktor qiling, xatolarni tuzating, kod yarating va o‘zgarishlarni real vaqt rejimida ko‘ring.",
-    "vision_title": "AI Vision studiyasi",
-    "vision_desc": "Skrinshotlar va dizayn maketlarini tahlil qiling hamda UI'ni native komponentlarga aylantiring.",
-    "chat_title": "Umumiy AI yordamchi",
-    "chat_desc": "Umumiy fikrlash, g‘oyalar almashinuvi va arxitektura muhokamasi."
+    "code_desc": "Developer Agent yordamida kodni refaktoring qiling, xatolarni tuzating, kod yarating va real vaqtda farqlarni ko'ring.",
+    "vision_title": "AI Ko'rish studiyasi",
+    "vision_desc": "Skrinshotlarni, dizayn maketlarini tahlil qiling va UI-ni mahalliy komponentlarga aylantiring.",
+    "chat_title": "AI Umumiy yordamchi",
+    "chat_desc": "Umumiy mulohaza yuritish, g'oyalar almashish va arxitektura muhokamasi."
   },
   "code": {
     "title": "AI Kod studiyasi",
     "workspace_editor": "Ish maydoni muharriri",
-    "proposed_changes": "AI taklif qilgan o‘zgarishlar",
-    "apply_changes": "O‘zgarishlarni qo‘llash",
-    "prompt_placeholder": "AI'dan kod yozish yoki refaktor qilishni so‘rang...",
-    "file_explorer": "Loyiha fayllari",
+    "proposed_changes": "Taklif etilgan AI o'zgarishlari",
+    "apply_changes": "O'zgarishlarni qo'llash",
+    "prompt_placeholder": "AI-dan kod yozishni yoki refaktoring qilishni so'rang...",
+    "file_explorer": "Loyiha ko'rgichi",
     "no_files": "Ish maydonida fayllar topilmadi",
     "terminal_title": "Bajarish konsoli",
-    "terminal_empty": "Konsol tayyor. Bajarilish jurnallari kutilmoqda..."
+    "terminal_empty": "Konsol tayyor. Bajarish jurnallarini kutmoqda..."
   },
   "vision": {
-    "title": "AI Vision studiyasi",
-    "image_url_label": "Rasm URL manzili yoki manba",
-    "url_placeholder": "Rasm URL manzilini shu yerga joylashtiring...",
+    "title": "AI Ko'rish studiyasi",
+    "image_url_label": "Rasm URL yoki manba",
+    "url_placeholder": "Bu yerga rasm URL manzilini joylashtiring...",
     "results_label": "Tahlil natijalari",
-    "ai_label": "AI Vision",
-    "prompt_placeholder": "Rasmni tasvirlang yoki rasm haqida savol bering..."
+    "ai_label": "Ko'rish AI",
+    "prompt_placeholder": "Rasmni tasvirlang yoki u haqida so'rang..."
   },
   "chat": {
     "you": "Siz",
@@ -124,6 +124,6 @@
     "title": "Sozlamalar",
     "language": "Til",
     "theme": "Mavzu",
-    "api_key": "Supabase va AI sozlamalari"
+    "api_key": "Supabase va AI konfiguratsiyasi"
   }
-}
+  }
