@@ -3,52 +3,52 @@
     "appName": "CREOVA",
     "error": "Fout",
     "success": "Succes",
-    "generate": "Genereren",
-    "analyze": "Analyseren",
-    "apply": "Toepassen",
-    "cancel": "Annuleren",
-    "save": "Opslaan",
-    "loading": "Laden...",
-    "retry": "Opnieuw proberen",
-    "delete": "Verwijderen"
+    "generate": "Generate",
+    "analyze": "Analyze",
+    "apply": "Apply",
+    "cancel": "Cancel",
+    "save": "Save",
+    "loading": "Loading...",
+    "retry": "Retry",
+    "delete": "Delete"
   },
   "aiVideo": {
-    "title": "🎬 AI-video",
+    "title": "🎬 AI Video",
     "subtitle": "Genereer video's met CREOVA AI",
     "promptPlaceholder": "bijv. Een futuristische stad bij zonsondergang",
     "generateButton": "Video genereren",
     "emptyPromptTitle": "CREOVA",
-    "emptyPromptMessage": "Voer een beschrijving voor de video in.",
+    "emptyPromptMessage": "Voer een beschrijving in voor de video.",
     "statusTitle": "Videostatus",
     "progressLabel": "Voortgang",
     "videoErrorTitle": "Videofout",
-    "videoStatusError": "De videostatus kon niet worden opgehaald.",
+    "videoStatusError": "Er is een fout opgetreden bij het ophalen van de videostatus.",
     "videoReadyTitle": "CREOVA",
     "videoReadyMessage": "Je video is klaar.",
     "videoReadyNoUrl": "De video is klaar, maar er is geen MP4-URL ontvangen.",
-    "videoFailedTitle": "Videogeneratie mislukt",
+    "videoFailedTitle": "Video genereren mislukt",
     "videoFailedStatus": "Videostatus: {{status}}",
     "videoTooLongTitle": "CREOVA",
     "videoTooLongMessage": "Het genereren van de video duurt te lang. Controleer het later opnieuw.",
     "videoCheckError": "Er is een fout opgetreden bij het controleren van de videostatus.",
-    "generationFailed": "Videogeneratie mislukt.",
+    "generationFailed": "Video genereren mislukt.",
     "unexpectedError": "Er is een onverwachte fout opgetreden bij het genereren van de video.",
-    "noUrlYet": "Er is nog geen MP4-URL ontvangen.",
+    "noUrlYet": "Nog geen MP4-URL ontvangen.",
     "idLabel": "ID: {{id}}"
   },
   "aiVoice": {
-    "title": "🎤 AI-stem",
-    "subtitle": "Zet tekst om in spraak met CREOVA AI",
+    "title": "🎤 AI Stem",
+    "subtitle": "Zet tekst om naar spraak met CREOVA AI",
     "textPlaceholder": "bijv. Hallo, CREOVA!",
     "generateButton": "Stem genereren",
-    "result": { "title": "🔊 Stem klaar", "description": "Je tekst is succesvol omgezet in spraak." },
-    "player": { "play": "▶️ Afspelen", "pause": "⏸ Pauzeren" },
+    "result": { "title": "🔊 Stem klaar", "description": "Je tekst is succesvol omgezet naar spraak." },
+    "player": { "play": "▶️ Afspelen", "pause": "⏸ Pauze" },
     "errors": {
       "emptyText": "Voer tekst in voor de stem.",
       "generationFailed": "Er is een fout opgetreden bij het genereren van de stem.",
-      "audioMissing": "Er is geen audiobestand ontvangen.",
+      "audioMissing": "Audiobestand niet ontvangen.",
       "unexpected": "Er is een onverwachte fout opgetreden bij het genereren van de stem.",
-      "playbackFailed": "Er is een fout opgetreden bij het afspelen van audio."
+      "playbackFailed": "Er is een fout opgetreden tijdens het afspelen van de audio."
     },
     "success": { "generated": "Stem succesvol gegenereerd." }
   },
@@ -64,18 +64,18 @@
     "updateSuccess": "Profiel succesvol bijgewerkt."
   },
   "aiMusic": {
-    "title": "🎶 AI-muziek",
+    "title": "🎶 AI Muziek",
     "subtitle": "Genereer muziek met CREOVA AI",
     "promptPlaceholder": "bijv. Een futuristische stad bij zonsondergang",
     "generateButton": "Muziek genereren",
     "result": { "title": "🎶 Muziek klaar", "description": "Je tekst is succesvol omgezet in muziek." },
-    "player": { "play": "▶️ Afspelen", "pause": "⏸ Pauzeren" },
+    "player": { "play": "▶️ Afspelen", "pause": "⏸ Pauze" },
     "errors": {
-      "emptyPrompt": "Voer een beschrijving voor de muziek in.",
-      "generationFailed": "Er is een fout opgetreden bij het genereren van muziek.",
-      "audioMissing": "Er is geen audiobestand ontvangen.",
-      "unexpected": "Er is een onverwachte fout opgetreden bij het genereren van muziek.",
-      "playbackFailed": "Er is een fout opgetreden bij het afspelen van audio."
+      "emptyPrompt": "Voer een beschrijving in voor de muziek.",
+      "generationFailed": "Muziekgeneratie mislukt.",
+      "audioMissing": "Audiobestand niet ontvangen.",
+      "unexpected": "Er is een onverwachte fout opgetreden tijdens het genereren van muziek.",
+      "playbackFailed": "Er is een fout opgetreden tijdens het afspelen van de audio."
     },
     "success": { "generated": "Muziek succesvol gegenereerd." }
   },
@@ -83,37 +83,37 @@
     "home": "Home",
     "code_studio": "Code Studio",
     "vision_studio": "Vision Studio",
-    "chat": "AI-chat",
+    "chat": "AI Chat",
     "settings": "Instellingen"
   },
   "dashboard": {
-    "welcome": "CREOVA AI-platform",
-    "subtitle": "Selecteer een werkruimte voor een autonome AI-agent om te beginnen",
+    "welcome": "Creova AI Platform",
+    "subtitle": "Selecteer een autonome AI-agent werkruimte om te beginnen",
     "code_title": "AI Code Studio",
-    "code_desc": "Refactor, debug en genereer code en bekijk wijzigingen in realtime met Developer Agent.",
+    "code_desc": "Refactor, debug, genereer code en bekijk realtime verschillen met Developer Agent.",
     "vision_title": "AI Vision Studio",
-    "vision_desc": "Analyseer schermafbeeldingen en designmockups en zet UI om in native componenten.",
-    "chat_title": "Algemene AI-assistent",
-    "chat_desc": "Algemene redenering, brainstormen en architectuur bespreken."
+    "vision_desc": "Analyseer screenshots, ontwerpmockups en converteer de UI naar native componenten.",
+    "chat_title": "AI Algemene Assistent",
+    "chat_desc": "Algemeen redeneren, gedachtewisseling en architectuurdiscussie."
   },
   "code": {
     "title": "AI Code Studio",
     "workspace_editor": "Werkruimte-editor",
-    "proposed_changes": "Door AI voorgestelde wijzigingen",
+    "proposed_changes": "Voorgestelde AI-wijzigingen",
     "apply_changes": "Wijzigingen toepassen",
-    "prompt_placeholder": "Vraag AI om code te schrijven of te refactoren...",
+    "prompt_placeholder": "Vraag AI om code te schrijven of refactoren...",
     "file_explorer": "Projectverkenner",
-    "no_files": "Geen bestanden gevonden in de werkruimte",
+    "no_files": "Geen bestanden gevonden in werkruimte",
     "terminal_title": "Uitvoeringsconsole",
-    "terminal_empty": "Console gereed. Wachten op uitvoeringslogboeken..."
+    "terminal_empty": "Console gereed. Wachten op uitvoeringslogs..."
   },
   "vision": {
     "title": "AI Vision Studio",
-    "image_url_label": "Afbeeldings-URL of bron",
-    "url_placeholder": "Plak hier de URL van de afbeelding...",
+    "image_url_label": "Afbeelding-URL of bron",
+    "url_placeholder": "Plak hier de afbeeldings-URL...",
     "results_label": "Analyseresultaten",
-    "ai_label": "AI Vision",
-    "prompt_placeholder": "Beschrijf de afbeelding of stel er een vraag over..."
+    "ai_label": "Vision AI",
+    "prompt_placeholder": "Beschrijf of stel een vraag over de afbeelding..."
   },
   "chat": {
     "you": "Jij",
@@ -124,6 +124,6 @@
     "title": "Instellingen",
     "language": "Taal",
     "theme": "Thema",
-    "api_key": "Supabase- en AI-instellingen"
+    "api_key": "Supabase & AI-configuratie"
   }
-}
+  }
