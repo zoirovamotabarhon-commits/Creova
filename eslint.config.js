@@ -10,6 +10,22 @@ module.exports = [
       ".expo/**",
       "dist/**",
       "build/**",
+      ". core/**",
     ],
+  },
+  {
+    files: ["scripts/**/*.js"],
+    languageOptions: {
+      sourceType: "commonjs",
+      globals: {
+        __dirname: "readonly",
+        __filename: "readonly",
+        require: "readonly",
+        module: "writable",
+        exports: "writable",
+        process: "readonly",
+        console: "readonly",
+      },
+    },
   },
 ];
