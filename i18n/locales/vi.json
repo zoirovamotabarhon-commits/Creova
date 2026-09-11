@@ -15,21 +15,21 @@
   "aiVideo": {
     "title": "🎬 Video AI",
     "subtitle": "Tạo video với CREOVA AI",
-    "promptPlaceholder": "ví dụ: Một thành phố tương lai lúc hoàng hôn",
+    "promptPlaceholder": "vd. Một thành phố tương lai lúc hoàng hôn",
     "generateButton": "Tạo video",
     "emptyPromptTitle": "CREOVA",
-    "emptyPromptMessage": "Nhập mô tả cho video.",
+    "emptyPromptMessage": "Vui lòng nhập mô tả cho video.",
     "statusTitle": "Trạng thái video",
     "progressLabel": "Tiến trình",
     "videoErrorTitle": "Lỗi video",
-    "videoStatusError": "Không thể lấy trạng thái video.",
+    "videoStatusError": "Đã xảy ra lỗi khi lấy trạng thái video.",
     "videoReadyTitle": "CREOVA",
     "videoReadyMessage": "Video của bạn đã sẵn sàng.",
-    "videoReadyNoUrl": "Video đã sẵn sàng nhưng chưa nhận được URL MP4.",
+    "videoReadyNoUrl": "Video đã sẵn sàng, nhưng không nhận được URL MP4.",
     "videoFailedTitle": "Tạo video thất bại",
     "videoFailedStatus": "Trạng thái video: {{status}}",
     "videoTooLongTitle": "CREOVA",
-    "videoTooLongMessage": "Quá trình tạo video mất quá nhiều thời gian. Hãy kiểm tra lại sau.",
+    "videoTooLongMessage": "Việc tạo video đang mất quá nhiều thời gian. Vui lòng kiểm tra lại sau.",
     "videoCheckError": "Đã xảy ra lỗi khi kiểm tra trạng thái video.",
     "generationFailed": "Tạo video thất bại.",
     "unexpectedError": "Đã xảy ra lỗi không mong muốn khi tạo video.",
@@ -39,18 +39,18 @@
   "aiVoice": {
     "title": "🎤 Giọng nói AI",
     "subtitle": "Chuyển văn bản thành giọng nói với CREOVA AI",
-    "textPlaceholder": "ví dụ: Xin chào, CREOVA!",
+    "textPlaceholder": "vd. Xin chào, CREOVA!",
     "generateButton": "Tạo giọng nói",
-    "result": { "title": "🔊 Giọng nói đã sẵn sàng", "description": "Văn bản của bạn đã được chuyển thành giọng nói thành công." },
+    "result": { "title": "🔊 Giọng nói đã sẵn sàng", "description": "Văn bản của bạn đã được chuyển đổi thành công thành giọng nói." },
     "player": { "play": "▶️ Phát", "pause": "⏸ Tạm dừng" },
     "errors": {
-      "emptyText": "Nhập văn bản cho giọng nói.",
+      "emptyText": "Vui lòng nhập văn bản cho giọng nói.",
       "generationFailed": "Đã xảy ra lỗi khi tạo giọng nói.",
       "audioMissing": "Không nhận được tệp âm thanh.",
       "unexpected": "Đã xảy ra lỗi không mong muốn khi tạo giọng nói.",
       "playbackFailed": "Đã xảy ra lỗi khi phát âm thanh."
     },
-    "success": { "generated": "Giọng nói đã được tạo thành công." }
+    "success": { "generated": "Tạo giọng nói thành công." }
   },
   "profile": {
     "title": "Hồ sơ",
@@ -61,58 +61,58 @@
     "nameRequired": "Tên là bắt buộc.",
     "loadFailed": "Không thể tải hồ sơ.",
     "updateFailed": "Không thể cập nhật hồ sơ.",
-    "updateSuccess": "Hồ sơ đã được cập nhật thành công."
+    "updateSuccess": "Cập nhật hồ sơ thành công."
   },
   "aiMusic": {
     "title": "🎶 Âm nhạc AI",
     "subtitle": "Tạo nhạc với CREOVA AI",
-    "promptPlaceholder": "ví dụ: Một thành phố tương lai lúc hoàng hôn",
+    "promptPlaceholder": "vd. Một thành phố tương lai lúc hoàng hôn",
     "generateButton": "Tạo nhạc",
-    "result": { "title": "🎶 Nhạc đã sẵn sàng", "description": "Văn bản của bạn đã được chuyển thành nhạc thành công." },
+    "result": { "title": "🎶 Nhạc đã sẵn sàng", "description": "Văn bản của bạn đã được chuyển đổi thành công thành nhạc." },
     "player": { "play": "▶️ Phát", "pause": "⏸ Tạm dừng" },
     "errors": {
-      "emptyPrompt": "Nhập mô tả cho âm nhạc.",
-      "generationFailed": "Đã xảy ra lỗi khi tạo nhạc.",
+      "emptyPrompt": "Vui lòng nhập mô tả cho bản nhạc.",
+      "generationFailed": "Tạo nhạc thất bại.",
       "audioMissing": "Không nhận được tệp âm thanh.",
       "unexpected": "Đã xảy ra lỗi không mong muốn khi tạo nhạc.",
       "playbackFailed": "Đã xảy ra lỗi khi phát âm thanh."
     },
-    "success": { "generated": "Nhạc đã được tạo thành công." }
+    "success": { "generated": "Tạo nhạc thành công." }
   },
   "navigation": {
     "home": "Trang chủ",
-    "code_studio": "Studio mã nguồn",
-    "vision_studio": "Studio Vision",
-    "chat": "Chat AI",
+    "code_studio": "Studio Mã",
+    "vision_studio": "Studio Thị giác",
+    "chat": "Trò chuyện AI",
     "settings": "Cài đặt"
   },
   "dashboard": {
     "welcome": "Nền tảng Creova AI",
     "subtitle": "Chọn không gian làm việc của tác nhân AI tự động để bắt đầu",
-    "code_title": "Studio mã nguồn AI",
-    "code_desc": "Tái cấu trúc, gỡ lỗi, tạo mã và xem các thay đổi theo thời gian thực với Developer Agent.",
-    "vision_title": "Studio Vision AI",
-    "vision_desc": "Phân tích ảnh chụp màn hình, bản thiết kế và chuyển UI thành các thành phần native.",
-    "chat_title": "Trợ lý AI tổng quát",
-    "chat_desc": "Suy luận tổng quát, trao đổi ý tưởng và thảo luận kiến trúc."
+    "code_title": "Studio Mã AI",
+    "code_desc": "Tái cấu trúc, gỡ lỗi, tạo mã và xem sự khác biệt theo thời gian thực với Developer Agent.",
+    "vision_title": "Studio Thị giác AI",
+    "vision_desc": "Phân tích ảnh chụp màn hình, bản thiết kế và chuyển đổi UI thành các thành phần gốc.",
+    "chat_title": "Trợ lý Chung AI",
+    "chat_desc": "Lập luận chung, trao đổi ý tưởng và thảo luận về kiến trúc."
   },
   "code": {
-    "title": "Studio mã nguồn AI",
+    "title": "Studio Mã AI",
     "workspace_editor": "Trình chỉnh sửa không gian làm việc",
-    "proposed_changes": "Các thay đổi do AI đề xuất",
+    "proposed_changes": "Các thay đổi AI đề xuất",
     "apply_changes": "Áp dụng thay đổi",
     "prompt_placeholder": "Yêu cầu AI viết hoặc tái cấu trúc mã...",
     "file_explorer": "Trình khám phá dự án",
-    "no_files": "Không tìm thấy tệp nào trong không gian làm việc",
+    "no_files": "Không tìm thấy tệp trong không gian làm việc",
     "terminal_title": "Bảng điều khiển thực thi",
     "terminal_empty": "Bảng điều khiển đã sẵn sàng. Đang chờ nhật ký thực thi..."
   },
   "vision": {
-    "title": "Studio Vision AI",
+    "title": "Studio Thị giác AI",
     "image_url_label": "URL hình ảnh hoặc nguồn",
     "url_placeholder": "Dán URL hình ảnh vào đây...",
     "results_label": "Kết quả phân tích",
-    "ai_label": "AI Vision",
+    "ai_label": "AI Thị giác",
     "prompt_placeholder": "Mô tả hoặc đặt câu hỏi về hình ảnh..."
   },
   "chat": {
@@ -124,6 +124,6 @@
     "title": "Cài đặt",
     "language": "Ngôn ngữ",
     "theme": "Chủ đề",
-    "api_key": "Cài đặt Supabase và AI"
+    "api_key": "Cấu hình Supabase & AI"
   }
-  }
+}
