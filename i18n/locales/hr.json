@@ -3,18 +3,18 @@
     "appName": "CREOVA",
     "error": "Pogreška",
     "success": "Uspjeh",
-    "generate": "Generiraj",
-    "analyze": "Analiziraj",
-    "apply": "Primijeni",
-    "cancel": "Odustani",
-    "save": "Spremi",
-    "loading": "Učitavanje...",
-    "retry": "Pokušaj ponovno",
-    "delete": "Izbriši"
+    "generate": "Generate",
+    "analyze": "Analyze",
+    "apply": "Apply",
+    "cancel": "Cancel",
+    "save": "Save",
+    "loading": "Loading...",
+    "retry": "Retry",
+    "delete": "Delete"
   },
   "aiVideo": {
     "title": "🎬 AI Video",
-    "subtitle": "Stvarajte videozapise s CREOVA AI",
+    "subtitle": "Generirajte video s CREOVA AI",
     "promptPlaceholder": "npr. Futuristički grad u sumrak",
     "generateButton": "Generiraj video",
     "emptyPromptTitle": "CREOVA",
@@ -22,15 +22,15 @@
     "statusTitle": "Status videa",
     "progressLabel": "Napredak",
     "videoErrorTitle": "Pogreška videa",
-    "videoStatusError": "Nije uspjelo dohvaćanje statusa videa.",
+    "videoStatusError": "Došlo je do pogreške pri dohvaćanju statusa videa.",
     "videoReadyTitle": "CREOVA",
-    "videoReadyMessage": "Video je spreman.",
+    "videoReadyMessage": "Vaš video je spreman.",
     "videoReadyNoUrl": "Video je spreman, ali MP4 URL nije primljen.",
     "videoFailedTitle": "Generiranje videa nije uspjelo",
     "videoFailedStatus": "Status videa: {{status}}",
     "videoTooLongTitle": "CREOVA",
     "videoTooLongMessage": "Generiranje videa traje predugo. Provjerite ponovno kasnije.",
-    "videoCheckError": "Pogreška pri provjeri statusa videa.",
+    "videoCheckError": "Došlo je do pogreške pri provjeri statusa videa.",
     "generationFailed": "Generiranje videa nije uspjelo.",
     "unexpectedError": "Došlo je do neočekivane pogreške tijekom generiranja videa.",
     "noUrlYet": "MP4 URL još nije primljen.",
@@ -41,12 +41,12 @@
     "subtitle": "Pretvorite tekst u govor s CREOVA AI",
     "textPlaceholder": "npr. Bok, CREOVA!",
     "generateButton": "Generiraj glas",
-    "result": { "title": "🔊 Glas je spreman", "description": "Vaš tekst uspješno je pretvoren u govor." },
-    "player": { "play": "▶️ Reproduciraj", "pause": "⏸ Pauziraj" },
+    "result": { "title": "🔊 Glas spreman", "description": "Vaš tekst uspješno je pretvoren u govor." },
+    "player": { "play": "▶️ Reproduciraj", "pause": "⏸ Pauza" },
     "errors": {
       "emptyText": "Unesite tekst za glas.",
       "generationFailed": "Došlo je do pogreške tijekom generiranja glasa.",
-      "audioMissing": "Audiodatoteka nije primljena.",
+      "audioMissing": "Audio datoteka nije primljena.",
       "unexpected": "Došlo je do neočekivane pogreške tijekom generiranja glasa.",
       "playbackFailed": "Došlo je do pogreške tijekom reprodukcije zvuka."
     },
@@ -68,12 +68,12 @@
     "subtitle": "Generirajte glazbu s CREOVA AI",
     "promptPlaceholder": "npr. Futuristički grad u sumrak",
     "generateButton": "Generiraj glazbu",
-    "result": { "title": "🎶 Glazba je spremna", "description": "Vaš tekst uspješno je pretvoren u glazbu." },
-    "player": { "play": "▶️ Reproduciraj", "pause": "⏸ Pauziraj" },
+    "result": { "title": "🎶 Glazba spremna", "description": "Vaš tekst uspješno je pretvoren u glazbu." },
+    "player": { "play": "▶️ Reproduciraj", "pause": "⏸ Pauza" },
     "errors": {
       "emptyPrompt": "Unesite opis za glazbu.",
-      "generationFailed": "Pogreška pri generiranju glazbe.",
-      "audioMissing": "Audiodatoteka nije primljena.",
+      "generationFailed": "Generiranje glazbe nije uspjelo.",
+      "audioMissing": "Audio datoteka nije primljena.",
       "unexpected": "Došlo je do neočekivane pogreške tijekom generiranja glazbe.",
       "playbackFailed": "Došlo je do pogreške tijekom reprodukcije zvuka."
     },
@@ -83,47 +83,47 @@
     "home": "Početna",
     "code_studio": "Studio za kod",
     "vision_studio": "Studio za viziju",
-    "chat": "AI Chat",
+    "chat": "AI chat",
     "settings": "Postavke"
   },
   "dashboard": {
-    "welcome": "CREOVA AI platforma",
+    "welcome": "Creova AI platforma",
     "subtitle": "Odaberite radni prostor autonomnog AI agenta za početak",
     "code_title": "AI Studio za kod",
-    "code_desc": "Refaktorirajte, otklanjajte pogreške, generirajte kod i pregledavajte promjene u stvarnom vremenu s Developer Agentom.",
+    "code_desc": "Refaktorirajte, otklonite pogreške, generirajte kod i pratite razlike u stvarnom vremenu s Developer Agentom.",
     "vision_title": "AI Studio za viziju",
-    "vision_desc": "Analizirajte snimke zaslona, dizajnerske makete i pretvorite UI u nativne komponente.",
+    "vision_desc": "Analizirajte snimke zaslona, dizajnerske makete i pretvorite UI u izvorne komponente.",
     "chat_title": "Opći AI asistent",
     "chat_desc": "Opće zaključivanje, razmjena ideja i rasprava o arhitekturi."
   },
   "code": {
     "title": "AI Studio za kod",
     "workspace_editor": "Uređivač radnog prostora",
-    "proposed_changes": "Promjene koje predlaže AI",
+    "proposed_changes": "Predložene AI promjene",
     "apply_changes": "Primijeni promjene",
-    "prompt_placeholder": "Zatražite od AI-ja da napiše ili refaktorira kod...",
-    "file_explorer": "Istraživač projekta",
-    "no_files": "U radnom prostoru nisu pronađene datoteke",
+    "prompt_placeholder": "Zamolite AI da napiše ili refaktorira kod...",
+    "file_explorer": "Preglednik projekta",
+    "no_files": "Nema pronađenih datoteka u radnom prostoru",
     "terminal_title": "Konzola za izvršavanje",
-    "terminal_empty": "Konzola je spremna. Čekaju se zapisi izvršavanja..."
+    "terminal_empty": "Konzola je spremna. Čekanje zapisa izvršavanja..."
   },
   "vision": {
     "title": "AI Studio za viziju",
     "image_url_label": "URL slike ili izvor",
     "url_placeholder": "Ovdje zalijepite URL slike...",
     "results_label": "Rezultati analize",
-    "ai_label": "AI vizija",
+    "ai_label": "Vizijski AI",
     "prompt_placeholder": "Opišite sliku ili postavite pitanje o njoj..."
   },
   "chat": {
     "you": "Vi",
     "ai": "Asistent",
-    "placeholder": "Napišite svoju poruku..."
+    "placeholder": "Upišite svoju poruku..."
   },
   "settings": {
     "title": "Postavke",
     "language": "Jezik",
     "theme": "Tema",
-    "api_key": "Postavke Supabasea i AI-ja"
+    "api_key": "Konfiguracija Supabase i AI"
   }
 }
