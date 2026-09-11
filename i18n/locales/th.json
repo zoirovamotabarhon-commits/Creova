@@ -22,26 +22,26 @@
     "statusTitle": "สถานะวิดีโอ",
     "progressLabel": "ความคืบหน้า",
     "videoErrorTitle": "ข้อผิดพลาดของวิดีโอ",
-    "videoStatusError": "ไม่สามารถรับสถานะวิดีโอได้",
+    "videoStatusError": "เกิดข้อผิดพลาดขณะดึงสถานะวิดีโอ",
     "videoReadyTitle": "CREOVA",
     "videoReadyMessage": "วิดีโอของคุณพร้อมแล้ว",
-    "videoReadyNoUrl": "วิดีโอพร้อมแล้ว แต่ไม่ได้รับ URL MP4",
-    "videoFailedTitle": "สร้างวิดีโอไม่สำเร็จ",
+    "videoReadyNoUrl": "วิดีโอพร้อมแล้ว แต่ไม่ได้รับ URL ของ MP4",
+    "videoFailedTitle": "การสร้างวิดีโอล้มเหลว",
     "videoFailedStatus": "สถานะวิดีโอ: {{status}}",
     "videoTooLongTitle": "CREOVA",
     "videoTooLongMessage": "การสร้างวิดีโอใช้เวลานานเกินไป กรุณาตรวจสอบอีกครั้งภายหลัง",
     "videoCheckError": "เกิดข้อผิดพลาดขณะตรวจสอบสถานะวิดีโอ",
-    "generationFailed": "สร้างวิดีโอไม่สำเร็จ",
+    "generationFailed": "การสร้างวิดีโอล้มเหลว",
     "unexpectedError": "เกิดข้อผิดพลาดที่ไม่คาดคิดขณะสร้างวิดีโอ",
-    "noUrlYet": "ยังไม่ได้รับ URL MP4",
+    "noUrlYet": "ยังไม่ได้รับ URL ของ MP4",
     "idLabel": "ID: {{id}}"
   },
   "aiVoice": {
     "title": "🎤 เสียง AI",
-    "subtitle": "แปลงข้อความเป็นเสียงด้วย CREOVA AI",
+    "subtitle": "แปลงข้อความเป็นเสียงพูดด้วย CREOVA AI",
     "textPlaceholder": "เช่น สวัสดี CREOVA!",
     "generateButton": "สร้างเสียง",
-    "result": { "title": "🔊 เสียงพร้อมแล้ว", "description": "ข้อความของคุณถูกแปลงเป็นเสียงเรียบร้อยแล้ว" },
+    "result": { "title": "🔊 เสียงพร้อมแล้ว", "description": "ข้อความของคุณถูกแปลงเป็นเสียงพูดเรียบร้อยแล้ว" },
     "player": { "play": "▶️ เล่น", "pause": "⏸ หยุดชั่วคราว" },
     "errors": {
       "emptyText": "กรุณาป้อนข้อความสำหรับเสียง",
@@ -58,9 +58,9 @@
     "namePlaceholder": "ป้อนชื่อของคุณ",
     "emailLabel": "อีเมล",
     "saveButton": "บันทึก",
-    "nameRequired": "จำเป็นต้องระบุชื่อ",
-    "loadFailed": "ไม่สามารถโหลดโปรไฟล์ได้",
-    "updateFailed": "ไม่สามารถอัปเดตโปรไฟล์ได้",
+    "nameRequired": "ต้องระบุชื่อ",
+    "loadFailed": "โหลดโปรไฟล์ล้มเหลว",
+    "updateFailed": "อัปเดตโปรไฟล์ล้มเหลว",
     "updateSuccess": "อัปเดตโปรไฟล์สำเร็จแล้ว"
   },
   "aiMusic": {
@@ -72,7 +72,7 @@
     "player": { "play": "▶️ เล่น", "pause": "⏸ หยุดชั่วคราว" },
     "errors": {
       "emptyPrompt": "กรุณาป้อนคำอธิบายสำหรับเพลง",
-      "generationFailed": "เกิดข้อผิดพลาดขณะสร้างเพลง",
+      "generationFailed": "การสร้างเพลงล้มเหลว",
       "audioMissing": "ไม่ได้รับไฟล์เสียง",
       "unexpected": "เกิดข้อผิดพลาดที่ไม่คาดคิดขณะสร้างเพลง",
       "playbackFailed": "เกิดข้อผิดพลาดขณะเล่นเสียง"
@@ -80,39 +80,39 @@
     "success": { "generated": "สร้างเพลงสำเร็จแล้ว" }
   },
   "navigation": {
-    "home": "หน้าหลัก",
+    "home": "หน้าแรก",
     "code_studio": "สตูดิโอโค้ด",
-    "vision_studio": "สตูดิโอ Vision",
-    "chat": "แชต AI",
+    "vision_studio": "สตูดิโอวิชั่น",
+    "chat": "แชท AI",
     "settings": "การตั้งค่า"
   },
   "dashboard": {
     "welcome": "แพลตฟอร์ม Creova AI",
-    "subtitle": "เลือกพื้นที่ทำงานของเอเจนต์ AI อัตโนมัติเพื่อเริ่มต้น",
+    "subtitle": "เลือกพื้นที่ทำงานของเอเจนต์ AI อิสระเพื่อเริ่มต้น",
     "code_title": "สตูดิโอโค้ด AI",
-    "code_desc": "รีแฟกเตอร์ แก้ไขข้อผิดพลาด สร้างโค้ด และดูการเปลี่ยนแปลงแบบเรียลไทม์ด้วย Developer Agent",
-    "vision_title": "สตูดิโอ Vision AI",
-    "vision_desc": "วิเคราะห์ภาพหน้าจอ แบบจำลองการออกแบบ และแปลง UI เป็นคอมโพเนนต์เนทีฟ",
-    "chat_title": "ผู้ช่วย AI ทั่วไป",
-    "chat_desc": "การให้เหตุผลทั่วไป การระดมความคิด และการพูดคุยเกี่ยวกับสถาปัตยกรรม"
+    "code_desc": "ปรับโครงสร้างใหม่ แก้ไขข้อบกพร่อง สร้างโค้ด และดูความแตกต่างแบบเรียลไทม์กับ Developer Agent",
+    "vision_title": "สตูดิโอวิชั่น AI",
+    "vision_desc": "วิเคราะห์ภาพหน้าจอ แบบจำลองการออกแบบ และแปลง UI เป็นคอมโพเนนต์แบบเนทีฟ",
+    "chat_title": "ผู้ช่วยทั่วไปของ AI",
+    "chat_desc": "การให้เหตุผลทั่วไป การแลกเปลี่ยนความคิด และการอภิปรายด้านสถาปัตยกรรม"
   },
   "code": {
     "title": "สตูดิโอโค้ด AI",
     "workspace_editor": "ตัวแก้ไขพื้นที่ทำงาน",
     "proposed_changes": "การเปลี่ยนแปลงที่ AI เสนอ",
     "apply_changes": "ใช้การเปลี่ยนแปลง",
-    "prompt_placeholder": "ขอให้ AI เขียนหรือรีแฟกเตอร์โค้ด...",
+    "prompt_placeholder": "ขอให้ AI เขียนหรือปรับโครงสร้างโค้ด...",
     "file_explorer": "ตัวสำรวจโปรเจกต์",
     "no_files": "ไม่พบไฟล์ในพื้นที่ทำงาน",
     "terminal_title": "คอนโซลการทำงาน",
     "terminal_empty": "คอนโซลพร้อมแล้ว กำลังรอบันทึกการทำงาน..."
   },
   "vision": {
-    "title": "สตูดิโอ Vision AI",
+    "title": "สตูดิโอวิชั่น AI",
     "image_url_label": "URL รูปภาพหรือแหล่งที่มา",
     "url_placeholder": "วาง URL รูปภาพที่นี่...",
     "results_label": "ผลการวิเคราะห์",
-    "ai_label": "AI Vision",
+    "ai_label": "AI วิชั่น",
     "prompt_placeholder": "อธิบายหรือถามเกี่ยวกับรูปภาพ..."
   },
   "chat": {
@@ -124,6 +124,6 @@
     "title": "การตั้งค่า",
     "language": "ภาษา",
     "theme": "ธีม",
-    "api_key": "การตั้งค่า Supabase และ AI"
+    "api_key": "การกำหนดค่า Supabase และ AI"
   }
   }
