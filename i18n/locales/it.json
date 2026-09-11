@@ -1,46 +1,56 @@
 {
-  "common": { "appName": "CREOVA", "error": "Errore", "success": "Successo" },
+  "common": {
+    "appName": "CREOVA",
+    "error": "Errore",
+    "success": "Successo",
+    "generate": "Generate",
+    "analyze": "Analyze",
+    "apply": "Apply",
+    "cancel": "Cancel",
+    "save": "Save",
+    "loading": "Loading...",
+    "retry": "Retry",
+    "delete": "Delete"
+  },
   "aiVideo": {
     "title": "🎬 Video IA",
     "subtitle": "Genera video con CREOVA AI",
-    "promptPlaceholder": "Es: Una città futuristica al tramonto",
+    "promptPlaceholder": "es. Una città futuristica al tramonto",
     "generateButton": "Genera video",
     "emptyPromptTitle": "CREOVA",
     "emptyPromptMessage": "Inserisci una descrizione per il video.",
     "statusTitle": "Stato del video",
     "progressLabel": "Avanzamento",
     "videoErrorTitle": "Errore video",
-    "videoStatusError": "Impossibile recuperare lo stato del video.",
+    "videoStatusError": "Si è verificato un errore durante il recupero dello stato del video.",
     "videoReadyTitle": "CREOVA",
-    "videoReadyMessage": "Il video è pronto.",
-    "videoReadyNoUrl": "Il video è pronto, ma l'URL MP4 non è stato ricevuto.",
+    "videoReadyMessage": "Il tuo video è pronto.",
+    "videoReadyNoUrl": "Il video è pronto, ma non è stato ricevuto alcun URL MP4.",
     "videoFailedTitle": "Generazione del video non riuscita",
     "videoFailedStatus": "Stato del video: {{status}}",
     "videoTooLongTitle": "CREOVA",
-    "videoTooLongMessage": "La generazione del video richiede troppo tempo. Riprova più tardi.",
-    "videoCheckError": "Errore durante la verifica dello stato del video.",
+    "videoTooLongMessage": "La generazione del video sta richiedendo troppo tempo. Riprova più tardi.",
+    "videoCheckError": "Si è verificato un errore durante il controllo dello stato del video.",
     "generationFailed": "Generazione del video non riuscita.",
     "unexpectedError": "Si è verificato un errore imprevisto durante la generazione del video.",
-    "noUrlYet": "L'URL MP4 non è stato ricevuto.",
+    "noUrlYet": "Nessun URL MP4 ricevuto ancora.",
     "idLabel": "ID: {{id}}"
   },
   "aiVoice": {
     "title": "🎤 Voce IA",
-    "subtitle": "Converti il testo in voce con CREOVA AI",
-    "textPlaceholder": "Es: Ciao, CREOVA!",
+    "subtitle": "Converti testo in voce con CREOVA AI",
+    "textPlaceholder": "es. Ciao, CREOVA!",
     "generateButton": "Genera voce",
-    "emptyTextMessage": "Inserisci il testo per la voce.",
-    "generationFailedTitle": "Generazione della voce non riuscita",
-    "generationFailedMessage": "Si è verificato un errore durante la generazione della voce.",
-    "noAudioMessage": "Il file audio non è stato ricevuto.",
-    "readyMessage": "La voce è pronta.",
-    "unexpectedError": "Si è verificato un errore imprevisto durante la generazione della voce.",
-    "resultTitle": "🔊 Voce pronta",
-    "resultText": "Il testo è stato convertito con successo in voce.",
-    "play": "▶️ Riproduci",
-    "pause": "⏸ Pausa",
-    "audioErrorTitle": "Errore audio",
-    "audioErrorMessage": "Si è verificato un errore durante la riproduzione dell'audio."
+    "result": { "title": "🔊 Voce pronta", "description": "Il tuo testo è stato convertito con successo in voce." },
+    "player": { "play": "▶️ Riproduci", "pause": "⏸ Pausa" },
+    "errors": {
+      "emptyText": "Inserisci del testo per la voce.",
+      "generationFailed": "Si è verificato un errore durante la generazione della voce.",
+      "audioMissing": "Il file audio non è stato ricevuto.",
+      "unexpected": "Si è verificato un errore imprevisto durante la generazione della voce.",
+      "playbackFailed": "Si è verificato un errore durante la riproduzione dell'audio."
+    },
+    "success": { "generated": "Voce generata con successo." }
   },
   "profile": {
     "title": "Profilo",
@@ -49,8 +59,71 @@
     "emailLabel": "Email",
     "saveButton": "Salva",
     "nameRequired": "Il nome è obbligatorio.",
-    "loadFailed": "Impossibile caricare il profilo.",
-    "updateFailed": "Impossibile aggiornare il profilo.",
+    "loadFailed": "Caricamento del profilo non riuscito.",
+    "updateFailed": "Aggiornamento del profilo non riuscito.",
     "updateSuccess": "Profilo aggiornato con successo."
+  },
+  "aiMusic": {
+    "title": "🎶 Musica IA",
+    "subtitle": "Genera musica con CREOVA AI",
+    "promptPlaceholder": "es. Una città futuristica al tramonto",
+    "generateButton": "Genera musica",
+    "result": { "title": "🎶 Musica pronta", "description": "Il tuo testo è stato convertito con successo in musica." },
+    "player": { "play": "▶️ Riproduci", "pause": "⏸ Pausa" },
+    "errors": {
+      "emptyPrompt": "Inserisci una descrizione per la musica.",
+      "generationFailed": "Generazione della musica non riuscita.",
+      "audioMissing": "Il file audio non è stato ricevuto.",
+      "unexpected": "Si è verificato un errore imprevisto durante la generazione della musica.",
+      "playbackFailed": "Si è verificato un errore durante la riproduzione dell'audio."
+    },
+    "success": { "generated": "Musica generata con successo." }
+  },
+  "navigation": {
+    "home": "Home",
+    "code_studio": "Studio Codice",
+    "vision_studio": "Studio Visione",
+    "chat": "Chat IA",
+    "settings": "Impostazioni"
+  },
+  "dashboard": {
+    "welcome": "Piattaforma Creova AI",
+    "subtitle": "Seleziona uno spazio di lavoro di un agente IA autonomo per iniziare",
+    "code_title": "Studio Codice IA",
+    "code_desc": "Rifattorizza, esegui il debug, genera codice e visualizza le differenze in tempo reale con Developer Agent.",
+    "vision_title": "Studio Visione IA",
+    "vision_desc": "Analizza screenshot, mockup di design e converti l'UI in componenti nativi.",
+    "chat_title": "Assistente Generale IA",
+    "chat_desc": "Ragionamento generale, scambio di idee e discussione sull'architettura."
+  },
+  "code": {
+    "title": "Studio Codice IA",
+    "workspace_editor": "Editor dello spazio di lavoro",
+    "proposed_changes": "Modifiche IA proposte",
+    "apply_changes": "Applica modifiche",
+    "prompt_placeholder": "Chiedi all'IA di scrivere o rifattorizzare codice...",
+    "file_explorer": "Esplora progetto",
+    "no_files": "Nessun file trovato nello spazio di lavoro",
+    "terminal_title": "Console di esecuzione",
+    "terminal_empty": "Console pronta. In attesa dei log di esecuzione..."
+  },
+  "vision": {
+    "title": "Studio Visione IA",
+    "image_url_label": "URL immagine o sorgente",
+    "url_placeholder": "Incolla qui l'URL dell'immagine...",
+    "results_label": "Risultati dell'analisi",
+    "ai_label": "IA Visione",
+    "prompt_placeholder": "Descrivi o chiedi informazioni sull'immagine..."
+  },
+  "chat": {
+    "you": "Tu",
+    "ai": "Assistente",
+    "placeholder": "Scrivi il tuo messaggio..."
+  },
+  "settings": {
+    "title": "Impostazioni",
+    "language": "Lingua",
+    "theme": "Tema",
+    "api_key": "Configurazione Supabase e IA"
   }
-}
+  }
