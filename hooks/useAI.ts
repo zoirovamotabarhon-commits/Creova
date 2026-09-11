@@ -5,17 +5,21 @@ import {
 } from "react";
 
 import { AIRouter } from "../core/router/AIRouter";
-import { AgentContext } from "../core/agents/AgentContext";
-import { AIMessage } from "../core/ai/AIProvider";
+import type { AgentContext } from "../core/agents/AgentContext";
+import type { AIMessage } from "../core/ai/AIProvider";
+import { useAuthContext } from "../providers/AuthProvider";
 
 export interface UseAIOptions {
   projectId?: string;
   conversationId?: string;
+  imageUrl?: string;
 }
 
 export function useAI(
   options: UseAIOptions = {}
 ) {
+  const { user } = useAuthContext();
+
   const [loading, setLoading] =
     useState<boolean>(false);
 
@@ -34,6 +38,13 @@ export function useAI(
     async (input: string) => {
       if (!input.trim()) return;
 
+      if (!user) {
+        setError(
+          "You must be signed in to use AI features."
+        );
+        return;
+      }
+
       setLoading(true);
       setError(null);
 
@@ -51,9 +62,12 @@ export function useAI(
 
       try {
         const context: AgentContext = {
-          projectId: options.projectId,
-          conversationId: options.conversationId,
-          history: messages,
+          userId: user.id,
+          imageUrl: options.imageUrl,
+          metadata: {
+            projectId: options.projectId,
+            conversationId: options.conversationId,
+          },
         };
 
         const response =
@@ -93,6 +107,8 @@ export function useAI(
       messages,
       options.projectId,
       options.conversationId,
+      options.imageUrl,
+      user,
       router,
     ]
   );
@@ -109,4 +125,4 @@ export function useAI(
     sendMessage,
     clearMessages,
   };
-        }
+    }
