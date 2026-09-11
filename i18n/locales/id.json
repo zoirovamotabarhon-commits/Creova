@@ -3,33 +3,33 @@
     "appName": "CREOVA",
     "error": "Kesalahan",
     "success": "Berhasil",
-    "generate": "Buat",
-    "analyze": "Analisis",
-    "apply": "Terapkan",
-    "cancel": "Batal",
-    "save": "Simpan",
-    "loading": "Memuat...",
-    "retry": "Coba lagi",
-    "delete": "Hapus"
+    "generate": "Generate",
+    "analyze": "Analyze",
+    "apply": "Apply",
+    "cancel": "Cancel",
+    "save": "Save",
+    "loading": "Loading...",
+    "retry": "Retry",
+    "delete": "Delete"
   },
   "aiVideo": {
     "title": "🎬 Video AI",
-    "subtitle": "Buat video dengan CREOVA AI",
+    "subtitle": "Hasilkan video dengan CREOVA AI",
     "promptPlaceholder": "mis. Kota futuristik saat matahari terbenam",
-    "generateButton": "Buat video",
+    "generateButton": "Hasilkan Video",
     "emptyPromptTitle": "CREOVA",
     "emptyPromptMessage": "Masukkan deskripsi untuk video.",
-    "statusTitle": "Status video",
+    "statusTitle": "Status Video",
     "progressLabel": "Kemajuan",
-    "videoErrorTitle": "Kesalahan video",
-    "videoStatusError": "Gagal mendapatkan status video.",
+    "videoErrorTitle": "Kesalahan Video",
+    "videoStatusError": "Terjadi kesalahan saat mengambil status video.",
     "videoReadyTitle": "CREOVA",
     "videoReadyMessage": "Video Anda siap.",
-    "videoReadyNoUrl": "Video siap, tetapi URL MP4 tidak diterima.",
+    "videoReadyNoUrl": "Video sudah siap, tetapi URL MP4 tidak diterima.",
     "videoFailedTitle": "Pembuatan video gagal",
     "videoFailedStatus": "Status video: {{status}}",
     "videoTooLongTitle": "CREOVA",
-    "videoTooLongMessage": "Pembuatan video membutuhkan waktu terlalu lama. Periksa kembali nanti.",
+    "videoTooLongMessage": "Pembuatan video memakan waktu terlalu lama. Silakan periksa lagi nanti.",
     "videoCheckError": "Terjadi kesalahan saat memeriksa status video.",
     "generationFailed": "Pembuatan video gagal.",
     "unexpectedError": "Terjadi kesalahan tak terduga saat membuat video.",
@@ -38,19 +38,19 @@
   },
   "aiVoice": {
     "title": "🎤 Suara AI",
-    "subtitle": "Ubah teks menjadi suara dengan CREOVA AI",
+    "subtitle": "Ubah teks menjadi ucapan dengan CREOVA AI",
     "textPlaceholder": "mis. Halo, CREOVA!",
-    "generateButton": "Buat suara",
-    "result": { "title": "🔊 Suara siap", "description": "Teks Anda berhasil diubah menjadi suara." },
+    "generateButton": "Hasilkan Suara",
+    "result": { "title": "🔊 Suara Siap", "description": "Teks Anda berhasil diubah menjadi ucapan." },
     "player": { "play": "▶️ Putar", "pause": "⏸ Jeda" },
     "errors": {
       "emptyText": "Masukkan teks untuk suara.",
-      "generationFailed": "Terjadi kesalahan saat membuat suara.",
+      "generationFailed": "Terjadi kesalahan saat menghasilkan suara.",
       "audioMissing": "File audio tidak diterima.",
-      "unexpected": "Terjadi kesalahan tak terduga saat membuat suara.",
+      "unexpected": "Terjadi kesalahan tak terduga saat menghasilkan suara.",
       "playbackFailed": "Terjadi kesalahan saat memutar audio."
     },
-    "success": { "generated": "Suara berhasil dibuat." }
+    "success": { "generated": "Suara berhasil dihasilkan." }
   },
   "profile": {
     "title": "Profil",
@@ -65,14 +65,14 @@
   },
   "aiMusic": {
     "title": "🎶 Musik AI",
-    "subtitle": "Buat musik dengan CREOVA AI",
+    "subtitle": "Hasilkan musik dengan CREOVA AI",
     "promptPlaceholder": "mis. Kota futuristik saat matahari terbenam",
-    "generateButton": "Buat musik",
-    "result": { "title": "🎶 Musik siap", "description": "Teks Anda berhasil diubah menjadi musik." },
+    "generateButton": "Hasilkan Musik",
+    "result": { "title": "🎶 Musik Siap", "description": "Teks Anda berhasil diubah menjadi musik." },
     "player": { "play": "▶️ Putar", "pause": "⏸ Jeda" },
     "errors": {
       "emptyPrompt": "Masukkan deskripsi untuk musik.",
-      "generationFailed": "Terjadi kesalahan saat membuat musik.",
+      "generationFailed": "Pembuatan musik gagal.",
       "audioMissing": "File audio tidak diterima.",
       "unexpected": "Terjadi kesalahan tak terduga saat membuat musik.",
       "playbackFailed": "Terjadi kesalahan saat memutar audio."
@@ -83,47 +83,47 @@
     "home": "Beranda",
     "code_studio": "Studio Kode",
     "vision_studio": "Studio Visi",
-    "chat": "Chat AI",
+    "chat": "Obrolan AI",
     "settings": "Pengaturan"
   },
   "dashboard": {
-    "welcome": "Platform CREOVA AI",
+    "welcome": "Platform Creova AI",
     "subtitle": "Pilih ruang kerja agen AI otonom untuk memulai",
     "code_title": "Studio Kode AI",
-    "code_desc": "Refaktor, debug, buat kode, dan lihat perubahan secara real-time dengan Developer Agent.",
+    "code_desc": "Refaktor, debug, hasilkan kode, dan lihat perbedaan waktu nyata dengan Developer Agent.",
     "vision_title": "Studio Visi AI",
-    "vision_desc": "Analisis tangkapan layar, maket desain, dan ubah UI menjadi komponen native.",
-    "chat_title": "Asisten AI Umum",
-    "chat_desc": "Penalaran umum, bertukar ide, dan diskusi arsitektur."
+    "vision_desc": "Analisis tangkapan layar, mockup desain, dan konversi UI menjadi komponen native.",
+    "chat_title": "Asisten Umum AI",
+    "chat_desc": "Penalaran umum, bertukar pikiran, dan diskusi arsitektur."
   },
   "code": {
     "title": "Studio Kode AI",
-    "workspace_editor": "Editor ruang kerja",
-    "proposed_changes": "Perubahan yang diusulkan AI",
-    "apply_changes": "Terapkan perubahan",
-    "prompt_placeholder": "Minta AI menulis atau merancang ulang kode...",
-    "file_explorer": "Penjelajah proyek",
-    "no_files": "Tidak ada file yang ditemukan di ruang kerja",
-    "terminal_title": "Konsol eksekusi",
+    "workspace_editor": "Editor Ruang Kerja",
+    "proposed_changes": "Perubahan AI yang Diusulkan",
+    "apply_changes": "Terapkan Perubahan",
+    "prompt_placeholder": "Minta AI untuk menulis atau merefaktor kode...",
+    "file_explorer": "Penjelajah Proyek",
+    "no_files": "Tidak ada file ditemukan di ruang kerja",
+    "terminal_title": "Konsol Eksekusi",
     "terminal_empty": "Konsol siap. Menunggu log eksekusi..."
   },
   "vision": {
     "title": "Studio Visi AI",
-    "image_url_label": "URL atau sumber gambar",
+    "image_url_label": "URL Gambar atau Sumber",
     "url_placeholder": "Tempel URL gambar di sini...",
-    "results_label": "Hasil analisis",
-    "ai_label": "Visi AI",
-    "prompt_placeholder": "Jelaskan atau tanyakan tentang gambar..."
+    "results_label": "Hasil Analisis",
+    "ai_label": "AI Visi",
+    "prompt_placeholder": "Deskripsikan atau tanyakan tentang gambar..."
   },
   "chat": {
     "you": "Anda",
     "ai": "Asisten",
-    "placeholder": "Tulis pesan Anda..."
+    "placeholder": "Ketik pesan Anda..."
   },
   "settings": {
     "title": "Pengaturan",
     "language": "Bahasa",
     "theme": "Tema",
-    "api_key": "Pengaturan Supabase dan AI"
+    "api_key": "Konfigurasi Supabase & AI"
   }
-}
+  }
