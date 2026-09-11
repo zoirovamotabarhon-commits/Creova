@@ -14,43 +14,43 @@
   },
   "aiVideo": {
     "title": "🎬 AI Video",
-    "subtitle": "Vytvárajte videá s CREOVA AI",
+    "subtitle": "Generujte video s CREOVA AI",
     "promptPlaceholder": "napr. Futuristické mesto pri západe slnka",
-    "generateButton": "Vytvoriť video",
+    "generateButton": "Generovať video",
     "emptyPromptTitle": "CREOVA",
-    "emptyPromptMessage": "Zadajte popis videa.",
+    "emptyPromptMessage": "Zadajte popis pre video.",
     "statusTitle": "Stav videa",
     "progressLabel": "Priebeh",
     "videoErrorTitle": "Chyba videa",
-    "videoStatusError": "Nepodarilo sa získať stav videa.",
+    "videoStatusError": "Pri načítaní stavu videa došlo k chybe.",
     "videoReadyTitle": "CREOVA",
     "videoReadyMessage": "Vaše video je pripravené.",
-    "videoReadyNoUrl": "Video je pripravené, ale URL MP4 nebolo prijaté.",
-    "videoFailedTitle": "Vytvorenie videa zlyhalo",
+    "videoReadyNoUrl": "Video je pripravené, ale nebola prijatá URL MP4.",
+    "videoFailedTitle": "Generovanie videa zlyhalo",
     "videoFailedStatus": "Stav videa: {{status}}",
     "videoTooLongTitle": "CREOVA",
-    "videoTooLongMessage": "Vytváranie videa trvá príliš dlho. Skontrolujte ho neskôr.",
-    "videoCheckError": "Pri kontrole stavu videa sa vyskytla chyba.",
-    "generationFailed": "Vytvorenie videa zlyhalo.",
-    "unexpectedError": "Pri vytváraní videa sa vyskytla neočakávaná chyba.",
-    "noUrlYet": "URL MP4 ešte nebolo prijaté.",
+    "videoTooLongMessage": "Generovanie videa trvá príliš dlho. Skúste to znova neskôr.",
+    "videoCheckError": "Pri kontrole stavu videa došlo k chybe.",
+    "generationFailed": "Generovanie videa zlyhalo.",
+    "unexpectedError": "Pri generovaní videa došlo k neočakávanej chybe.",
+    "noUrlYet": "Zatiaľ nebola prijatá žiadna URL MP4.",
     "idLabel": "ID: {{id}}"
   },
   "aiVoice": {
     "title": "🎤 AI Hlas",
-    "subtitle": "Preveďte text na reč pomocou CREOVA AI",
+    "subtitle": "Prevádzajte text na reč s CREOVA AI",
     "textPlaceholder": "napr. Ahoj, CREOVA!",
-    "generateButton": "Vytvoriť hlas",
-    "result": { "title": "🔊 Hlas je pripravený", "description": "Váš text bol úspešne prevedený na reč." },
+    "generateButton": "Generovať hlas",
+    "result": { "title": "🔊 Hlas pripravený", "description": "Váš text bol úspešne prevedený na reč." },
     "player": { "play": "▶️ Prehrať", "pause": "⏸ Pozastaviť" },
     "errors": {
       "emptyText": "Zadajte text pre hlas.",
-      "generationFailed": "Pri vytváraní hlasu sa vyskytla chyba.",
+      "generationFailed": "Pri generovaní hlasu došlo k chybe.",
       "audioMissing": "Zvukový súbor nebol prijatý.",
-      "unexpected": "Pri vytváraní hlasu sa vyskytla neočakávaná chyba.",
-      "playbackFailed": "Pri prehrávaní zvuku sa vyskytla chyba."
+      "unexpected": "Pri generovaní hlasu došlo k neočakávanej chybe.",
+      "playbackFailed": "Pri prehrávaní zvuku došlo k chybe."
     },
-    "success": { "generated": "Hlas bol úspešne vytvorený." }
+    "success": { "generated": "Hlas bol úspešne vygenerovaný." }
   },
   "profile": {
     "title": "Profil",
@@ -59,30 +59,30 @@
     "emailLabel": "E-mail",
     "saveButton": "Uložiť",
     "nameRequired": "Meno je povinné.",
-    "loadFailed": "Nepodarilo sa načítať profil.",
-    "updateFailed": "Nepodarilo sa aktualizovať profil.",
+    "loadFailed": "Načítanie profilu zlyhalo.",
+    "updateFailed": "Aktualizácia profilu zlyhala.",
     "updateSuccess": "Profil bol úspešne aktualizovaný."
   },
   "aiMusic": {
     "title": "🎶 AI Hudba",
-    "subtitle": "Vytvárajte hudbu s CREOVA AI",
+    "subtitle": "Generujte hudbu s CREOVA AI",
     "promptPlaceholder": "napr. Futuristické mesto pri západe slnka",
-    "generateButton": "Vytvoriť hudbu",
-    "result": { "title": "🎶 Hudba je pripravená", "description": "Váš text bol úspešne prevedený na hudbu." },
+    "generateButton": "Generovať hudbu",
+    "result": { "title": "🎶 Hudba je pripravená", "description": "Váš text bol úspešne premenený na hudbu." },
     "player": { "play": "▶️ Prehrať", "pause": "⏸ Pozastaviť" },
     "errors": {
-      "emptyPrompt": "Zadajte popis hudby.",
-      "generationFailed": "Chyba pri vytváraní hudby.",
+      "emptyPrompt": "Zadajte popis pre hudbu.",
+      "generationFailed": "Generovanie hudby zlyhalo.",
       "audioMissing": "Zvukový súbor nebol prijatý.",
-      "unexpected": "Pri vytváraní hudby sa vyskytla neočakávaná chyba.",
-      "playbackFailed": "Pri prehrávaní zvuku sa vyskytla chyba."
+      "unexpected": "Pri generovaní hudby došlo k neočakávanej chybe.",
+      "playbackFailed": "Pri prehrávaní zvuku došlo k chybe."
     },
-    "success": { "generated": "Hudba bola úspešne vytvorená." }
+    "success": { "generated": "Hudba bola úspešne vygenerovaná." }
   },
   "navigation": {
     "home": "Domov",
     "code_studio": "Štúdio kódu",
-    "vision_studio": "Vision štúdio",
+    "vision_studio": "Vizuálne štúdio",
     "chat": "AI Chat",
     "settings": "Nastavenia"
   },
@@ -90,11 +90,11 @@
     "welcome": "Platforma Creova AI",
     "subtitle": "Vyberte pracovný priestor autonómneho AI agenta a začnite",
     "code_title": "AI Štúdio kódu",
-    "code_desc": "Refaktorujte, opravujte, generujte kód a zobrazujte zmeny v reálnom čase pomocou Developer Agent.",
-    "vision_title": "AI Vision štúdio",
-    "vision_desc": "Analyzujte snímky obrazovky, návrhy dizajnu a premieňajte UI na natívne komponenty.",
+    "code_desc": "Refaktorujte, ladíte, generujte kód a sledujte zmeny v reálnom čase s Developer Agentom.",
+    "vision_title": "AI Vizuálne štúdio",
+    "vision_desc": "Analyzujte snímky obrazovky, návrhy maket a konvertujte UI na natívne komponenty.",
     "chat_title": "Všeobecný AI asistent",
-    "chat_desc": "Všeobecné uvažovanie, brainstorming a diskusia o architektúre."
+    "chat_desc": "Všeobecné uvažovanie, výmena nápadov a diskusia o architektúre."
   },
   "code": {
     "title": "AI Štúdio kódu",
@@ -104,26 +104,26 @@
     "prompt_placeholder": "Požiadajte AI, aby napísala alebo refaktorovala kód...",
     "file_explorer": "Prieskumník projektu",
     "no_files": "V pracovnom priestore sa nenašli žiadne súbory",
-    "terminal_title": "Konzola spúšťania",
-    "terminal_empty": "Konzola je pripravená. Čaká na záznamy spúšťania..."
+    "terminal_title": "Konzola vykonávania",
+    "terminal_empty": "Konzola je pripravená. Čaká sa na záznamy vykonávania..."
   },
   "vision": {
-    "title": "AI Vision štúdio",
+    "title": "AI Vizuálne štúdio",
     "image_url_label": "URL obrázka alebo zdroj",
     "url_placeholder": "Sem vložte URL obrázka...",
     "results_label": "Výsledky analýzy",
-    "ai_label": "AI Vision",
-    "prompt_placeholder": "Opíšte obrázok alebo sa naň opýtajte..."
+    "ai_label": "Vizuálne AI",
+    "prompt_placeholder": "Popíšte obrázok alebo sa naň opýtajte..."
   },
   "chat": {
     "you": "Vy",
     "ai": "Asistent",
-    "placeholder": "Napíšte správu..."
+    "placeholder": "Napíšte svoju správu..."
   },
   "settings": {
     "title": "Nastavenia",
     "language": "Jazyk",
     "theme": "Téma",
-    "api_key": "Nastavenia Supabase a AI"
+    "api_key": "Konfigurácia Supabase a AI"
   }
   }
