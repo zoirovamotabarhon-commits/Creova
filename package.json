@@ -10,6 +10,7 @@
     "web": "expo start --web",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
+    "validate:i18n": "node scripts/validate-i18n.js",
     "format": "prettier --write .",
     "test": "jest --config jest/config.js",
     "test:watch": "jest --config jest/config.js --watch",
