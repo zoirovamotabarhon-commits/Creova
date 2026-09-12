@@ -1,119 +1,164 @@
-/**
- * CREOVA
- * HybridRouter
- *
- * Decides whether a request can be answered on-device for free
- * (LocalInferenceEngine) or must go to the paid cloud model (AIClient).
- * This is the single place that trades off cost vs. capability, so agents
- * and screens don't need to know about local models at all.
- *
- * Policy, in order:
- *  1. Offline + not answerable locally -> queue for later (caller decides
- *     how to surface that to the user), never silently fail.
- *  2. Answerable locally (greeting/FAQ/cached) -> answer for free.
- *  3. Otherwise -> cloud call, then remember the answer for cache reuse.
- */
-
 import NetInfo from "@react-native-community/netinfo";
 
 import { AIClient } from "./AIClient";
 import { LocalInferenceEngine } from "./LocalInferenceEngine";
-import type { AIMessage } from "./AIProvider";
-import type { HybridResponse, RoutingDecision } from "../../types/ai-local";
+import type { AIMessage, AIOptions } from "./AIProvider";
+import type {
+  HybridResponse,
+  RoutingDecision,
+} from "../../types/ai-local";
 
-const ESTIMATED_CLOUD_CALL_COST = 1; // in coin units, for savings reporting only
+const ESTIMATED_CLOUD_CALL_COST = 1;
 
 export class HybridRouter {
   private static instance: HybridRouter;
 
-  private localEngine: LocalInferenceEngine;
+  private readonly localEngine: LocalInferenceEngine;
 
   private constructor() {
-    this.localEngine = LocalInferenceEngine.getInstance();
+    this.localEngine =
+      LocalInferenceEngine.getInstance();
   }
 
   public static getInstance(): HybridRouter {
     if (!HybridRouter.instance) {
-      HybridRouter.instance = new HybridRouter();
+      HybridRouter.instance =
+        new HybridRouter();
     }
 
     return HybridRouter.instance;
   }
 
-  public async decide(prompt: string): Promise<RoutingDecision> {
-    const netState = await NetInfo.fetch();
-    const isOnline = !!netState.isConnected;
-    const localCanHandle = this.localEngine.canLikelyHandle(prompt);
+  public async decide(
+    prompt: string,
+  ): Promise<RoutingDecision> {
+    const network =
+      await NetInfo.fetch();
+
+    const isOnline =
+      network.isConnected === true;
+
+    const localCanHandle =
+      this.localEngine.canLikelyHandle(
+        prompt,
+      );
 
     if (localCanHandle) {
       return {
         destination: "local",
-        reason: "Matched a built-in rule/FAQ or recent cached answer",
-        estimatedSavings: ESTIMATED_CLOUD_CALL_COST,
+        reason:
+          "The request can be answered by the on-device rule/cache layer.",
+        estimatedSavings:
+          ESTIMATED_CLOUD_CALL_COST,
       };
     }
 
     if (!isOnline) {
       return {
         destination: "queued-offline",
-        reason: "Device is offline and the prompt needs the cloud model",
+        reason:
+          "The device is offline and this request requires the cloud model.",
         estimatedSavings: 0,
       };
     }
 
     return {
       destination: "cloud",
-      reason: "Needs the full cloud model",
+      reason:
+        "The request requires cloud AI capabilities.",
       estimatedSavings: 0,
     };
   }
 
-  /**
-   * Main entry point. Throws only when routed to the cloud and the cloud
-   * call itself fails — callers already handle AIClient errors today.
-   * When queued offline, returns a HybridResponse with `routedTo:
-   * "queued-offline"` and no content, so the caller can enqueue the
-   * request (see hooks/useOfflineSync) instead of showing a raw error.
-   */
-  public async respond(messages: AIMessage[]): Promise<HybridResponse> {
-    const lastUserMessage = [...messages].reverse().find((m) => m.role === "user");
-    const prompt = lastUserMessage?.content ?? "";
+  public async respond(
+    messages: AIMessage[],
+    options: AIOptions = {},
+  ): Promise<HybridResponse> {
+    const lastUserMessage =
+      [...messages]
+        .reverse()
+        .find(
+          (message) =>
+            message.role === "user",
+        );
 
-    const decision = await this.decide(prompt);
+    const prompt =
+      lastUserMessage?.content ?? "";
 
-    if (decision.destination === "local") {
-      const localResult = await this.localEngine.infer({ prompt });
+    if (!prompt.trim()) {
+      throw new Error(
+        "A user prompt is required.",
+      );
+    }
+
+    const decision =
+      await this.decide(prompt);
+
+    if (
+      decision.destination === "local"
+    ) {
+      const localResult =
+        await this.localEngine.infer({
+          prompt,
+        });
 
       if (localResult) {
         return {
-          content: localResult.content,
+          content:
+            localResult.content,
+
           routedTo: "local",
-          reason: decision.reason,
+
+          reason:
+            decision.reason,
+
+          model:
+            localResult.source ===
+            "cache"
+              ? "creova-cache"
+              : "creova-local-rules",
         };
       }
-
-      // Local match looked promising but didn't actually resolve (e.g. cache
-      // expired between canLikelyHandle and infer) — fall through to cloud.
     }
 
-    if (decision.destination === "queued-offline") {
+    if (
+      decision.destination ===
+      "queued-offline"
+    ) {
       return {
         content: "",
-        routedTo: "queued-offline",
-        reason: decision.reason,
+        routedTo:
+          "queued-offline",
+        reason:
+          decision.reason,
       };
     }
 
-    const client = AIClient.getInstance();
-    const cloudResult = await client.chat(messages);
+    const client =
+      AIClient.getInstance();
 
-    await this.localEngine.rememberCloudAnswer(prompt, cloudResult.content);
+    const cloudResult =
+      await client.chat(
+        messages,
+        options,
+      );
+
+    await this.localEngine.rememberCloudAnswer(
+      prompt,
+      cloudResult.content,
+    );
 
     return {
-      content: cloudResult.content,
+      content:
+        cloudResult.content,
+
       routedTo: "cloud",
-      reason: decision.reason,
-      model: cloudResult.model,
+
+      reason:
+        decision.reason,
+
+      model:
+        cloudResult.model,
     };
   }
-        }
+}
