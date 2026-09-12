@@ -144,7 +144,10 @@ function getAdminClient(): ReturnType<typeof createClient> {
   }
 
   const url = Deno.env.get('SUPABASE_URL') ?? '';
-  const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+  const key =
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ??
+    Deno.env.get('SUPABASE_SECRET_KEY') ??
+    '';
 
   if (!url || !key) {
     throw new Error(
@@ -346,4 +349,4 @@ export async function storeAssetAndGetSignedUrl(
   }
 
   return { url: signed.signedUrl, path };
-    }
+      }
