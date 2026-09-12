@@ -20,12 +20,6 @@ export class AIClient {
     return AIClient.instance;
   }
 
-  /**
-   * Calls the private OpenAI edge function.
-   *
-   * If the caller does not supply a generationId,
-   * we create the server-side generation first.
-   */
   public async chat(
     messages: AIMessage[],
     options: AIOptions = {},
@@ -37,9 +31,7 @@ export class AIClient {
     );
 
     if (cleanMessages.length === 0) {
-      throw new Error(
-        "At least one AI message is required.",
-      );
+      throw new Error("At least one AI message is required.");
     }
 
     const generationType =
@@ -72,8 +64,7 @@ export class AIClient {
           undefined,
           prompt,
           {
-            feature:
-              generationType,
+            feature: generationType,
           },
         );
 
@@ -92,25 +83,26 @@ export class AIClient {
     }
 
     try {
-      const {
-        data,
-        error,
-      } =
+      const { data, error } =
         await supabase.functions.invoke(
           "openai-chat",
           {
             body: {
               generationId,
-              messages:
-                cleanMessages,
+              generationType,
+              messages: cleanMessages,
+
               temperature:
-                options.temperature ??
-                0.7,
+                options.temperature ?? 0.7,
+
               max_tokens:
-                options.maxTokens ??
-                2000,
+                options.maxTokens ?? 2000,
+
               top_p:
                 options.topP,
+
+              imageUrl:
+                options.imageUrl,
             },
           },
         );
@@ -134,14 +126,11 @@ export class AIClient {
       const content =
         typeof data.text === "string"
           ? data.text
-          : typeof data.content ===
-              "string"
+          : typeof data.content === "string"
             ? data.content
             : typeof data.choices?.[0]
-                  ?.message?.content ===
-                "string"
-              ? data.choices[0]
-                  .message.content
+                  ?.message?.content === "string"
+              ? data.choices[0].message.content
               : "";
 
       if (!content.trim()) {
@@ -151,39 +140,32 @@ export class AIClient {
       }
 
       const model =
-        typeof data.model ===
-          "string" &&
+        typeof data.model === "string" &&
         data.model.trim()
           ? data.model
           : "unknown";
 
       return {
-        content:
-          content.trim(),
+        content: content.trim(),
         model,
         generationId,
+        routedTo: "cloud",
+
         usage:
           data.usage &&
-          typeof data.usage ===
-            "object"
+          typeof data.usage === "object"
             ? {
                 promptTokens:
                   Number(
-                    data.usage
-                      .prompt_tokens ??
-                      0,
+                    data.usage.prompt_tokens ?? 0,
                   ),
                 completionTokens:
                   Number(
-                    data.usage
-                      .completion_tokens ??
-                      0,
+                    data.usage.completion_tokens ?? 0,
                   ),
                 totalTokens:
                   Number(
-                    data.usage
-                      .total_tokens ??
-                      0,
+                    data.usage.total_tokens ?? 0,
                   ),
               }
             : undefined,
@@ -197,4 +179,4 @@ export class AIClient {
       throw error;
     }
   }
-              }
+    }
