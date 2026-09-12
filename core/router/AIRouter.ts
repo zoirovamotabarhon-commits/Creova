@@ -1,46 +1,121 @@
-import { AgentManager } from '../agents/AgentManager';
-import { AgentContext } from '../agents/AgentContext';
-import { IntentDetector, UserIntent } from './IntentDetector';
-import { AIResponse } from '../ai/AIProvider';
+import { AgentManager } from "../agents/AgentManager";
+import { AgentContext } from "../agents/AgentContext";
+import {
+  IntentDetector,
+  UserIntent,
+} from "./IntentDetector";
+
+import type {
+  AIMessage,
+  AIResponse,
+} from "../ai/AIProvider";
+
+import { HybridRouter } from "../ai/HybridRouter";
 
 export class AIRouter {
-  private agentManager: AgentManager;
+  private readonly agentManager: AgentManager;
+  private readonly hybridRouter: HybridRouter;
 
   constructor() {
-    this.agentManager = AgentManager.getInstance();
+    this.agentManager =
+      AgentManager.getInstance();
+
+    this.hybridRouter =
+      HybridRouter.getInstance();
   }
 
-  /**
-   * Routes incoming user prompt to appropriate agent based on detected intent,
-   * then executes it and returns the AI response.
-   */
   public async routeAndExecute(
     prompt: string,
-    context: AgentContext
+    context: AgentContext,
   ): Promise<AIResponse> {
-    const intent: UserIntent = IntentDetector.detectIntent(prompt);
+    const intent: UserIntent =
+      IntentDetector.detectIntent(
+        prompt,
+      );
 
-    let agentId: string;
+    /*
+     * Vision always goes through the VisionAgent.
+     *
+     * The VisionAgent uses HybridRouter underneath.
+     * Because it supplies imageUrl, the request is sent
+     * as a real multimodal request.
+     */
+    if (intent === "vision") {
+      const agent =
+        this.agentManager.getAgent(
+          "vision-agent",
+        );
 
-    switch (intent) {
-      case 'vision':
-        agentId = 'vision-agent';
-        break;
-      case 'code':
-      case 'chat':
-      case 'media':
-      case 'unknown':
-      default:
-        agentId = 'developer-agent';
-        break;
+      if (!agent) {
+        throw new Error(
+          'Agent "vision-agent" was not found.',
+        );
+      }
+
+      return agent.process(
+        prompt,
+        context,
+      );
     }
 
-    const targetAgent = this.agentManager.getAgent(agentId);
+    /*
+     * Normal chat/code/media requests are handled
+     * by the hybrid layer first.
+     */
+    const messages: AIMessage[] = [
+      {
+        role: "user",
+        content: prompt.trim(),
+      },
+    ];
 
-    if (!targetAgent) {
-      throw new Error(`Agent with ID "${agentId}" was not found in registry.`);
+    const hybrid =
+      await this.hybridRouter.respond(
+        messages,
+        {
+          generationType:
+            intent === "code"
+              ? "code"
+              : "chat",
+        },
+      );
+
+    /*
+     * Offline requests cannot produce a normal AIResponse.
+     */
+    if (
+      hybrid.routedTo ===
+      "queued-offline"
+    ) {
+      throw new Error(
+        "You are offline. This request requires an internet connection.",
+      );
     }
 
-    return await targetAgent.process(prompt, context);
+    return {
+      content:
+        hybrid.content,
+
+      model:
+        hybrid.model ??
+        "creova-hybrid",
+
+      /*
+       * Local answers intentionally do not create
+       * a paid generation record.
+       *
+       * This identifier is only an internal marker.
+       */
+      generationId:
+        hybrid.routedTo === "local"
+          ? "local"
+          : "hybrid-cloud",
+
+      routedTo:
+        hybrid.routedTo ===
+        "local"
+          ? "local"
+          : "cloud",
+    };
   }
-}
+      }
