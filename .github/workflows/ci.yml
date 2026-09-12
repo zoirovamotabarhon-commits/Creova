@@ -5,6 +5,11 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -12,6 +17,7 @@ permissions:
 jobs:
   test-and-lint:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     steps:
       - name: Checkout code
@@ -24,6 +30,9 @@ jobs:
 
       - name: Install dependencies
         run: npm install --legacy-peer-deps
+
+      - name: Validate i18n locale files
+        run: npm run validate:i18n
 
       - name: Type check
         run: npm run typecheck
