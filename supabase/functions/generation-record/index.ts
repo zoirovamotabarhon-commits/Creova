@@ -5,7 +5,9 @@ import {
 } from "../_shared/rateLimiter.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
-const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+const SUPABASE_SERVICE_ROLE_KEY =
+  Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ??
+  Deno.env.get("SUPABASE_SECRET_KEY");
 
 if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
   throw new Error("Missing Supabase environment variables");
@@ -237,7 +239,7 @@ Deno.serve(async (request) => {
        */
       const { data: existing, error: existingError } =
         await supabaseAdmin
-          .from("generations")
+          .from("generation_history")
           .select(
             "id,user_id,type,status,prompt,metadata,created_at,updated_at",
           )
