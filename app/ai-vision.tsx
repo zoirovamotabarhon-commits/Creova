@@ -1,215 +1,464 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
-  TextInput,
-  TouchableOpacity,
-  ScrollView,
-  Image,
   ActivityIndicator,
-} from 'react-native';
-import { useTranslation } from 'react-i18next';
-import { useAI } from '../hooks/useAI';
+  Alert,
+  Image,
+  Pressable,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
+import * as ImagePicker from "expo-image-picker";
+
+import { useAI } from "../hooks/useAI";
 
 export default function AIVisionScreen() {
-  const { t } = useTranslation();
-  const [imageUrl, setImageUrl] = useState<string>('');
-  const [prompt, setPrompt] = useState<string>('');
-  const { messages, loading, error, sendMessage } = useAI();
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [prompt, setPrompt] = useState(
+    "Bu rasmni batafsil tahlil qil."
+  );
 
-  const handleAnalyzeVision = async () => {
-    if (!prompt.trim()) return;
+  const {
+    messages,
+    loading,
+    error,
+    sendMessage,
+  } = useAI();
 
-    let fullInput = prompt;
-    if (imageUrl.trim()) {
-      fullInput = `[Image: ${imageUrl.trim()}] ${prompt}`;
+  const requestImagePermission = async () => {
+    const result =
+      await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+    if (!result.granted) {
+      Alert.alert(
+        "Ruxsat kerak",
+        "Rasm tanlash uchun galereyaga ruxsat bering."
+      );
+
+      return false;
     }
 
-    await sendMessage(fullInput);
+    return true;
+  };
+
+  const requestCameraPermission = async () => {
+    const result =
+      await ImagePicker.requestCameraPermissionsAsync();
+
+    if (!result.granted) {
+      Alert.alert(
+        "Ruxsat kerak",
+        "Kamera ishlashi uchun kamera ruxsatini bering."
+      );
+
+      return false;
+    }
+
+    return true;
+  };
+
+  const convertToDataUrl = (
+    base64: string,
+    mimeType?: string | null
+  ) => {
+    const mime =
+      mimeType && mimeType.startsWith("image/")
+        ? mimeType
+        : "image/jpeg";
+
+    return `data:${mime};base64,${base64}`;
+  };
+
+  const pickImage = async () => {
+    const allowed =
+      await requestImagePermission();
+
+    if (!allowed) {
+      return;
+    }
+
+    const result =
+      await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"],
+        allowsEditing: true,
+        quality: 0.8,
+        base64: true,
+      });
+
+    if (
+      result.canceled ||
+      !result.assets?.[0]
+    ) {
+      return;
+    }
+
+    const asset = result.assets[0];
+
+    if (!asset.base64) {
+      Alert.alert(
+        "Xatolik",
+        "Rasm ma'lumotini olishning imkoni bo'lmadi."
+      );
+
+      return;
+    }
+
+    const dataUrl = convertToDataUrl(
+      asset.base64,
+      asset.mimeType
+    );
+
+    if (dataUrl.length > 6_000_000) {
+      Alert.alert(
+        "Rasm juda katta",
+        "Iltimos, kichikroq rasm tanlang."
+      );
+
+      return;
+    }
+
+    setImageUrl(dataUrl);
+  };
+
+  const takePhoto = async () => {
+    const allowed =
+      await requestCameraPermission();
+
+    if (!allowed) {
+      return;
+    }
+
+    const result =
+      await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        quality: 0.8,
+        base64: true,
+      });
+
+    if (
+      result.canceled ||
+      !result.assets?.[0]
+    ) {
+      return;
+    }
+
+    const asset = result.assets[0];
+
+    if (!asset.base64) {
+      Alert.alert(
+        "Xatolik",
+        "Surat ma'lumotini olishning imkoni bo'lmadi."
+      );
+
+      return;
+    }
+
+    const dataUrl = convertToDataUrl(
+      asset.base64,
+      asset.mimeType
+    );
+
+    if (dataUrl.length > 6_000_000) {
+      Alert.alert(
+        "Rasm juda katta",
+        "Iltimos, kichikroq surat oling."
+      );
+
+      return;
+    }
+
+    setImageUrl(dataUrl);
+  };
+
+  const analyze = async () => {
+    if (!imageUrl) {
+      Alert.alert(
+        "Rasm tanlanmagan",
+        "Avval rasm tanlang yoki suratga oling."
+      );
+
+      return;
+    }
+
+    const text =
+      prompt.trim() ||
+      "Bu rasmni batafsil tahlil qil.";
+
+    await sendMessage(text, {
+      imageUrl,
+    });
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>{t('vision.title', 'AI Vision Studio')}</Text>
-
-      <ScrollView style={styles.scrollArea}>
-        <Text style={styles.sectionLabel}>
-          {t('vision.image_url_label', 'Image URL or Source')}
+    <SafeAreaView style={styles.container}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+      >
+        <Text style={styles.title}>
+          Creova Vision
         </Text>
-        <TextInput
-          style={styles.input}
-          placeholder={t('vision.url_placeholder', 'Paste image URL here...')}
-          placeholderTextColor="#666"
-          value={imageUrl}
-          onChangeText={setImageUrl}
-          autoCapitalize="none"
-        />
 
-        {imageUrl.trim() ? (
+        <Text style={styles.subtitle}>
+          Rasmni yuklang va AI yordamida tahlil qiling.
+        </Text>
+
+        <View style={styles.actions}>
+          <Pressable
+            style={styles.button}
+            onPress={pickImage}
+            disabled={loading}
+          >
+            <Text style={styles.buttonText}>
+              Galereyadan tanlash
+            </Text>
+          </Pressable>
+
+          <Pressable
+            style={styles.button}
+            onPress={takePhoto}
+            disabled={loading}
+          >
+            <Text style={styles.buttonText}>
+              Kamera
+            </Text>
+          </Pressable>
+        </View>
+
+        {imageUrl ? (
           <View style={styles.previewContainer}>
             <Image
               source={{ uri: imageUrl }}
-              style={styles.imagePreview}
-              resizeMode="cover"
+              style={styles.preview}
+              resizeMode="contain"
             />
+
+            <Pressable
+              onPress={() => setImageUrl(null)}
+              style={styles.removeButton}
+            >
+              <Text style={styles.removeText}>
+                Rasmni olib tashlash
+              </Text>
+            </Pressable>
+          </View>
+        ) : (
+          <View style={styles.emptyPreview}>
+            <Text style={styles.emptyText}>
+              Rasm tanlanmagan
+            </Text>
+          </View>
+        )}
+
+        <TextInput
+          value={prompt}
+          onChangeText={setPrompt}
+          placeholder="Rasm haqida nima bilmoqchisiz?"
+          multiline
+          style={styles.input}
+          editable={!loading}
+        />
+
+        <Pressable
+          style={[
+            styles.analyzeButton,
+            (!imageUrl || loading) &&
+              styles.disabledButton,
+          ]}
+          onPress={analyze}
+          disabled={!imageUrl || loading}
+        >
+          {loading ? (
+            <ActivityIndicator />
+          ) : (
+            <Text style={styles.analyzeText}>
+              Rasmni tahlil qilish
+            </Text>
+          )}
+        </Pressable>
+
+        {error ? (
+          <View style={styles.errorBox}>
+            <Text style={styles.errorText}>
+              {error}
+            </Text>
           </View>
         ) : null}
 
-        <Text style={styles.sectionLabel}>
-          {t('vision.results_label', 'Analysis Results')}
-        </Text>
-        {messages.map((msg, index) => (
-          <View
-            key={index}
-            style={[
-              styles.messageBubble,
-              msg.role === 'user' ? styles.userBubble : styles.assistantBubble,
-            ]}
-          >
-            <Text style={styles.roleLabel}>
-              {msg.role === 'user'
-                ? t('chat.you', 'You')
-                : t('vision.ai_label', 'Vision AI')}
+        {messages.length > 0 ? (
+          <View style={styles.results}>
+            <Text style={styles.resultTitle}>
+              Natija
             </Text>
-            <Text style={styles.messageText}>{msg.content}</Text>
+
+            {messages.map((message) => (
+              <View
+                key={message.id}
+                style={[
+                  styles.message,
+                  message.role === "user"
+                    ? styles.userMessage
+                    : styles.aiMessage,
+                ]}
+              >
+                <Text style={styles.messageRole}>
+                  {message.role === "user"
+                    ? "Siz"
+                    : "Creova AI"}
+                </Text>
+
+                <Text style={styles.messageText}>
+                  {message.content}
+                </Text>
+              </View>
+            ))}
           </View>
-        ))}
-
-        {error && <Text style={styles.errorText}>{error}</Text>}
+        ) : null}
       </ScrollView>
-
-      <View style={styles.inputContainer}>
-        <TextInput
-          style={styles.promptInput}
-          placeholder={t('vision.prompt_placeholder', 'Describe or ask about the image...')}
-          placeholderTextColor="#666"
-          value={prompt}
-          onChangeText={setPrompt}
-          editable={!loading}
-        />
-        <TouchableOpacity
-          style={styles.sendButton}
-          onPress={handleAnalyzeVision}
-          disabled={loading}
-        >
-          {loading ? (
-            <ActivityIndicator color="#fff" size="small" />
-          ) : (
-            <Text style={styles.sendButtonText}>
-              {t('common.analyze', 'Analyze')}
-            </Text>
-          )}
-        </TouchableOpacity>
-      </View>
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#121212',
-    paddingTop: 40,
-    paddingHorizontal: 16,
+    backgroundColor: "#fff",
   },
+
+  content: {
+    padding: 20,
+    gap: 16,
+  },
+
   title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#fff',
-    marginBottom: 12,
+    fontSize: 30,
+    fontWeight: "700",
   },
-  scrollArea: {
+
+  subtitle: {
+    fontSize: 16,
+    opacity: 0.7,
+  },
+
+  actions: {
+    flexDirection: "row",
+    gap: 10,
+  },
+
+  button: {
     flex: 1,
+    padding: 14,
+    borderRadius: 12,
+    backgroundColor: "#111",
+    alignItems: "center",
   },
-  sectionLabel: {
-    color: '#888',
-    fontSize: 12,
-    fontWeight: '600',
-    marginTop: 12,
-    marginBottom: 6,
-    textTransform: 'uppercase',
+
+  buttonText: {
+    color: "#fff",
+    fontWeight: "600",
   },
-  input: {
-    backgroundColor: '#1e1e1e',
-    color: '#fff',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 14,
-    borderWidth: 1,
-    borderColor: '#333',
-  },
+
   previewContainer: {
-    marginTop: 10,
-    borderRadius: 8,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: '#333',
+    borderRadius: 16,
+    overflow: "hidden",
   },
-  imagePreview: {
-    width: '100%',
-    height: 180,
+
+  preview: {
+    width: "100%",
+    height: 300,
+    backgroundColor: "#f1f1f1",
   },
-  messageBubble: {
+
+  removeButton: {
     padding: 12,
-    borderRadius: 8,
-    marginVertical: 4,
+    alignItems: "center",
+    backgroundColor: "#eee",
   },
-  userBubble: {
-    backgroundColor: '#1f2937',
-    alignSelf: 'flex-end',
-    maxWidth: '85%',
+
+  removeText: {
+    fontWeight: "600",
   },
-  assistantBubble: {
-    backgroundColor: '#1e1e1e',
-    alignSelf: 'flex-start',
-    maxWidth: '100%',
+
+  emptyPreview: {
+    height: 220,
     borderWidth: 1,
-    borderColor: '#2a2a2a',
+    borderStyle: "dashed",
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  roleLabel: {
-    fontSize: 10,
-    color: '#888',
-    marginBottom: 4,
-    fontWeight: 'bold',
+
+  emptyText: {
+    opacity: 0.5,
   },
-  messageText: {
-    color: '#e5e7eb',
-    fontSize: 14,
-    lineHeight: 20,
+
+  input: {
+    minHeight: 100,
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 14,
+    padding: 14,
+    textAlignVertical: "top",
   },
+
+  analyzeButton: {
+    padding: 16,
+    borderRadius: 14,
+    alignItems: "center",
+    backgroundColor: "#111",
+  },
+
+  disabledButton: {
+    opacity: 0.4,
+  },
+
+  analyzeText: {
+    color: "#fff",
+    fontWeight: "700",
+  },
+
+  errorBox: {
+    padding: 14,
+    borderRadius: 12,
+    backgroundColor: "#fee",
+  },
+
   errorText: {
-    color: '#ff5252',
-    marginVertical: 8,
-    fontSize: 13,
+    color: "#b00020",
   },
-  inputContainer: {
-    flexDirection: 'row',
-    paddingVertical: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#222',
+
+  results: {
+    gap: 10,
   },
-  promptInput: {
-    flex: 1,
-    backgroundColor: '#1e1e1e',
-    color: '#fff',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 14,
-    marginRight: 8,
+
+  resultTitle: {
+    fontSize: 22,
+    fontWeight: "700",
   },
-  sendButton: {
-    backgroundColor: '#7c3aed',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    borderRadius: 8,
+
+  message: {
+    padding: 14,
+    borderRadius: 14,
   },
-  sendButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 14,
+
+  userMessage: {
+    backgroundColor: "#eee",
+  },
+
+  aiMessage: {
+    backgroundColor: "#f5f5f5",
+  },
+
+  messageRole: {
+    fontWeight: "700",
+    marginBottom: 5,
+  },
+
+  messageText: {
+    fontSize: 15,
+    lineHeight: 22,
   },
 });
