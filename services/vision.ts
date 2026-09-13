@@ -1,39 +1,55 @@
-import { supabase } from './supabase';
+import { AIClient } from "../core/ai/AIClient";
 
-export interface VisionInput {
-  generationId: string;
-  prompt: string;
+export interface VisionRequest {
   imageUrl: string;
+  prompt?: string;
+  generationId?: string;
 }
 
-export async function analyzeImage(input: VisionInput) {
-  if (!input.generationId) {
-    throw new Error('generationId is required');
+export interface VisionResponse {
+  content: string;
+  generationId?: string;
+  model?: string;
+  modality?: "vision";
+}
+
+export async function analyzeImage(
+  request: VisionRequest,
+): Promise<VisionResponse> {
+  if (!request.imageUrl) {
+    throw new Error(
+      "Image URL is required.",
+    );
   }
 
-  if (!input.imageUrl) {
-    throw new Error('Image URL is required');
-  }
+  const prompt =
+    request.prompt?.trim() ||
+    "Analyze this image and describe the important visible details.";
 
-  if (!input.prompt.trim()) {
-    throw new Error('Prompt is required');
-  }
+  const client =
+    AIClient.getInstance();
 
-  const { data, error } = await supabase.functions.invoke(
-    'openai-chat',
-    {
-      body: {
-        type: 'vision',
-        generationId: input.generationId,
-        prompt: input.prompt.trim(),
-        imageUrl: input.imageUrl,
+  const response =
+    await client.chat(
+      [
+        {
+          role: "user",
+          content: prompt,
+        },
+      ],
+      {
+        generationType: "vision",
+        generationId:
+          request.generationId,
+        imageUrl: request.imageUrl,
       },
-    },
-  );
+    );
 
-  if (error) {
-    throw error;
-  }
-
-  return data;
+  return {
+    content: response.content,
+    generationId:
+      response.generationId,
+    model: response.model,
+    modality: "vision",
+  };
 }
