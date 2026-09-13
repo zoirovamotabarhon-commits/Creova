@@ -4,7 +4,8 @@ export type GenerationType =
   | "image"
   | "video"
   | "music"
-  | "voice";
+  | "voice"
+  | "vision";
 
 export const FEATURE_COSTS: Readonly<
   Record<GenerationType, number>
@@ -15,6 +16,7 @@ export const FEATURE_COSTS: Readonly<
   video: 15,
   music: 10,
   voice: 5,
+  vision: 5,
 });
 
 export function getFeatureCost(
