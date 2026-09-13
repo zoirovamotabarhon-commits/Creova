@@ -1,11 +1,6 @@
-export type GenerationType =
-  | "chat"
-  | "code"
-  | "image"
-  | "video"
-  | "music"
-  | "voice"
-  | "vision";
+import type { GenerationType } from "./generation";
+
+export type { GenerationType };
 
 export const FEATURE_COSTS: Readonly<
   Record<GenerationType, number>
