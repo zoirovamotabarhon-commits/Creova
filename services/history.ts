@@ -1,19 +1,10 @@
 import { supabase } from "./supabase";
+import type {
+  GenerationType,
+  GenerationStatus,
+} from "./generation";
 
-export type GenerationType =
-  | "chat"
-  | "code"
-  | "image"
-  | "video"
-  | "music"
-  | "voice";
-
-export type GenerationStatus =
-  | "queued"
-  | "processing"
-  | "completed"
-  | "failed"
-  | "cancelled";
+export type { GenerationType, GenerationStatus };
 
 export interface GenerationHistoryItem {
   id: string;
@@ -52,6 +43,7 @@ const GENERATION_TYPES: GenerationType[] = [
   "video",
   "music",
   "voice",
+  "vision",
 ];
 
 const GENERATION_STATUSES: GenerationStatus[] = [
@@ -294,4 +286,4 @@ export async function getGenerationById(
           : "Unable to load generation history item.",
     };
   }
-}
+    }
