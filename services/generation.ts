@@ -7,7 +7,8 @@ export type GenerationType =
   | "image"
   | "video"
   | "music"
-  | "voice";
+  | "voice"
+  | "vision";
 
 export type GenerationStatus =
   | "queued"
@@ -98,7 +99,8 @@ function isGenerationType(
     value === "image" ||
     value === "video" ||
     value === "music" ||
-    value === "voice"
+    value === "voice" ||
+    value === "vision"
   );
 }
 
@@ -579,4 +581,4 @@ export async function updateGeneration(
       normalized.id,
     data: normalized,
   };
-}
+      }
