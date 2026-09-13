@@ -15,6 +15,8 @@ export const AI_PROVIDERS: Record<AIProviderName, AIProviderConfig> = {
 };
 
 export interface AIMessage {
+  /** Present on messages surfaced to the UI (e.g. via useAI's message list). Internal agent-constructed messages may omit it. */
+  id?: string;
   role: "user" | "assistant" | "system";
   content: string;
 }
