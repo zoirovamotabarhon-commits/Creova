@@ -1,49 +1,72 @@
-import { Agent } from '../Agent';
-import type { AgentContext } from '../AgentContext';
-import type { AIMessage, AIResponse } from '../../ai/AIProvider';
+import { Agent } from "../Agent";
+import type { AgentContext } from "../AgentContext";
+import type {
+  AIMessage,
+  AIResponse,
+} from "../../ai/AIProvider";
 
 export class VisionAgent extends Agent {
-  readonly id = 'vision-agent';
-  readonly name = 'Vision Agent';
+  readonly id =
+    "vision-agent";
+
+  readonly name =
+    "Vision Agent";
+
   readonly description =
-    'Analyzes screenshots, design mockups, and other images referenced by URL.';
+    "Analyzes screenshots, photos, UI designs, documents, and other images.";
+
   readonly systemPrompt =
-    'You are CREOVA AI Vision. Describe and analyze the referenced image as accurately as possible using its URL and the accompanying prompt.';
+    "You are CREOVA AI Vision. Analyze the supplied image accurately. Describe what is visible, identify UI elements, objects, text, layout problems, and visual details relevant to the user's request. Never claim to see information that is not actually present in the image.";
 
   async process(
     input: string,
     context: AgentContext,
   ): Promise<AIResponse> {
     if (!context.userId) {
-      throw new Error('Authentication required');
+      throw new Error(
+        "Authentication required",
+      );
     }
 
-    if (!context.imageUrl) {
-      throw new Error('Image URL is required');
+    const imageUrl =
+      context.imageUrl?.trim();
+
+    if (!imageUrl) {
+      throw new Error(
+        "Image URL is required for Vision AI.",
+      );
     }
 
-    const prompt = input.trim();
+    const prompt =
+      input.trim();
 
     if (!prompt) {
-      throw new Error('Vision prompt is required');
+      throw new Error(
+        "Vision prompt is required.",
+      );
     }
 
     const messages: AIMessage[] = [
-      { role: 'system', content: this.systemPrompt },
       {
-        role: 'user',
-        content: `${prompt}\n\nImage: ${context.imageUrl}`,
+        role: "system",
+        content:
+          this.systemPrompt,
+      },
+      {
+        role: "user",
+        content: prompt,
       },
     ];
 
-    // NOTE: the openai-chat edge function currently only reads
-    // `messages`/text fields — it does not yet accept/forward an image
-    // payload to the model. Passing the URL inline keeps this agent
-    // type-correct and functional for text-based analysis today; true
-    // multimodal image input is a separate backend feature to add later.
-    return this.aiClient.chat(messages, {
-      generationType: 'chat',
-      generationId: context.generationId,
-    });
+    return this.hybridChat(
+      messages,
+      context,
+      {
+        generationType:
+          "chat",
+
+        imageUrl,
+      },
+    );
   }
-  }
+        }
