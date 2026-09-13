@@ -1,40 +1,62 @@
-import { Tool, ToolExecutionContext } from '../Tool';
+import { AIClient } from "../../ai/AIClient";
 
 export interface VisionToolInput {
   imageUrl: string;
   prompt?: string;
-  detailLevel?: 'low' | 'high' | 'auto';
+  generationId?: string;
 }
 
-export interface VisionToolOutput {
+export interface VisionToolResult {
   success: boolean;
-  analysis?: string;
-  error?: string;
+  content: string;
+  generationId?: string;
 }
 
-export class VisionTool extends Tool<VisionToolInput, VisionToolOutput> {
-  readonly name = 'vision_tool';
-  readonly description = 'Analyzes image content, UI layouts, or visual errors provided via URL or base64.';
+export class VisionTool {
+  private readonly client: AIClient;
+
+  constructor() {
+    this.client =
+      AIClient.getInstance();
+  }
 
   async execute(
     input: VisionToolInput,
-    context?: ToolExecutionContext
-  ): Promise<VisionToolOutput> {
-    const { imageUrl, prompt } = input;
-
-    try {
-      if (!imageUrl) {
-        return { success: false, error: 'Image URL or base64 data is required.' };
-      }
-
-      // Placeholder execution for vision logic integration
-      return {
-        success: true,
-        analysis: `Visual analysis complete for image: ${imageUrl}. Prompt context: ${prompt || 'None'}`,
-      };
-    } catch (err: any) {
-      return { success: false, error: err.message };
+  ): Promise<VisionToolResult> {
+    if (!input.imageUrl) {
+      throw new Error(
+        "VisionTool requires imageUrl.",
+      );
     }
+
+    const prompt =
+      input.prompt?.trim() ||
+      "Analyze this image and describe the important visible details.";
+
+    const response =
+      await this.client.chat(
+        [
+          {
+            role: "user",
+            content: prompt,
+          },
+        ],
+        {
+          generationType: "vision",
+          generationId:
+            input.generationId,
+          imageUrl: input.imageUrl,
+        },
+      );
+
+    return {
+      success: true,
+      content: response.content,
+      generationId:
+        response.generationId,
+    };
   }
 }
 
+export const visionTool =
+  new VisionTool();
