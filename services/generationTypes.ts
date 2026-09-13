@@ -1,17 +1,9 @@
-export type GenerationType =
-  | "chat"
-  | "code"
-  | "image"
-  | "video"
-  | "music"
-  | "voice";
+import type {
+  GenerationType,
+  GenerationStatus,
+} from "./generation";
 
-export type GenerationStatus =
-  | "queued"
-  | "processing"
-  | "completed"
-  | "failed"
-  | "cancelled";
+export type { GenerationType, GenerationStatus };
 
 export interface GenerationRequest {
   type: GenerationType;
