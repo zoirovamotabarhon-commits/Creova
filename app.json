@@ -12,7 +12,14 @@
     "plugins": [
       "expo-router",
       "expo-asset",
-      "expo-audio"
+      "expo-audio",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Creova rasm tanlash uchun galereyangizga kirishi kerak.",
+          "cameraPermission": "Creova suratga olish uchun kamerangizdan foydalanishi kerak."
+        }
+      ]
     ],
     "android": {
       "package": "com.creova.app"
