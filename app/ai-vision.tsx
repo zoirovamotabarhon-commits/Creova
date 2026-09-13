@@ -26,7 +26,9 @@ export default function AIVisionScreen() {
     loading,
     error,
     sendMessage,
-  } = useAI();
+  } = useAI({
+    imageUrl: imageUrl ?? undefined,
+  });
 
   const requestImagePermission = async () => {
     const result =
@@ -187,9 +189,7 @@ export default function AIVisionScreen() {
       prompt.trim() ||
       "Bu rasmni batafsil tahlil qil.";
 
-    await sendMessage(text, {
-      imageUrl,
-    });
+    await sendMessage(text);
   };
 
   return (
