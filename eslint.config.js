@@ -10,7 +10,7 @@ module.exports = [
       ".expo/**",
       "dist/**",
       "build/**",
-      ". core/**",
+      "coverage/**",
     ],
   },
   {
