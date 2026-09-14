@@ -1,28 +1,24 @@
 {
   "cli": {
-    "appVersionSource": "remote"
+    "version": ">= 10.0.0"
   },
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal",
-      "node": "22.22.0"
+      "distribution": "internal"
     },
     "preview": {
       "distribution": "internal",
-      "node": "22.22.0",
-      "env": {
-        "EAS_BUILD_DISABLE_NPM_CACHE": "1"
-      },
       "android": {
-        "buildType": "apk"
+        "buildType": "apk",
+        "gradleCommand": ":app:assembleRelease"
       }
     },
     "production": {
-      "node": "22.22.0"
+      "android": {
+        "resourceClass": "large"
+      }
     }
   },
-  "submit": {
-    "production": {}
-  }
+  "submit": {}
 }
