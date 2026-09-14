@@ -2,21 +2,21 @@ name: i18n Validation Check
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
   pull_request:
-    branches: [ main, develop ]
+    branches: [main, develop]
 
 jobs:
   validate-i18n:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: 22.x
+          cache: npm
 
-      - name: Validate & Auto-fix i18n Locales
+      - name: Validate i18n Locales
         run: node scripts/validate-i18n.js
-        continue-on-error: true
