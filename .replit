@@ -14,3 +14,7 @@ YARN_NPM_REGISTRY_SERVER = "https://registry.yarnpkg.com"
 YARN_REGISTRY = "https://registry.yarnpkg.com"
 PIP_INDEX_URL = "https://pypi.org/simple"
 GOPROXY = "https://proxy.golang.org,direct"
+
+[[ports]]
+localPort = 8081
+externalPort = 80
