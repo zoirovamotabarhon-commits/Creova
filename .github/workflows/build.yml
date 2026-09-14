@@ -8,7 +8,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 60 # Jarayon bekor bo'lishining oldini olish uchun taymaut oshirildi
+    timeout-minutes: 60
 
     steps:
       - name: Checkout repository
@@ -47,3 +47,8 @@ jobs:
           cd android
           ./gradlew assembleRelease --no-daemon
 
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release
+          path: android/app/build/outputs/apk/release/app-release.apk
