@@ -29,9 +29,17 @@ jobs:
       - name: Install Dependencies
         run: npm ci
 
-      # Expo loyihasidan android/ papkasini avtomatik yaratish (Prebuild)
-      - name: Expo Prebuild
-        run: npx expo prebuild --platform android
+      # GitHub Secrets bo'limidagi kalitlarni .env fayliga biriktirish
+      - name: Create .env file
+        run: |
+          echo "EXPO_PUBLIC_SUPABASE_URL=${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}" >> .env
+          echo "EXPO_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}" >> .env
+
+      # Eski va chala android papkasini tozalab, qayta Prebuild qilish
+      - name: Expo Prebuild Clean
+        run: |
+          rm -rf android
+          npx expo prebuild --platform android --clean
 
       - name: Setup Gradle Cache
         uses: actions/cache@v4
