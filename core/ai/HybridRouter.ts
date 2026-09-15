@@ -1,8 +1,16 @@
 import NetInfo from "@react-native-community/netinfo";
 
 import { AIClient } from "./AIClient";
-import { LocalInferenceEngine } from "./LocalInferenceEngine";
-import type { AIMessage, AIOptions } from "./AIProvider";
+
+import {
+  LocalInferenceEngine,
+} from "./LocalInferenceEngine";
+
+import type {
+  AIMessage,
+  AIOptions,
+} from "./AIProvider";
+
 import type {
   HybridResponse,
   RoutingDecision,
@@ -11,9 +19,12 @@ import type {
 const ESTIMATED_CLOUD_CALL_COST = 1;
 
 export class HybridRouter {
-  private static instance: HybridRouter;
+  private static instance:
+    | HybridRouter
+    | undefined;
 
-  private readonly localEngine: LocalInferenceEngine;
+  private readonly localEngine:
+    LocalInferenceEngine;
 
   private constructor() {
     this.localEngine =
@@ -46,8 +57,10 @@ export class HybridRouter {
     if (localCanHandle) {
       return {
         destination: "local",
+
         reason:
           "The request can be answered by the on-device rule/cache layer.",
+
         estimatedSavings:
           ESTIMATED_CLOUD_CALL_COST,
       };
@@ -55,17 +68,22 @@ export class HybridRouter {
 
     if (!isOnline) {
       return {
-        destination: "queued-offline",
+        destination:
+          "queued-offline",
+
         reason:
           "The device is offline and this request requires the cloud model.",
+
         estimatedSavings: 0,
       };
     }
 
     return {
       destination: "cloud",
+
       reason:
         "The request requires cloud AI capabilities.",
+
       estimatedSavings: 0,
     };
   }
@@ -91,11 +109,36 @@ export class HybridRouter {
       );
     }
 
+    /*
+     * Vision must always use the cloud
+     * multimodal provider.
+     *
+     * Do not send Vision requests through
+     * local rules or cache.
+     */
+    const requiresCloudVision =
+      options.generationType ===
+        "vision" ||
+      Boolean(options.imageUrl);
+
     const decision =
-      await this.decide(prompt);
+      requiresCloudVision
+        ? {
+            destination:
+              "cloud" as const,
+
+            reason:
+              "Vision requests require the cloud multimodal model and must not be handled by local text rules or cache.",
+
+            estimatedSavings: 0,
+          }
+        : await this.decide(
+            prompt,
+          );
 
     if (
-      decision.destination === "local"
+      decision.destination ===
+      "local"
     ) {
       const localResult =
         await this.localEngine.infer({
@@ -127,8 +170,10 @@ export class HybridRouter {
     ) {
       return {
         content: "",
+
         routedTo:
           "queued-offline",
+
         reason:
           decision.reason,
       };
@@ -143,10 +188,16 @@ export class HybridRouter {
         options,
       );
 
-    await this.localEngine.rememberCloudAnswer(
-      prompt,
-      cloudResult.content,
-    );
+    /*
+     * Do not cache Vision responses.
+     * Images may contain sensitive/private data.
+     */
+    if (!requiresCloudVision) {
+      await this.localEngine.rememberCloudAnswer(
+        prompt,
+        cloudResult.content,
+      );
+    }
 
     return {
       content:
@@ -161,4 +212,4 @@ export class HybridRouter {
         cloudResult.model,
     };
   }
-}
+        }
