@@ -5,7 +5,8 @@ import type {
   AIResponse,
 } from "../../ai/AIProvider";
 
-export class VisionAgent extends Agent {
+export class VisionAgent
+  extends Agent {
   readonly id =
     "vision-agent";
 
@@ -46,27 +47,28 @@ export class VisionAgent extends Agent {
       );
     }
 
-    const messages: AIMessage[] = [
-      {
-        role: "system",
-        content:
-          this.systemPrompt,
-      },
-      {
-        role: "user",
-        content: prompt,
-      },
-    ];
+    const messages: AIMessage[] =
+      [
+        {
+          role: "system",
+          content:
+            this.systemPrompt,
+        },
+        {
+          role: "user",
+          content: prompt,
+        },
+      ];
 
     return this.hybridChat(
       messages,
       context,
       {
         generationType:
-          "chat",
+          "vision",
 
         imageUrl,
       },
     );
   }
-        }
+  }
