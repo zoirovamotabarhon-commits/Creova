@@ -6,7 +6,8 @@ export type GenerationType =
   | 'image'
   | 'video'
   | 'music'
-  | 'voice';
+  | 'voice'
+  | 'vision';
 
 export type GenerationStatus =
   | 'queued'
@@ -129,21 +130,21 @@ export async function claimGeneration(
 }
 
 /* ------------------------------------------------------------------ */
-/*  Below: the three helpers the provider edge functions               */
-/*  (image-generate, openai-chat, voice-generate, video-generate,      */
-/*  music-generate) actually call, but which never existed until now.  */
-/*  They create their own admin client from env vars because none of   */
-/*  the call sites pass one in.                                        */
+/* Shared admin client                                                 */
 /* ------------------------------------------------------------------ */
 
-let adminClient: ReturnType<typeof createClient> | null = null;
+let adminClient:
+  | ReturnType<typeof createClient>
+  | null = null;
 
 function getAdminClient(): ReturnType<typeof createClient> {
   if (adminClient) {
     return adminClient;
   }
 
-  const url = Deno.env.get('SUPABASE_URL') ?? '';
+  const url =
+    Deno.env.get('SUPABASE_URL') ?? '';
+
   const key =
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ??
     Deno.env.get('SUPABASE_SECRET_KEY') ??
@@ -155,28 +156,39 @@ function getAdminClient(): ReturnType<typeof createClient> {
     );
   }
 
-  adminClient = createClient(url, key, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
+  adminClient = createClient(
+    url,
+    key,
+    {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
     },
-  });
+  );
 
   return adminClient;
 }
 
 /**
- * Loads a generation and verifies it belongs to `userId` and (optionally)
- * matches `expectedType`, throwing otherwise. Used by provider functions to
- * check ownership/type before spending money on a paid API call.
+ * Loads a generation and verifies that it belongs to
+ * the requested user and optionally matches the expected
+ * generation type.
  */
 export async function getGenerationForUser(
   generationId: string,
   userId: string,
   expectedType?: GenerationType,
 ): Promise<Generation> {
-  const supabase = getAdminClient();
-  return getGeneration(supabase, userId, generationId, expectedType);
+  const supabase =
+    getAdminClient();
+
+  return getGeneration(
+    supabase,
+    userId,
+    generationId,
+    expectedType,
+  );
 }
 
 export interface UpdateGenerationInput {
@@ -189,23 +201,37 @@ export interface UpdateGenerationInput {
   resultText?: string;
   resultUrl?: string;
   errorMessage?: string;
-  /** Token/usage info from the provider; stored under metadata.usage (no dedicated column). */
+
+  /**
+   * Token/usage information returned by the
+   * AI provider.
+   *
+   * Stored under metadata.usage because the
+   * generation_history table does not have a
+   * dedicated usage column.
+   */
   usage?: Record<string, unknown>;
+
   metadata?: Record<string, unknown>;
 }
 
 /**
- * Single entry point the provider functions use for every status
- * transition:
- *  - status "processing"  -> atomically claims the generation (queued ->
- *    processing), same guarantee as claimGeneration().
- *  - status "completed" / "failed" -> writes the final result/error and
- *    stamps completed_at.
+ * Updates generation state.
+ *
+ * Processing:
+ *   queued -> processing
+ *
+ * Terminal:
+ *   processing -> completed
+ *   processing -> failed
+ *   processing -> cancelled
  */
 export async function updateGeneration(
   input: UpdateGenerationInput,
 ): Promise<Generation> {
-  const supabase = getAdminClient();
+  const supabase =
+    getAdminClient();
+
   const {
     generationId,
     userId,
@@ -220,21 +246,31 @@ export async function updateGeneration(
     metadata,
   } = input;
 
-  const current = await getGeneration(
-    supabase,
-    userId,
-    generationId,
-    expectedType,
-  );
+  const current =
+    await getGeneration(
+      supabase,
+      userId,
+      generationId,
+      expectedType,
+    );
 
+  /*
+   * Processing is an atomic claim.
+   */
   if (status === 'processing') {
-    assertCanStartGeneration(current);
+    assertCanStartGeneration(
+      current,
+    );
 
-    const { data, error } = await supabase
+    const {
+      data,
+      error,
+    } = await supabase
       .from('generation_history')
       .update({
         status: 'processing',
-        started_at: new Date().toISOString(),
+        started_at:
+          new Date().toISOString(),
       })
       .eq('id', generationId)
       .eq('user_id', userId)
@@ -255,35 +291,90 @@ export async function updateGeneration(
     return data as Generation;
   }
 
-  assertCanUpdateGeneration(current);
+  /*
+   * Completed / failed / cancelled.
+   */
+  assertCanUpdateGeneration(
+    current,
+  );
 
-  const mergedMetadata: Record<string, unknown> = {
-    ...((current.metadata as Record<string, unknown>) ?? {}),
+  const mergedMetadata: Record<
+    string,
+    unknown
+  > = {
+    ...(
+      (current.metadata as Record<
+        string,
+        unknown
+      >) ?? {}
+    ),
+
     ...(metadata ?? {}),
-    ...(usage ? { usage } : {}),
+
+    ...(usage
+      ? { usage }
+      : {}),
   };
 
-  const update: Record<string, unknown> = {
+  const update: Record<
+    string,
+    unknown
+  > = {
     status,
-    metadata: mergedMetadata,
-    updated_at: new Date().toISOString(),
+    metadata:
+      mergedMetadata,
+    updated_at:
+      new Date().toISOString(),
   };
 
-  if (provider !== undefined) update.provider = provider;
-  if (model !== undefined) update.model = model;
-  if (resultText !== undefined) update.result_text = resultText;
-  if (resultUrl !== undefined) update.result_url = resultUrl;
-  if (errorMessage !== undefined) update.error_message = errorMessage;
+  if (
+    provider !== undefined
+  ) {
+    update.provider =
+      provider;
+  }
+
+  if (
+    model !== undefined
+  ) {
+    update.model =
+      model;
+  }
+
+  if (
+    resultText !== undefined
+  ) {
+    update.result_text =
+      resultText;
+  }
+
+  if (
+    resultUrl !== undefined
+  ) {
+    update.result_url =
+      resultUrl;
+  }
+
+  if (
+    errorMessage !== undefined
+  ) {
+    update.error_message =
+      errorMessage;
+  }
 
   if (
     status === 'completed' ||
     status === 'failed' ||
     status === 'cancelled'
   ) {
-    update.completed_at = new Date().toISOString();
+    update.completed_at =
+      new Date().toISOString();
   }
 
-  const { data, error } = await supabase
+  const {
+    data,
+    error,
+  } = await supabase
     .from('generation_history')
     .update(update)
     .eq('id', generationId)
@@ -296,7 +387,9 @@ export async function updateGeneration(
   }
 
   if (!data) {
-    throw new Error('Generation not found while updating.');
+    throw new Error(
+      'Generation not found while updating.',
+    );
   }
 
   return data as Generation;
@@ -305,9 +398,16 @@ export async function updateGeneration(
 export interface StoreAssetInput {
   bucket: string;
   path: string;
-  data: Uint8Array | ArrayBuffer;
+  data:
+    | Uint8Array
+    | ArrayBuffer;
   contentType: string;
-  /** Signed URL lifetime in seconds. Defaults to 1 hour. */
+
+  /**
+   * Signed URL lifetime in seconds.
+   *
+   * Default: 1 hour.
+   */
   expiresIn?: number;
 }
 
@@ -317,36 +417,65 @@ export interface StoredAsset {
 }
 
 /**
- * Uploads a generated asset (image/audio/video bytes) to Supabase Storage
- * and returns a time-limited signed URL for it. Mirrors the inline
- * upload+sign pattern already used in video-generate/index.ts, just shared.
+ * Uploads generated assets to Supabase Storage
+ * and returns a signed URL.
  */
 export async function storeAssetAndGetSignedUrl(
   input: StoreAssetInput,
 ): Promise<StoredAsset> {
-  const supabase = getAdminClient();
-  const { bucket, path, data, contentType, expiresIn = 60 * 60 } = input;
+  const supabase =
+    getAdminClient();
 
-  const { error: uploadError } = await supabase.storage
+  const {
+    bucket,
+    path,
+    data,
+    contentType,
+    expiresIn = 60 * 60,
+  } = input;
+
+  const {
+    error: uploadError,
+  } = await supabase.storage
     .from(bucket)
-    .upload(path, data, {
-      contentType,
-      upsert: true,
-    });
+    .upload(
+      path,
+      data,
+      {
+        contentType,
+        upsert: true,
+      },
+    );
 
   if (uploadError) {
-    throw new Error(`Asset upload failed: ${uploadError.message}`);
-  }
-
-  const { data: signed, error: signError } = await supabase.storage
-    .from(bucket)
-    .createSignedUrl(path, expiresIn);
-
-  if (signError || !signed?.signedUrl) {
     throw new Error(
-      signError?.message ?? 'Unable to create a signed URL for the asset.',
+      `Asset upload failed: ${uploadError.message}`,
     );
   }
 
-  return { url: signed.signedUrl, path };
+  const {
+    data: signed,
+    error: signError,
+  } =
+    await supabase.storage
+      .from(bucket)
+      .createSignedUrl(
+        path,
+        expiresIn,
+      );
+
+  if (
+    signError ||
+    !signed?.signedUrl
+  ) {
+    throw new Error(
+      signError?.message ??
+        'Unable to create a signed URL for the asset.',
+    );
+  }
+
+  return {
+    url: signed.signedUrl,
+    path,
+  };
       }
