@@ -10,50 +10,105 @@ import {
 } from "npm:@supabase/supabase-js@2.57.0";
 
 const SUPABASE_URL =
-  Deno.env.get("SUPABASE_URL") ?? "";
+  Deno.env.get(
+    "SUPABASE_URL",
+  ) ?? "";
 
 const SUPABASE_SERVICE_ROLE_KEY =
-  Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ??
-  Deno.env.get("SUPABASE_SECRET_KEY") ??
+  Deno.env.get(
+    "SUPABASE_SERVICE_ROLE_KEY",
+  ) ??
+  Deno.env.get(
+    "SUPABASE_SECRET_KEY",
+  ) ??
   "";
 
 const OPENAI_API_KEY =
-  Deno.env.get("OPENAI_API_KEY") ?? "";
+  Deno.env.get(
+    "OPENAI_API_KEY",
+  ) ?? "";
 
 const DEFAULT_SYSTEM_PROMPT =
   "You are CREOVA AI Assistant. Give clear, useful and accurate answers.";
 
 const MAX_MESSAGES = 40;
-const MAX_CONTENT_LENGTH = 12000;
+
+const MAX_CONTENT_LENGTH =
+  12000;
+
+const MAX_IMAGE_URL_LENGTH =
+  12_000_000;
 
 type MessageRole =
   | "user"
   | "assistant"
   | "system";
 
-interface ChatMessage {
+type GenerationType =
+  | "chat"
+  | "code"
+  | "vision";
+
+type TextMessage = {
   role: MessageRole;
+
   content: string;
-}
+};
+
+type ImageContentPart = {
+  type: "image_url";
+
+  image_url: {
+    url: string;
+
+    detail:
+      | "auto"
+      | "low"
+      | "high";
+  };
+};
+
+type MultimodalMessage = {
+  role: MessageRole;
+
+  content:
+    | string
+    | Array<
+        | {
+            type: "text";
+            text: string;
+          }
+        | ImageContentPart
+      >;
+};
 
 const CORS_HEADERS = {
-  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Origin":
+    "*",
+
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
+
   "Access-Control-Allow-Methods":
     "POST, OPTIONS",
-  "Content-Type": "application/json",
+
+  "Content-Type":
+    "application/json",
 };
 
 function json(
-  body: Record<string, unknown>,
+  body: Record<
+    string,
+    unknown
+  >,
   status = 200,
 ) {
   return new Response(
     JSON.stringify(body),
     {
       status,
-      headers: CORS_HEADERS,
+      headers:
+        CORS_HEADERS,
     },
   );
 }
@@ -98,21 +153,20 @@ async function requireUser(
 
   const token =
     authorization
-      .slice("Bearer ".length)
+      .slice(
+        "Bearer ".length,
+      )
       .trim();
 
   if (!token) {
     return null;
   }
 
-  const admin =
-    getAdminClient();
-
   const {
     data,
     error,
   } =
-    await admin.auth.getUser(
+    await getAdminClient().auth.getUser(
       token,
     );
 
@@ -128,8 +182,10 @@ async function requireUser(
 
 function normalizeMessages(
   value: unknown,
-): ChatMessage[] {
-  if (!Array.isArray(value)) {
+): TextMessage[] {
+  if (
+    !Array.isArray(value)
+  ) {
     return [];
   }
 
@@ -161,7 +217,8 @@ function normalizeMessages(
           ) &&
           typeof item.content ===
             "string" &&
-          item.content.trim()
+          item.content
+            .trim()
             .length > 0
         );
       },
@@ -193,16 +250,192 @@ function normalizeMessages(
     );
 }
 
-function getGenerationType(
+function parseGenerationType(
   value: unknown,
-): "chat" | "code" {
-  return value === "code"
-    ? "code"
-    : "chat";
+): GenerationType {
+  if (
+    value === "chat" ||
+    value === "code" ||
+    value === "vision"
+  ) {
+    return value;
+  }
+
+  throw new Error(
+    "Invalid generation type.",
+  );
+}
+
+function normalizeImageUrl(
+  value: unknown,
+): string | undefined {
+  if (
+    typeof value !==
+    "string"
+  ) {
+    return undefined;
+  }
+
+  const imageUrl =
+    value.trim();
+
+  if (!imageUrl) {
+    return undefined;
+  }
+
+  if (
+    imageUrl.length >
+    MAX_IMAGE_URL_LENGTH
+  ) {
+    throw new Error(
+      "Image URL or data is too large.",
+    );
+  }
+
+  /*
+   * Supported image sources:
+   *
+   * https://...
+   * http://...
+   * data:image/...
+   */
+  if (
+    imageUrl.startsWith(
+      "https://",
+    ) ||
+    imageUrl.startsWith(
+      "http://",
+    ) ||
+    imageUrl.startsWith(
+      "data:image/",
+    )
+  ) {
+    return imageUrl;
+  }
+
+  throw new Error(
+    "imageUrl must be an HTTP(S) URL or image data URL.",
+  );
+}
+
+function buildOpenAIMessages(
+  systemPrompt: string,
+  messages: TextMessage[],
+  generationType: GenerationType,
+  imageUrl?: string,
+): MultimodalMessage[] {
+  const output:
+    MultimodalMessage[] = [
+    {
+      role: "system",
+
+      content:
+        systemPrompt,
+    },
+
+    ...messages,
+  ];
+
+  /*
+   * Normal chat/code does not need multimodal
+   * content.
+   */
+  if (
+    generationType !==
+    "vision"
+  ) {
+    return output;
+  }
+
+  /*
+   * Vision must have an image.
+   */
+  if (!imageUrl) {
+    throw new Error(
+      "imageUrl is required for vision generation.",
+    );
+  }
+
+  /*
+   * Find the last user message.
+   */
+  let lastUserIndex =
+    -1;
+
+  for (
+    let index =
+      output.length - 1;
+    index >= 0;
+    index -= 1
+  ) {
+    if (
+      output[index]?.role ===
+      "user"
+    ) {
+      lastUserIndex =
+        index;
+
+      break;
+    }
+  }
+
+  if (
+    lastUserIndex < 0
+  ) {
+    throw new Error(
+      "A user message is required for vision generation.",
+    );
+  }
+
+  const userMessage =
+    output[
+      lastUserIndex
+    ];
+
+  const text =
+    typeof userMessage.content ===
+    "string"
+      ? userMessage.content
+      : "Analyze the supplied image.";
+
+  /*
+   * This is the critical Vision part:
+   *
+   * text + image_url are sent together
+   * in the same user message.
+   */
+  output[
+    lastUserIndex
+  ] = {
+    role: "user",
+
+    content: [
+      {
+        type: "text",
+
+        text,
+      },
+
+      {
+        type: "image_url",
+
+        image_url: {
+          url: imageUrl,
+
+          detail: "auto",
+        },
+      },
+    ],
+  };
+
+  return output;
 }
 
 Deno.serve(
   async (req) => {
+    /*
+     * CORS.
+     */
     if (
       req.method ===
       "OPTIONS"
@@ -216,6 +449,9 @@ Deno.serve(
       );
     }
 
+    /*
+     * Only POST.
+     */
     if (
       req.method !==
       "POST"
@@ -223,6 +459,7 @@ Deno.serve(
       return json(
         {
           success: false,
+
           error:
             "Method not allowed.",
         },
@@ -230,17 +467,28 @@ Deno.serve(
       );
     }
 
-    let generationId = "";
-    let userId = "";
+    let generationId =
+      "";
+
+    let userId =
+      "";
+
     let generationType:
-      | "chat"
-      | "code" = "chat";
+      GenerationType =
+        "chat";
 
     try {
-      if (!OPENAI_API_KEY) {
+      /*
+       * OpenAI API key must exist.
+       */
+      if (
+        !OPENAI_API_KEY
+      ) {
         return json(
           {
-            success: false,
+            success:
+              false,
+
             error:
               "OPENAI_API_KEY is not configured.",
           },
@@ -248,6 +496,9 @@ Deno.serve(
         );
       }
 
+      /*
+       * Authenticate user.
+       */
       const user =
         await requireUser(
           req,
@@ -256,7 +507,9 @@ Deno.serve(
       if (!user) {
         return json(
           {
-            success: false,
+            success:
+              false,
+
             error:
               "Authentication required.",
           },
@@ -264,13 +517,16 @@ Deno.serve(
         );
       }
 
-      userId = user.id;
+      userId =
+        user.id;
 
-      let body:
-        Record<
-          string,
-          unknown
-        >;
+      /*
+       * Parse body.
+       */
+      let body: Record<
+        string,
+        unknown
+      >;
 
       try {
         body =
@@ -281,7 +537,9 @@ Deno.serve(
       } catch {
         return json(
           {
-            success: false,
+            success:
+              false,
+
             error:
               "Invalid JSON request body.",
           },
@@ -289,16 +547,24 @@ Deno.serve(
         );
       }
 
+      /*
+       * Generation ID.
+       */
       generationId =
         typeof body.generationId ===
         "string"
-          ? body.generationId.trim()
+          ? body.generationId
+              .trim()
           : "";
 
-      if (!generationId) {
+      if (
+        !generationId
+      ) {
         return json(
           {
-            success: false,
+            success:
+              false,
+
             error:
               "Generation ID is required.",
           },
@@ -306,21 +572,69 @@ Deno.serve(
         );
       }
 
+      /*
+       * Generation type.
+       */
       generationType =
-        getGenerationType(
+        parseGenerationType(
           body.generationType,
         );
 
       /*
-       * Verify that the generation:
+       * Optional image.
+       */
+      const imageUrl =
+        normalizeImageUrl(
+          body.imageUrl,
+        );
+
+      /*
+       * Vision requires image.
+       */
+      if (
+        generationType ===
+          "vision" &&
+        !imageUrl
+      ) {
+        return json(
+          {
+            success:
+              false,
+
+            error:
+              "imageUrl is required for vision generation.",
+          },
+          400,
+        );
+      }
+
+      /*
+       * Image is not allowed for regular
+       * chat/code.
+       */
+      if (
+        generationType !==
+          "vision" &&
+        imageUrl
+      ) {
+        return json(
+          {
+            success:
+              false,
+
+            error:
+              "imageUrl is only allowed for vision generation.",
+          },
+          400,
+        );
+      }
+
+      /*
+       * Verify:
        *
-       * 1. belongs to the authenticated user
-       * 2. has the expected type
-       * 3. can legally move into processing
-       *
-       * This prevents another user from using a generation ID
-       * and prevents a completed/failed generation from being
-       * charged/provider-called again.
+       * generation exists
+       * belongs to authenticated user
+       * type matches request
        */
       await getGenerationForUser(
         generationId,
@@ -328,6 +642,9 @@ Deno.serve(
         generationType,
       );
 
+      /*
+       * Normalize messages.
+       */
       const messages =
         normalizeMessages(
           body.messages,
@@ -339,7 +656,9 @@ Deno.serve(
       ) {
         return json(
           {
-            success: false,
+            success:
+              false,
+
             error:
               "At least one message is required.",
           },
@@ -347,6 +666,9 @@ Deno.serve(
         );
       }
 
+      /*
+       * System prompt.
+       */
       const systemPrompt =
         typeof body.systemPrompt ===
           "string" &&
@@ -359,6 +681,24 @@ Deno.serve(
               )
           : DEFAULT_SYSTEM_PROMPT;
 
+      /*
+       * Model selection.
+       *
+       * Vision:
+       *   OPENAI_VISION_MODEL
+       *
+       * Code:
+       *   OPENAI_CODE_MODEL
+       *
+       * Chat:
+       *   OPENAI_CHAT_MODEL
+       *
+       * fallback:
+       *   OPENAI_MODEL
+       *
+       * final fallback:
+       *   gpt-5.6
+       */
       const requestedModel =
         typeof body.model ===
         "string"
@@ -369,19 +709,27 @@ Deno.serve(
         requestedModel ||
         (
           generationType ===
-          "code"
+          "vision"
             ? Deno.env.get(
-                "OPENAI_CODE_MODEL",
+                "OPENAI_VISION_MODEL",
               )
-            : Deno.env.get(
-                "OPENAI_CHAT_MODEL",
-              )
+            : generationType ===
+                "code"
+              ? Deno.env.get(
+                  "OPENAI_CODE_MODEL",
+                )
+              : Deno.env.get(
+                  "OPENAI_CHAT_MODEL",
+                )
         ) ||
         Deno.env.get(
           "OPENAI_MODEL",
         ) ||
-        "gpt-5.5";
+        "gpt-5.6";
 
+      /*
+       * Temperature.
+       */
       const temperature =
         typeof body.temperature ===
           "number" &&
@@ -397,6 +745,13 @@ Deno.serve(
             )
           : undefined;
 
+      /*
+       * Token limit.
+       *
+       * Client sends max_tokens.
+       * OpenAI request uses
+       * max_completion_tokens.
+       */
       const maxTokens =
         typeof body.max_tokens ===
           "number" &&
@@ -412,6 +767,9 @@ Deno.serve(
             )
           : undefined;
 
+      /*
+       * Top P.
+       */
       const topP =
         typeof body.top_p ===
           "number" &&
@@ -428,37 +786,39 @@ Deno.serve(
           : undefined;
 
       /*
-       * Atomically claim the generation.
+       * Claim generation.
        *
-       * If another request already claimed it, updateGeneration()
-       * will reject the transition and the provider will NOT be called.
+       * queued -> processing
        */
       await updateGeneration({
         generationId,
+
         userId,
+
         status:
           "processing",
+
         expectedType:
           generationType,
       });
 
-      const openAIMessages = [
-        {
-          role:
-            "system" as const,
-          content:
-            systemPrompt,
-        },
-        ...messages,
-      ];
-
-      const requestBody: Record<
-        string,
-        unknown
-      > = {
+      /*
+       * Construct OpenAI request.
+       */
+      const requestBody:
+        Record<
+          string,
+          unknown
+        > = {
         model,
+
         messages:
-          openAIMessages,
+          buildOpenAIMessages(
+            systemPrompt,
+            messages,
+            generationType,
+            imageUrl,
+          ),
       };
 
       if (
@@ -473,18 +833,20 @@ Deno.serve(
         maxTokens !==
         undefined
       ) {
-        requestBody.max_tokens =
+        requestBody.max_completion_tokens =
           maxTokens;
       }
 
       if (
-        topP !==
-        undefined
+        topP !== undefined
       ) {
         requestBody.top_p =
           topP;
       }
 
+      /*
+       * Call OpenAI.
+       */
       const response =
         await fetch(
           "https://api.openai.com/v1/chat/completions",
@@ -500,13 +862,15 @@ Deno.serve(
                 `Bearer ${OPENAI_API_KEY}`,
             },
 
-            body:
-              JSON.stringify(
-                requestBody,
-              ),
+            body: JSON.stringify(
+              requestBody,
+            ),
           },
         );
 
+      /*
+       * Read raw response first.
+       */
       const rawText =
         await response.text();
 
@@ -532,7 +896,12 @@ Deno.serve(
         };
       }
 
-      if (!response.ok) {
+      /*
+       * OpenAI error.
+       */
+      if (
+        !response.ok
+      ) {
         const errorObject =
           result.error;
 
@@ -549,12 +918,15 @@ Deno.serve(
 
         throw new Error(
           typeof message ===
-            "string"
+          "string"
             ? message
             : "OpenAI API request failed.",
         );
       }
 
+      /*
+       * Extract choices.
+       */
       const choices =
         Array.isArray(
           result.choices,
@@ -576,7 +948,7 @@ Deno.serve(
             ).message
           : undefined;
 
-      const text =
+      const rawContent =
         choiceMessage &&
         typeof choiceMessage ===
           "object"
@@ -587,9 +959,53 @@ Deno.serve(
             ).content
           : undefined;
 
+      /*
+       * OpenAI may return:
+       *
+       * string
+       *
+       * or content parts.
+       */
+      const text =
+        typeof rawContent ===
+        "string"
+          ? rawContent
+          : Array.isArray(
+                rawContent,
+              )
+            ? rawContent
+                .filter(
+                  (part) =>
+                    part &&
+                    typeof part ===
+                      "object" &&
+                    (
+                      part as Record<
+                        string,
+                        unknown
+                      >
+                    ).type ===
+                      "text",
+                )
+                .map(
+                  (part) =>
+                    String(
+                      (
+                        part as Record<
+                          string,
+                          unknown
+                        >
+                      ).text ??
+                        "",
+                    ),
+                )
+                .join("\n")
+            : "";
+
+      /*
+       * Empty response is treated as failure.
+       */
       if (
-        typeof text !==
-          "string" ||
         !text.trim()
       ) {
         throw new Error(
@@ -597,6 +1013,9 @@ Deno.serve(
         );
       }
 
+      /*
+       * Usage information.
+       */
       const usage =
         result.usage &&
         typeof result.usage ===
@@ -604,21 +1023,34 @@ Deno.serve(
           ? result.usage
           : undefined;
 
+      /*
+       * Save completed generation.
+       */
       await updateGeneration({
         generationId,
+
         userId,
+
         status:
           "completed",
+
         provider:
           "openai",
+
         model,
+
         resultText:
           text.trim(),
+
         usage,
+
         expectedType:
           generationType,
       });
 
+      /*
+       * Return successful response.
+       */
       return json({
         success: true,
 
@@ -633,13 +1065,13 @@ Deno.serve(
       });
     } catch (error) {
       const errorMessage =
-        error instanceof Error
+        error instanceof
+        Error
           ? error.message
           : "OpenAI generation failed.";
 
       /*
-       * Refund is handled by updateGeneration() when a generation
-       * transitions from processing to failed.
+       * Try to mark generation as failed.
        */
       if (
         generationId &&
@@ -648,10 +1080,14 @@ Deno.serve(
         try {
           await updateGeneration({
             generationId,
+
             userId,
+
             status:
               "failed",
+
             errorMessage,
+
             expectedType:
               generationType,
           });
@@ -672,7 +1108,8 @@ Deno.serve(
 
       return json(
         {
-          success: false,
+          success:
+            false,
 
           generationId:
             generationId ||
