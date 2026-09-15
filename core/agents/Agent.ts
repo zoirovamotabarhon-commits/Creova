@@ -1,20 +1,31 @@
 import { AIClient } from "../ai/AIClient";
 import { HybridRouter } from "../ai/HybridRouter";
 import { Tool } from "../tools/Tool";
-import { AgentContext } from "./AgentContext";
-import { AIMessage, AIResponse } from "../ai/AIProvider";
+import {
+  AgentContext,
+} from "./AgentContext";
+import {
+  AIMessage,
+  AIResponse,
+} from "../ai/AIProvider";
 
 export abstract class Agent {
   abstract readonly id: string;
+
   abstract readonly name: string;
+
   abstract readonly description: string;
+
   abstract readonly systemPrompt: string;
 
   protected readonly aiClient: AIClient;
+
   protected readonly hybridRouter: HybridRouter;
 
-  protected tools: Map<string, Tool> =
-    new Map();
+  protected tools: Map<
+    string,
+    Tool
+  > = new Map();
 
   constructor() {
     this.aiClient =
@@ -43,7 +54,11 @@ export abstract class Agent {
     messages: AIMessage[],
     context: AgentContext,
     options: {
-      generationType?: "chat" | "code";
+      generationType?:
+        | "chat"
+        | "code"
+        | "vision";
+
       imageUrl?: string;
     } = {},
   ): Promise<AIResponse> {
