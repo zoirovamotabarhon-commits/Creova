@@ -7,32 +7,42 @@ export interface AIProviderConfig {
   model: string;
 }
 
-export const AI_PROVIDERS: Record<AIProviderName, AIProviderConfig> = {
+export const AI_PROVIDERS: Record<
+  AIProviderName,
+  AIProviderConfig
+> = {
   openai: {
     name: "openai",
-    model: "gpt-5.5",
+    model: "gpt-5.6",
   },
 };
 
 export interface AIMessage {
-  /** Present on messages surfaced to the UI (e.g. via useAI's message list). Internal agent-constructed messages may omit it. */
   id?: string;
-  role: "user" | "assistant" | "system";
+
+  role:
+    | "user"
+    | "assistant"
+    | "system";
+
   content: string;
 }
 
 export interface AIOptions {
   generationType?: GenerationType;
+
   generationId?: string;
+
   temperature?: number;
+
   maxTokens?: number;
+
   topP?: number;
 
   /**
-   * When supplied, the final user message is sent to the provider
-   * as a multimodal text + image message.
+   * Image URL used for multimodal Vision requests.
    *
-   * Supports:
+   * Supported formats:
    * - https://...
    * - data:image/...;base64,...
    */
@@ -41,20 +51,22 @@ export interface AIOptions {
 
 export interface AIUsage {
   promptTokens: number;
+
   completionTokens: number;
+
   totalTokens: number;
 }
 
 export interface AIResponse {
   content: string;
+
   model: string;
+
   generationId: string;
+
   usage?: AIUsage;
 
-  /**
-   * Where the response was produced.
-   * "cloud" is used by the normal AIClient.
-   * "local" is used by the HybridRouter.
-   */
-  routedTo?: "local" | "cloud";
+  routedTo?:
+    | "local"
+    | "cloud";
 }
