@@ -28,20 +28,16 @@ export async function generateChat(
     };
   }
 
-  const generation =
-    await createGeneration(
-      "chat",
-      undefined,
-      cleanMessage,
-      {
-        feature: "chat",
-      },
-    );
+  const generation = await createGeneration(
+    "chat",
+    undefined,
+    cleanMessage,
+    {
+      feature: "chat",
+    },
+  );
 
-  if (
-    !generation.success ||
-    !generation.generationId
-  ) {
+  if (!generation.success || !generation.generationId) {
     return {
       success: false,
       error:
@@ -54,41 +50,37 @@ export async function generateChat(
     ...history
       .filter(
         (item) =>
-          (
-            item.role === "user" ||
+          item &&
+          (item.role === "user" ||
             item.role === "assistant" ||
-            item.role === "system"
-          ) &&
+            item.role === "system") &&
           typeof item.content === "string" &&
           item.content.trim().length > 0,
       )
       .slice(-39),
+
     {
       role: "user",
       content: cleanMessage,
     },
   ];
 
-  const {
-    data,
-    error,
-  } =
-    await supabase.functions.invoke(
-      "openai-chat",
-      {
-        body: {
-          generationId:
-            generation.generationId,
-          messages,
-        },
+  const { data, error } =
+    await supabase.functions.invoke("openai-chat", {
+      body: {
+        generationId: generation.generationId,
+
+        // MUHIM: Edge Function aynan shu qiymatni kutmoqda.
+        generationType: "chat",
+
+        messages,
       },
-    );
+    });
 
   if (error) {
     return {
       success: false,
-      generationId:
-        generation.generationId,
+      generationId: generation.generationId,
       error: error.message,
     };
   }
@@ -96,8 +88,7 @@ export async function generateChat(
   if (!data?.success) {
     return {
       success: false,
-      generationId:
-        generation.generationId,
+      generationId: generation.generationId,
       error:
         data?.error ??
         "AI request failed.",
@@ -106,12 +97,8 @@ export async function generateChat(
 
   return {
     success: true,
-    generationId:
-      generation.generationId,
-    message:
-      data.message ??
-      data.text ??
-      "",
+    generationId: generation.generationId,
+    message: data.message ?? data.text ?? "",
   };
 }
 
@@ -119,8 +106,5 @@ export async function sendMessage(
   message: string,
   history: AIMessage[] = [],
 ): Promise<ChatResult> {
-  return generateChat(
-    message,
-    history,
-  );
-}
+  return generateChat(message, history);
+        }
