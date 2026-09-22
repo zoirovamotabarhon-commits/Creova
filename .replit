@@ -2,7 +2,7 @@ modules = ["nodejs-22"]
 
 [nix]
 channel = "stable-25_05"
-packages = ["eas-cli", "android-tools"]
+packages = ["eas-cli", "android-tools", "jre17_minimal", "supabase-cli"]
 
 [agent]
 expertMode = true
