@@ -1,5 +1,5 @@
 import { createGeneration } from "./generation";
-import { supabase } from "./supabase";
+import { invokeEdgeFunction } from "./edgeFunctions";
 
 export interface VoiceResponse {
   success: boolean;
@@ -46,7 +46,12 @@ export async function generateVoice(
     data,
     error,
   } =
-    await supabase.functions.invoke(
+    await invokeEdgeFunction<{
+      success: boolean;
+      audioUrl?: string;
+      audio_url?: string;
+      error?: string;
+    }>(
       "voice-generate",
       {
         body: {
@@ -85,4 +90,4 @@ export async function generateVoice(
       data.audioUrl ??
       data.audio_url,
   };
-}
+    }
