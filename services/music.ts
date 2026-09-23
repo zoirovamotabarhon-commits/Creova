@@ -1,5 +1,5 @@
 import { createGeneration } from "./generation";
-import { supabase } from "./supabase";
+import { invokeEdgeFunction } from "./edgeFunctions";
 
 export interface MusicGenerationResult {
   success: boolean;
@@ -49,7 +49,12 @@ export async function generateMusic(
     data,
     error,
   } =
-    await supabase.functions.invoke(
+    await invokeEdgeFunction<{
+      success: boolean;
+      audioUrl?: string;
+      audio_url?: string;
+      error?: string;
+    }>(
       "music-generate",
       {
         body: {
@@ -88,4 +93,4 @@ export async function generateMusic(
       data.audioUrl ??
       data.audio_url,
   };
-        }
+    }
