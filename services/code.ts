@@ -1,5 +1,5 @@
 import { createGeneration } from "./generation";
-import { supabase } from "./supabase";
+import { invokeEdgeFunction } from "./edgeFunctions";
 
 export interface CodeGenerationResult {
   success: boolean;
@@ -54,12 +54,24 @@ export async function generateCode(
     data,
     error,
   } =
-    await supabase.functions.invoke(
+    await invokeEdgeFunction<{
+      success: boolean;
+      text?: string;
+      message?: string;
+      error?: string;
+    }>(
       "openai-chat",
       {
         body: {
           generationId:
             generation.generationId,
+
+          // NOTE: openai-chat requires generationType (without it,
+          // it immediately rejects the request with "Invalid
+          // generation type.") - this was previously missing here.
+          generationType:
+            "code",
+
           systemPrompt:
             CODE_SYSTEM_PROMPT,
           messages: [
@@ -103,4 +115,4 @@ export async function generateCode(
       data.message ??
       "",
   };
-}
+    }
