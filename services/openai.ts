@@ -1,7 +1,17 @@
-import { supabase } from "./supabase";
+import { invokeEdgeFunction } from "./edgeFunctions";
 import type {
   AIMessage,
 } from "./chat";
+
+/**
+ * NOTE: this module is legacy/unused by the current UI (no
+ * screen or hook calls generateOpenAIChat/chatWithOpenAI - only
+ * services/index.ts re-exports it). Unlike chat.ts, it does not
+ * call createGeneration() itself and expects an already-created
+ * generationId to be passed in. Kept working and consistent with
+ * the openai-chat contract in case something still imports it
+ * directly, but prefer services/chat.ts for new code.
+ */
 
 export interface OpenAIResponse {
   success: boolean;
@@ -38,11 +48,24 @@ export async function generateOpenAIChat(
     data,
     error,
   } =
-    await supabase.functions.invoke(
+    await invokeEdgeFunction<{
+      success: boolean;
+      generationId?: string;
+      text?: string;
+      message?: string;
+      error?: string;
+    }>(
       "openai-chat",
       {
         body: {
           generationId,
+
+          // NOTE: openai-chat requires generationType (without it,
+          // it immediately rejects the request with "Invalid
+          // generation type.") - this was previously missing here.
+          generationType:
+            "chat",
+
           messages,
         },
       },
@@ -90,4 +113,4 @@ export async function chatWithOpenAI(
     history,
     generationId,
   );
-        }
+    }
