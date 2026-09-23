@@ -1,5 +1,5 @@
 import { createGeneration } from "./generation";
-import { supabase } from "./supabase";
+import { invokeEdgeFunction } from "./edgeFunctions";
 
 export interface ImageGenerationResult {
   success: boolean;
@@ -49,7 +49,12 @@ export async function generateImage(
     data,
     error,
   } =
-    await supabase.functions.invoke(
+    await invokeEdgeFunction<{
+      success: boolean;
+      imageUrl?: string;
+      image_url?: string;
+      error?: string;
+    }>(
       "image-generate",
       {
         body: {
@@ -88,4 +93,4 @@ export async function generateImage(
       data.imageUrl ??
       data.image_url,
   };
-}
+    }
