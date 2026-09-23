@@ -4,7 +4,7 @@ import type {
   AIResponse,
 } from "./AIProvider";
 
-import { supabase } from "../../services/supabase";
+import { invokeEdgeFunction } from "../../services/edgeFunctions";
 import { createGeneration } from "../../services/generation";
 
 export class AIClient {
@@ -84,7 +84,21 @@ export class AIClient {
 
     try {
       const { data, error } =
-        await supabase.functions.invoke(
+        await invokeEdgeFunction<{
+          success: boolean;
+          text?: string;
+          content?: string;
+          choices?: Array<{
+            message?: { content?: string };
+          }>;
+          model?: string;
+          usage?: {
+            prompt_tokens?: number;
+            completion_tokens?: number;
+            total_tokens?: number;
+          };
+          error?: string;
+        }>(
           "openai-chat",
           {
             body: {
