@@ -18,7 +18,7 @@
  * supabase.functions.invoke directly.
  */
 
-import { supabase } from "./supabase";
+import { invokeEdgeFunction } from "./edgeFunctions";
 
 const DEFAULT_TIMEOUT_MS = 30000;
 
@@ -42,20 +42,39 @@ async function invokeOnce<T>(
   body: Record<string, unknown>,
   timeoutMs: number
 ): Promise<PrivateAiServerResult<T>> {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  let timer: ReturnType<typeof setTimeout> | undefined;
+
+  // NOTE: supabase-js's functions.invoke() has no way to accept an
+  // AbortSignal, so a timeout can't cancel the in-flight request itself.
+  // Racing it against a rejecting timer at least makes sure this
+  // function's own promise always settles within timeoutMs, instead of
+  // hanging forever on a stuck network call (which the previous
+  // AbortController-based version did silently, since its signal was
+  // never actually passed to invoke()).
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => {
+      reject(new Error(`Request timeout after ${timeoutMs}ms.`));
+    }, timeoutMs);
+  });
 
   try {
-    const { data, error } = await supabase.functions.invoke(functionName, {
-      body,
-    });
+    const { data, error } = await Promise.race([
+      invokeEdgeFunction<Record<string, unknown>>(functionName, {
+        body,
+      }),
+      timeoutPromise,
+    ]);
 
     if (error) {
       return { success: false, error: error.message };
     }
 
     if (data && data.success === false) {
-      return { success: false, error: data.error ?? "Request failed." };
+      return {
+        success: false,
+        error:
+          typeof data.error === "string" ? data.error : "Request failed.",
+      };
     }
 
     return { success: true, data: data as T };
@@ -63,7 +82,7 @@ async function invokeOnce<T>(
     const message = err instanceof Error ? err.message : "Unknown error";
     return { success: false, error: message };
   } finally {
-    clearTimeout(timer);
+    if (timer) clearTimeout(timer);
   }
 }
 
@@ -84,4 +103,4 @@ export async function callPrivateAiFunction<T = unknown>(
   }
 
   return invokeOnce<T>(functionName, body, timeoutMs);
-}
+                                            }
