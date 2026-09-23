@@ -1,5 +1,5 @@
 import { createGeneration } from "./generation";
-import { supabase } from "./supabase";
+import { invokeEdgeFunction } from "./edgeFunctions";
 
 export interface AIMessage {
   role: "user" | "assistant" | "system";
@@ -66,11 +66,16 @@ export async function generateChat(
   ];
 
   const { data, error } =
-    await supabase.functions.invoke("openai-chat", {
+    await invokeEdgeFunction<{
+      success: boolean;
+      message?: string;
+      text?: string;
+      error?: string;
+    }>("openai-chat", {
       body: {
         generationId: generation.generationId,
 
-        // MUHIM: Edge Function aynan shu qiymatni kutmoqda.
+        // The edge function requires this exact field name.
         generationType: "chat",
 
         messages,
@@ -107,4 +112,4 @@ export async function sendMessage(
   history: AIMessage[] = [],
 ): Promise<ChatResult> {
   return generateChat(message, history);
-        }
+}
