@@ -1,4 +1,4 @@
-import { supabase } from "./supabase";
+import { invokeEdgeFunction } from "./edgeFunctions";
 import {
   createGeneration,
   getGeneration,
@@ -70,7 +70,14 @@ export async function generateVideo(
     data,
     error,
   } =
-    await supabase.functions.invoke(
+    await invokeEdgeFunction<{
+      success: boolean;
+      videoId?: string;
+      videoUrl?: string;
+      status?: string;
+      progress?: unknown;
+      error?: string;
+    }>(
       "video-generate",
       {
         body: {
@@ -171,7 +178,13 @@ export async function getVideoStatus(
     data,
     error,
   } =
-    await supabase.functions.invoke(
+    await invokeEdgeFunction<{
+      success: boolean;
+      videoUrl?: string;
+      status?: string;
+      progress?: unknown;
+      error?: string;
+    }>(
       "video-generate",
       {
         body: {
@@ -211,4 +224,4 @@ export async function getVideoStatus(
     error:
       data?.error,
   };
-      }
+}
