@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import { invokeEdgeFunction } from "./edgeFunctions";
 
 export interface CoinOperationResponse {
   success: boolean;
@@ -53,7 +54,7 @@ export async function chargeCoins(
     const {
       data,
       error,
-    } = await supabase.functions.invoke(
+    } = await invokeEdgeFunction<Record<string, unknown>>(
       "coin-operation",
       {
         body: {
@@ -111,4 +112,4 @@ export async function chargeCoins(
           : "Coin charge failed.",
     };
   }
-}
+  }
