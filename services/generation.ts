@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import { invokeEdgeFunction } from "./edgeFunctions";
 import { getFeatureCost } from "./featureCosts";
 
 export type GenerationType =
@@ -292,7 +293,12 @@ export async function createGeneration(
     data,
     error,
   } =
-    await supabase.functions.invoke(
+    await invokeEdgeFunction<{
+      success: boolean;
+      existing?: boolean;
+      generation?: unknown;
+      error?: string;
+    }>(
       "generation-record",
       {
         body: {
