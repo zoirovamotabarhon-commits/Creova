@@ -138,7 +138,7 @@ export default function AIChatScreen() {
       behavior={
         Platform.OS === "ios"
           ? "padding"
-          : undefined
+          : "height"
       }
       keyboardVerticalOffset={
         Platform.OS === "ios"
