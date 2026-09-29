@@ -442,7 +442,14 @@ Deno.serve(
             ),
         );
 
-      const assetUrl =
+      /*
+       * storeAssetAndGetSignedUrl() returns { url, path }, not a
+       * bare string - destructure `url` here so every use below
+       * is the actual signed URL string. The previous version
+       * assigned the whole object to assetUrl and sent it to the
+       * client as-is, which broke imageUrl.
+       */
+      const { url: assetUrl } =
         await storeAssetAndGetSignedUrl({
           bucket:
             "generation-assets",
