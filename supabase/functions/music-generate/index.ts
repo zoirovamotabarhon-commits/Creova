@@ -188,10 +188,13 @@ Deno.serve(async (req) => {
 
     await ensureBucket();
 
+    // NOTE: storeAssetAndGetSignedUrl() takes a `data` field, not
+    // `body` - the previous code passed `body: buffer`, so no
+    // actual bytes were ever uploaded.
     const stored = await storeAssetAndGetSignedUrl({
       bucket: BUCKET,
       path: `${userId}/${generationId}.mp3`,
-      body: buffer,
+      data: buffer,
       contentType: "audio/mpeg",
     });
 
