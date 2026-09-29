@@ -697,7 +697,10 @@ Deno.serve(
        *   OPENAI_MODEL
        *
        * final fallback:
-       *   gpt-5.6
+       *   gpt-4o-mini
+       *   (was previously "gpt-5.6", which is not a real OpenAI
+       *   model and made every request fail whenever
+       *   OPENAI_MODEL was not set)
        */
       const requestedModel =
         typeof body.model ===
@@ -725,7 +728,7 @@ Deno.serve(
         Deno.env.get(
           "OPENAI_MODEL",
         ) ||
-        "gpt-5.6";
+        "gpt-4o-mini";
 
       /*
        * Temperature.
