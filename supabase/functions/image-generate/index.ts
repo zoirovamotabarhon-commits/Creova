@@ -311,14 +311,19 @@ async function callGeminiImage(
               "IMAGE",
             ],
 
-            responseFormat: {
-              image: {
-                aspectRatio:
-                  config.aspectRatio,
+            // NOTE: Gemini's image generation config field is
+            // `imageConfig`, placed directly under
+            // generationConfig - there is no `responseFormat`
+            // wrapper in the actual API. The previous version used
+            // `responseFormat.image`, which Gemini silently ignores
+            // (unknown field), so the requested aspect ratio / size
+            // was never actually applied.
+            imageConfig: {
+              aspectRatio:
+                config.aspectRatio,
 
-                imageSize:
-                  config.imageSize,
-              },
+              imageSize:
+                config.imageSize,
             },
           },
         }),
