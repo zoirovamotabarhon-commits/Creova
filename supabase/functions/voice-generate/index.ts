@@ -169,132 +169,6 @@ async function ensureBucket() {
   }
 }
 
-function pcmToWav(
-  pcm: Uint8Array,
-  sampleRate = 24000,
-  channels = 1,
-  bitsPerSample = 16,
-) {
-  const bytesPerSample =
-    bitsPerSample / 8;
-
-  const blockAlign =
-    channels *
-    bytesPerSample;
-
-  const byteRate =
-    sampleRate *
-    blockAlign;
-
-  const buffer =
-    new ArrayBuffer(
-      44 + pcm.length,
-    );
-
-  const view =
-    new DataView(
-      buffer,
-    );
-
-  const writeString = (
-    offset: number,
-    value: string,
-  ) => {
-    for (
-      let i = 0;
-      i < value.length;
-      i++
-    ) {
-      view.setUint8(
-        offset + i,
-        value.charCodeAt(i),
-      );
-    }
-  };
-
-  writeString(
-    0,
-    "RIFF",
-  );
-
-  view.setUint32(
-    4,
-    36 + pcm.length,
-    true,
-  );
-
-  writeString(
-    8,
-    "WAVE",
-  );
-
-  writeString(
-    12,
-    "fmt ",
-  );
-
-  view.setUint32(
-    16,
-    16,
-    true,
-  );
-
-  view.setUint16(
-    20,
-    1,
-    true,
-  );
-
-  view.setUint16(
-    22,
-    channels,
-    true,
-  );
-
-  view.setUint32(
-    24,
-    sampleRate,
-    true,
-  );
-
-  view.setUint32(
-    28,
-    byteRate,
-    true,
-  );
-
-  view.setUint16(
-    32,
-    blockAlign,
-    true,
-  );
-
-  view.setUint16(
-    34,
-    bitsPerSample,
-    true,
-  );
-
-  writeString(
-    36,
-    "data",
-  );
-
-  view.setUint32(
-    40,
-    pcm.length,
-    true,
-  );
-
-  new Uint8Array(
-    buffer,
-    44,
-  ).set(pcm);
-
-  return new Uint8Array(
-    buffer,
-  );
-}
 
 function extractAudioBase64(
   data: unknown,
@@ -656,14 +530,17 @@ Deno.serve(
           "processing",
       });
 
-      const pcm =
+      // NOTE: gemini-3.8-flash-lite-tts already returns a full
+      // WAV file (RIFF header included) for unary requests -
+      // earlier Gemini TTS models (e.g. gemini-3.1-flash-tts-preview)
+      // returned headerless raw PCM, which is why the previous
+      // version wrapped the bytes in a WAV header via pcmToWav().
+      // Doing that here would wrap a second WAV header around an
+      // already-complete WAV file, corrupting the audio. The bytes
+      // from generateSpeech() are stored as-is.
+      const wav =
         await generateSpeech(
           text,
-        );
-
-      const wav =
-        pcmToWav(
-          pcm,
         );
 
       await ensureBucket();
