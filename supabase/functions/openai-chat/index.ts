@@ -23,10 +23,22 @@ const SUPABASE_SERVICE_ROLE_KEY =
   ) ??
   "";
 
-const OPENAI_API_KEY =
+const GEMINI_API_KEY =
   Deno.env.get(
-    "OPENAI_API_KEY",
+    "GEMINI_API_KEY",
   ) ?? "";
+
+const GEMINI_CHAT_MODEL =
+  Deno.env.get(
+    "GEMINI_CHAT_MODEL",
+  ) ??
+  "gemini-3.8-flash";
+
+const GEMINI_VISION_MODEL =
+  Deno.env.get(
+    "GEMINI_VISION_MODEL",
+  ) ??
+  "gemini-3.8-flash";
 
 const DEFAULT_SYSTEM_PROMPT =
   "You are CREOVA AI Assistant. Give clear, useful and accurate answers.";
@@ -51,35 +63,21 @@ type GenerationType =
 
 type TextMessage = {
   role: MessageRole;
-
   content: string;
 };
 
-type ImageContentPart = {
-  type: "image_url";
+type GeminiPart = {
+  text?: string;
 
-  image_url: {
-    url: string;
-
-    detail:
-      | "auto"
-      | "low"
-      | "high";
+  inlineData?: {
+    mimeType: string;
+    data: string;
   };
 };
 
-type MultimodalMessage = {
-  role: MessageRole;
-
-  content:
-    | string
-    | Array<
-        | {
-            type: "text";
-            text: string;
-          }
-        | ImageContentPart
-      >;
+type GeminiContent = {
+  role: "user" | "model";
+  parts: GeminiPart[];
 };
 
 const CORS_HEADERS = {
@@ -292,13 +290,6 @@ function normalizeImageUrl(
     );
   }
 
-  /*
-   * Supported image sources:
-   *
-   * https://...
-   * http://...
-   * data:image/...
-   */
   if (
     imageUrl.startsWith(
       "https://",
@@ -318,117 +309,482 @@ function normalizeImageUrl(
   );
 }
 
-function buildOpenAIMessages(
-  systemPrompt: string,
-  messages: TextMessage[],
-  generationType: GenerationType,
-  imageUrl?: string,
-): MultimodalMessage[] {
-  const output:
-    MultimodalMessage[] = [
-    {
-      role: "system",
-
-      content:
-        systemPrompt,
-    },
-
-    ...messages,
-  ];
-
-  /*
-   * Normal chat/code does not need multimodal
-   * content.
-   */
+function getSystemPrompt(
+  body: Record<
+    string,
+    unknown
+  >,
+): string {
   if (
-    generationType !==
-    "vision"
+    typeof body.systemPrompt ===
+      "string" &&
+    body.systemPrompt.trim()
   ) {
-    return output;
+    return body.systemPrompt
+      .trim()
+      .slice(
+        0,
+        MAX_CONTENT_LENGTH,
+      );
   }
 
-  /*
-   * Vision must have an image.
-   */
-  if (!imageUrl) {
+  return DEFAULT_SYSTEM_PROMPT;
+}
+
+function convertRole(
+  role: MessageRole,
+): "user" | "model" {
+  return role ===
+    "assistant"
+    ? "model"
+    : "user";
+}
+
+function dataUrlToInlineData(
+  imageUrl: string,
+) {
+  const match =
+    imageUrl.match(
+      /^data:(image\/[^;]+);base64,(.+)$/s,
+    );
+
+  if (!match) {
     throw new Error(
-      "imageUrl is required for vision generation.",
+      "Invalid image data URL.",
     );
   }
 
-  /*
-   * Find the last user message.
-   */
-  let lastUserIndex =
+  return {
+    mimeType:
+      match[1],
+    data:
+      match[2],
+  };
+}
+
+async function urlToInlineData(
+  imageUrl: string,
+) {
+  const response =
+    await fetch(imageUrl);
+
+  if (!response.ok) {
+    throw new Error(
+      "Unable to download image for vision request.",
+    );
+  }
+
+  const contentType =
+    response.headers.get(
+      "content-type",
+    ) ?? "image/jpeg";
+
+  if (
+    !contentType.startsWith(
+      "image/",
+    )
+  ) {
+    throw new Error(
+      "The supplied URL does not contain an image.",
+    );
+  }
+
+  const bytes =
+    new Uint8Array(
+      await response.arrayBuffer(),
+    );
+
+  if (
+    bytes.length >
+    MAX_IMAGE_URL_LENGTH
+  ) {
+    throw new Error(
+      "Image is too large.",
+    );
+  }
+
+  let binary = "";
+
+  const chunkSize =
+    0x8000;
+
+  for (
+    let i = 0;
+    i < bytes.length;
+    i += chunkSize
+  ) {
+    binary +=
+      String.fromCharCode(
+        ...bytes.subarray(
+          i,
+          Math.min(
+            i + chunkSize,
+            bytes.length,
+          ),
+        ),
+      );
+  }
+
+  return {
+    mimeType:
+      contentType,
+    data:
+      btoa(binary),
+  };
+}
+
+async function imageToInlineData(
+  imageUrl: string,
+) {
+  if (
+    imageUrl.startsWith(
+      "data:image/",
+    )
+  ) {
+    return dataUrlToInlineData(
+      imageUrl,
+    );
+  }
+
+  return urlToInlineData(
+    imageUrl,
+  );
+}
+
+function buildGeminiContents(
+  messages: TextMessage[],
+): GeminiContent[] {
+  return messages.map(
+    (message) => ({
+      role:
+        convertRole(
+          message.role,
+        ),
+
+      parts: [
+        {
+          text:
+            message.content,
+        },
+      ],
+    }),
+  );
+}
+
+async function addVisionImage(
+  contents: GeminiContent[],
+  imageUrl: string,
+) {
+  let lastUser =
     -1;
 
   for (
     let index =
-      output.length - 1;
+      contents.length - 1;
     index >= 0;
     index -= 1
   ) {
     if (
-      output[index]?.role ===
+      contents[index]?.role ===
       "user"
     ) {
-      lastUserIndex =
+      lastUser =
         index;
-
       break;
     }
   }
 
   if (
-    lastUserIndex < 0
+    lastUser < 0
   ) {
     throw new Error(
       "A user message is required for vision generation.",
     );
   }
 
-  const userMessage =
-    output[
-      lastUserIndex
-    ];
+  const image =
+    await imageToInlineData(
+      imageUrl,
+    );
 
-  const text =
-    typeof userMessage.content ===
-    "string"
-      ? userMessage.content
-      : "Analyze the supplied image.";
+  contents[
+    lastUser
+  ].parts.push({
+    inlineData: {
+      mimeType:
+        image.mimeType,
+      data:
+        image.data,
+    },
+  });
+}
 
-  /*
-   * This is the critical Vision part:
-   *
-   * text + image_url are sent together
-   * in the same user message.
-   */
-  output[
-    lastUserIndex
-  ] = {
-    role: "user",
+function getMaxOutputTokens(
+  generationType: GenerationType,
+  value: unknown,
+): number {
+  if (
+    typeof value ===
+      "number" &&
+    Number.isInteger(value)
+  ) {
+    return Math.max(
+      1,
+      Math.min(
+        32000,
+        value,
+      ),
+    );
+  }
 
-    content: [
+  if (
+    generationType ===
+    "code"
+  ) {
+    return 8000;
+  }
+
+  if (
+    generationType ===
+    "vision"
+  ) {
+    return 4000;
+  }
+
+  return 4000;
+}
+
+function getTemperature(
+  value: unknown,
+) {
+  if (
+    typeof value ===
+      "number" &&
+    Number.isFinite(value)
+  ) {
+    return Math.max(
+      0,
+      Math.min(
+        2,
+        value,
+      ),
+    );
+  }
+
+  return 0.7;
+}
+
+function getTopP(
+  value: unknown,
+) {
+  if (
+    typeof value ===
+      "number" &&
+    Number.isFinite(value)
+  ) {
+    return Math.max(
+      0,
+      Math.min(
+        1,
+        value,
+      ),
+    );
+  }
+
+  return 0.95;
+}
+
+async function callGemini(
+  model: string,
+  systemPrompt: string,
+  contents: GeminiContent[],
+  generationType: GenerationType,
+  maxOutputTokens: number,
+  temperature: number,
+  topP: number,
+) {
+  if (!GEMINI_API_KEY) {
+    throw new Error(
+      "GEMINI_API_KEY is not configured.",
+    );
+  }
+
+  const endpoint =
+    `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(
+      model,
+    )}:generateContent`;
+
+  const response =
+    await fetch(
+      endpoint,
       {
-        type: "text",
+        method:
+          "POST",
 
-        text,
-      },
+        headers: {
+          "Content-Type":
+            "application/json",
 
-      {
-        type: "image_url",
-
-        image_url: {
-          url: imageUrl,
-
-          detail: "auto",
+          "x-goog-api-key":
+            GEMINI_API_KEY,
         },
-      },
-    ],
-  };
 
-  return output;
+        body: JSON.stringify({
+          systemInstruction: {
+            parts: [
+              {
+                text:
+                  systemPrompt,
+              },
+            ],
+          },
+
+          contents,
+
+          generationConfig: {
+            temperature,
+            topP,
+            maxOutputTokens,
+
+            ...(generationType ===
+              "vision"
+              ? {}
+              : {}),
+          },
+        }),
+      },
+    );
+
+  const rawText =
+    await response.text();
+
+  let result:
+    Record<
+      string,
+      unknown
+    > = {};
+
+  try {
+    result =
+      rawText
+        ? (JSON.parse(
+            rawText,
+          ) as Record<
+            string,
+            unknown
+          >)
+        : {};
+  } catch {
+    result = {
+      raw: rawText,
+    };
+  }
+
+  if (!response.ok) {
+    const errorObject =
+      result.error;
+
+    const message =
+      errorObject &&
+      typeof errorObject ===
+        "object"
+        ? (
+            errorObject as {
+              message?: unknown;
+            }
+          ).message
+        : undefined;
+
+    throw new Error(
+      typeof message ===
+        "string"
+        ? message
+        : `Gemini API request failed (${response.status}).`,
+    );
+  }
+
+  return result;
+}
+
+function extractGeminiText(
+  result: Record<
+    string,
+    unknown
+  >,
+): string {
+  const candidates =
+    Array.isArray(
+      result.candidates,
+    )
+      ? result.candidates
+      : [];
+
+  const firstCandidate =
+    candidates[0];
+
+  if (
+    !firstCandidate ||
+    typeof firstCandidate !==
+      "object"
+  ) {
+    return "";
+  }
+
+  const content =
+    (
+      firstCandidate as {
+        content?: unknown;
+      }
+    ).content;
+
+  if (
+    !content ||
+    typeof content !==
+      "object"
+  ) {
+    return "";
+  }
+
+  const parts =
+    Array.isArray(
+      (
+        content as {
+          parts?: unknown;
+        }
+      ).parts,
+    )
+      ? (
+          content as {
+            parts: unknown[];
+          }
+        ).parts
+      : [];
+
+  return parts
+    .filter(
+      (part) =>
+        part &&
+        typeof part ===
+          "object" &&
+        typeof (
+          part as {
+            text?: unknown;
+          }
+        ).text ===
+          "string",
+    )
+    .map(
+      (part) =>
+        String(
+          (
+            part as {
+              text: string;
+            }
+          ).text,
+        ),
+    )
+    .join("\n")
+    .trim();
 }
 
 Deno.serve(
@@ -458,7 +814,8 @@ Deno.serve(
     ) {
       return json(
         {
-          success: false,
+          success:
+            false,
 
           error:
             "Method not allowed.",
@@ -479,10 +836,10 @@ Deno.serve(
 
     try {
       /*
-       * OpenAI API key must exist.
+       * Gemini API key must exist.
        */
       if (
-        !OPENAI_API_KEY
+        !GEMINI_API_KEY
       ) {
         return json(
           {
@@ -490,7 +847,7 @@ Deno.serve(
               false,
 
             error:
-              "OPENAI_API_KEY is not configured.",
+              "GEMINI_API_KEY is not configured.",
           },
           500,
         );
@@ -609,8 +966,8 @@ Deno.serve(
       }
 
       /*
-       * Image is not allowed for regular
-       * chat/code.
+       * Image is not allowed for
+       * regular chat/code.
        */
       if (
         generationType !==
@@ -630,11 +987,11 @@ Deno.serve(
       }
 
       /*
-       * Verify:
+       * Verify generation:
        *
-       * generation exists
-       * belongs to authenticated user
-       * type matches request
+       * - exists
+       * - belongs to user
+       * - type matches
        */
       await getGenerationForUser(
         generationId,
@@ -670,126 +1027,70 @@ Deno.serve(
        * System prompt.
        */
       const systemPrompt =
-        typeof body.systemPrompt ===
-          "string" &&
-        body.systemPrompt.trim()
-          ? body.systemPrompt
-              .trim()
-              .slice(
-                0,
-                MAX_CONTENT_LENGTH,
-              )
-          : DEFAULT_SYSTEM_PROMPT;
+        getSystemPrompt(
+          body,
+        );
 
       /*
-       * Model selection.
+       * Gemini model.
        *
-       * Vision:
-       *   OPENAI_VISION_MODEL
-       *
-       * Code:
-       *   OPENAI_CODE_MODEL
-       *
-       * Chat:
-       *   OPENAI_CHAT_MODEL
-       *
-       * fallback:
-       *   OPENAI_MODEL
-       *
-       * final fallback:
-       *   gpt-4o-mini
-       *   (was previously "gpt-5.6", which is not a real OpenAI
-       *   model and made every request fail whenever
-       *   OPENAI_MODEL was not set)
+       * We do not accept arbitrary
+       * client-selected provider models.
+       * This prevents a client from
+       * bypassing the server model policy.
        */
-      const requestedModel =
-        typeof body.model ===
-        "string"
-          ? body.model.trim()
-          : "";
-
       const model =
-        requestedModel ||
-        (
-          generationType ===
-          "vision"
-            ? Deno.env.get(
-                "OPENAI_VISION_MODEL",
-              )
-            : generationType ===
-                "code"
-              ? Deno.env.get(
-                  "OPENAI_CODE_MODEL",
-                )
-              : Deno.env.get(
-                  "OPENAI_CHAT_MODEL",
-                )
-        ) ||
-        Deno.env.get(
-          "OPENAI_MODEL",
-        ) ||
-        "gpt-4o-mini";
+        generationType ===
+        "vision"
+          ? GEMINI_VISION_MODEL
+          : GEMINI_CHAT_MODEL;
 
       /*
-       * Temperature.
+       * Generation settings.
        */
       const temperature =
-        typeof body.temperature ===
-          "number" &&
-        Number.isFinite(
+        getTemperature(
           body.temperature,
-        )
-          ? Math.max(
-              0,
-              Math.min(
-                2,
-                body.temperature,
-              ),
-            )
-          : undefined;
+        );
 
-      /*
-       * Token limit.
-       *
-       * Client sends max_tokens.
-       * OpenAI request uses
-       * max_completion_tokens.
-       */
-      const maxTokens =
-        typeof body.max_tokens ===
-          "number" &&
-        Number.isInteger(
-          body.max_tokens,
-        )
-          ? Math.max(
-              1,
-              Math.min(
-                32000,
-                body.max_tokens,
-              ),
-            )
-          : undefined;
-
-      /*
-       * Top P.
-       */
       const topP =
-        typeof body.top_p ===
-          "number" &&
-        Number.isFinite(
+        getTopP(
           body.top_p,
-        )
-          ? Math.max(
-              0,
-              Math.min(
-                1,
-                body.top_p,
-              ),
-            )
-          : undefined;
+        );
+
+      const maxOutputTokens =
+        getMaxOutputTokens(
+          generationType,
+          body.max_tokens,
+        );
 
       /*
-       * Claim generation.
+       * Convert OpenAI-style messages
+       * already used by the mobile app
+       * into Gemini contents.
+       */
+      const contents =
+        buildGeminiContents(
+          messages,
+        );
+
+      /*
+       * Add image to the last user
+       * message for Vision.
+       */
+      if (
+        generationType ===
+          "vision" &&
+        imageUrl
+      ) {
+        await addVisionImage(
+          contents,
+          imageUrl,
+        );
+      }
+
+      /*
+       * Claim generation:
        *
        * queued -> processing
        */
@@ -806,224 +1107,50 @@ Deno.serve(
       });
 
       /*
-       * Construct OpenAI request.
+       * Call Gemini.
        */
-      const requestBody:
-        Record<
-          string,
-          unknown
-        > = {
-        model,
-
-        messages:
-          buildOpenAIMessages(
-            systemPrompt,
-            messages,
-            generationType,
-            imageUrl,
-          ),
-      };
-
-      if (
-        temperature !==
-        undefined
-      ) {
-        requestBody.temperature =
-          temperature;
-      }
-
-      if (
-        maxTokens !==
-        undefined
-      ) {
-        requestBody.max_completion_tokens =
-          maxTokens;
-      }
-
-      if (
-        topP !== undefined
-      ) {
-        requestBody.top_p =
-          topP;
-      }
-
-      /*
-       * Call OpenAI.
-       */
-      const response =
-        await fetch(
-          "https://api.openai.com/v1/chat/completions",
-          {
-            method:
-              "POST",
-
-            headers: {
-              "Content-Type":
-                "application/json",
-
-              Authorization:
-                `Bearer ${OPENAI_API_KEY}`,
-            },
-
-            body: JSON.stringify(
-              requestBody,
-            ),
-          },
+      const result =
+        await callGemini(
+          model,
+          systemPrompt,
+          contents,
+          generationType,
+          maxOutputTokens,
+          temperature,
+          topP,
         );
 
       /*
-       * Read raw response first.
-       */
-      const rawText =
-        await response.text();
-
-      let result:
-        Record<
-          string,
-          unknown
-        > = {};
-
-      try {
-        result =
-          rawText
-            ? (JSON.parse(
-                rawText,
-              ) as Record<
-                string,
-                unknown
-              >)
-            : {};
-      } catch {
-        result = {
-          raw: rawText,
-        };
-      }
-
-      /*
-       * OpenAI error.
-       */
-      if (
-        !response.ok
-      ) {
-        const errorObject =
-          result.error;
-
-        const message =
-          errorObject &&
-          typeof errorObject ===
-            "object"
-            ? (
-                errorObject as {
-                  message?: unknown;
-                }
-              ).message
-            : undefined;
-
-        throw new Error(
-          typeof message ===
-          "string"
-            ? message
-            : "OpenAI API request failed.",
-        );
-      }
-
-      /*
-       * Extract choices.
-       */
-      const choices =
-        Array.isArray(
-          result.choices,
-        )
-          ? result.choices
-          : [];
-
-      const firstChoice =
-        choices[0];
-
-      const choiceMessage =
-        firstChoice &&
-        typeof firstChoice ===
-          "object"
-          ? (
-              firstChoice as {
-                message?: unknown;
-              }
-            ).message
-          : undefined;
-
-      const rawContent =
-        choiceMessage &&
-        typeof choiceMessage ===
-          "object"
-          ? (
-              choiceMessage as {
-                content?: unknown;
-              }
-            ).content
-          : undefined;
-
-      /*
-       * OpenAI may return:
-       *
-       * string
-       *
-       * or content parts.
+       * Extract generated text.
        */
       const text =
-        typeof rawContent ===
-        "string"
-          ? rawContent
-          : Array.isArray(
-                rawContent,
-              )
-            ? rawContent
-                .filter(
-                  (part) =>
-                    part &&
-                    typeof part ===
-                      "object" &&
-                    (
-                      part as Record<
-                        string,
-                        unknown
-                      >
-                    ).type ===
-                      "text",
-                )
-                .map(
-                  (part) =>
-                    String(
-                      (
-                        part as Record<
-                          string,
-                          unknown
-                        >
-                      ).text ??
-                        "",
-                    ),
-                )
-                .join("\n")
-            : "";
+        extractGeminiText(
+          result,
+        );
 
       /*
-       * Empty response is treated as failure.
+       * Empty response is failure.
        */
       if (
         !text.trim()
       ) {
         throw new Error(
-          "OpenAI returned an empty response.",
+          "Gemini returned an empty response.",
         );
       }
 
       /*
        * Usage information.
+       *
+       * Gemini returns:
+       *
+       * usageMetadata
        */
       const usage =
-        result.usage &&
-        typeof result.usage ===
+        result.usageMetadata &&
+        typeof result.usageMetadata ===
           "object"
-          ? result.usage
+          ? result.usageMetadata
           : undefined;
 
       /*
@@ -1038,7 +1165,7 @@ Deno.serve(
           "completed",
 
         provider:
-          "openai",
+          "gemini",
 
         model,
 
@@ -1053,6 +1180,15 @@ Deno.serve(
 
       /*
        * Return successful response.
+       *
+       * Keep the same response shape
+       * used by the existing mobile app:
+       *
+       * success
+       * generationId
+       * text
+       * model
+       * usage
        */
       return json({
         success: true,
@@ -1071,10 +1207,11 @@ Deno.serve(
         error instanceof
         Error
           ? error.message
-          : "OpenAI generation failed.";
+          : "Gemini generation failed.";
 
       /*
-       * Try to mark generation as failed.
+       * Try to mark generation
+       * as failed.
        */
       if (
         generationId &&
@@ -1105,7 +1242,7 @@ Deno.serve(
       }
 
       console.error(
-        "openai-chat error:",
+        "openai-chat Gemini error:",
         error,
       );
 
