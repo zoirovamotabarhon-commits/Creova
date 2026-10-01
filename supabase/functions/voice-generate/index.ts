@@ -1,239 +1,776 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import OpenAI from "npm:openai@6.49.0";
+
 import { createClient } from "npm:@supabase/supabase-js@2.57.0";
+
 import {
   getGenerationForUser,
   storeAssetAndGetSignedUrl,
   updateGeneration,
 } from "../_shared/generation.ts";
 
-const KEY = Deno.env.get("OPENAI_API_KEY") ?? "";
-const URL = Deno.env.get("SUPABASE_URL") ?? "";
-const SERVICE =
+const GEMINI_API_KEY =
+  Deno.env.get("GEMINI_API_KEY") ?? "";
+
+const GEMINI_TTS_MODEL =
+  Deno.env.get("GEMINI_TTS_MODEL") ??
+  "gemini-3.8-flash-lite-tts";
+
+const SUPABASE_URL =
+  Deno.env.get("SUPABASE_URL") ?? "";
+
+const SUPABASE_SERVICE_ROLE_KEY =
   Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ??
   Deno.env.get("SUPABASE_SECRET_KEY") ??
   "";
-const BUCKET = "generation-assets";
 
-const HEADERS = {
+const BUCKET =
+  "generation-assets";
+
+const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
+
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Content-Type": "application/json",
+
+  "Access-Control-Allow-Methods":
+    "POST, OPTIONS",
+
+  "Content-Type":
+    "application/json",
 };
 
-const json = (b: Record<string, unknown>, s = 200) =>
-  new Response(JSON.stringify(b), {
-    status: s,
-    headers: HEADERS,
-  });
+function json(
+  body: Record<string, unknown>,
+  status = 200,
+) {
+  return new Response(
+    JSON.stringify(body),
+    {
+      status,
+      headers:
+        CORS_HEADERS,
+    },
+  );
+}
 
 function admin() {
-  if (!URL || !SERVICE) {
-    throw new Error("Supabase server configuration is missing.");
-  }
-
-  return createClient(URL, SERVICE, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-    },
-  });
-}
-
-async function user(req: Request) {
-  const h = req.headers.get("Authorization");
-
-  if (!h?.startsWith("Bearer ")) {
-    return null;
-  }
-
-  const { data } = await admin().auth.getUser(h.slice(7).trim());
-
-  return data.user ?? null;
-}
-
-async function ensureBucket() {
-  const a = admin();
-
-  const { data, error } = await a.storage.listBuckets();
-
-  if (error) {
-    throw error;
-  }
-
-  if (!data?.some((b) => b.name === BUCKET)) {
-    const { error: e } = await a.storage.createBucket(BUCKET, {
-      public: false,
-    });
-
-    if (
-      e &&
-      !e.message.toLowerCase().includes("already exists")
-    ) {
-      throw e;
-    }
-  }
-}
-
-Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response("ok", {
-      headers: HEADERS,
-    });
-  }
-
-  if (req.method !== "POST") {
-    return json(
-      {
-        success: false,
-        error: "Method not allowed.",
-      },
-      405,
+  if (
+    !SUPABASE_URL ||
+    !SUPABASE_SERVICE_ROLE_KEY
+  ) {
+    throw new Error(
+      "Supabase server configuration is missing.",
     );
   }
 
-  let generationId = "";
-  let userId = "";
+  return createClient(
+    SUPABASE_URL,
+    SUPABASE_SERVICE_ROLE_KEY,
+    {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    },
+  );
+}
+
+async function getUser(
+  req: Request,
+) {
+  const authorization =
+    req.headers.get(
+      "Authorization",
+    );
+
+  if (
+    !authorization?.startsWith(
+      "Bearer ",
+    )
+  ) {
+    return null;
+  }
+
+  const token =
+    authorization
+      .slice(7)
+      .trim();
+
+  if (!token) {
+    return null;
+  }
+
+  const {
+    data,
+    error,
+  } =
+    await admin().auth.getUser(
+      token,
+    );
+
+  if (
+    error ||
+    !data.user
+  ) {
+    return null;
+  }
+
+  return data.user;
+}
+
+async function ensureBucket() {
+  const client =
+    admin();
+
+  const {
+    data,
+    error,
+  } =
+    await client.storage.listBuckets();
+
+  if (error) {
+    throw new Error(
+      error.message,
+    );
+  }
+
+  if (
+    data?.some(
+      (bucket) =>
+        bucket.name ===
+        BUCKET,
+    )
+  ) {
+    return;
+  }
+
+  const {
+    error:
+      createError,
+  } =
+    await client.storage.createBucket(
+      BUCKET,
+      {
+        public: false,
+      },
+    );
+
+  if (
+    createError &&
+    !createError.message
+      .toLowerCase()
+      .includes(
+        "already exists",
+      )
+  ) {
+    throw new Error(
+      createError.message,
+    );
+  }
+}
+
+function pcmToWav(
+  pcm: Uint8Array,
+  sampleRate = 24000,
+  channels = 1,
+  bitsPerSample = 16,
+) {
+  const bytesPerSample =
+    bitsPerSample / 8;
+
+  const blockAlign =
+    channels *
+    bytesPerSample;
+
+  const byteRate =
+    sampleRate *
+    blockAlign;
+
+  const buffer =
+    new ArrayBuffer(
+      44 + pcm.length,
+    );
+
+  const view =
+    new DataView(
+      buffer,
+    );
+
+  const writeString = (
+    offset: number,
+    value: string,
+  ) => {
+    for (
+      let i = 0;
+      i < value.length;
+      i++
+    ) {
+      view.setUint8(
+        offset + i,
+        value.charCodeAt(i),
+      );
+    }
+  };
+
+  writeString(
+    0,
+    "RIFF",
+  );
+
+  view.setUint32(
+    4,
+    36 + pcm.length,
+    true,
+  );
+
+  writeString(
+    8,
+    "WAVE",
+  );
+
+  writeString(
+    12,
+    "fmt ",
+  );
+
+  view.setUint32(
+    16,
+    16,
+    true,
+  );
+
+  view.setUint16(
+    20,
+    1,
+    true,
+  );
+
+  view.setUint16(
+    22,
+    channels,
+    true,
+  );
+
+  view.setUint32(
+    24,
+    sampleRate,
+    true,
+  );
+
+  view.setUint32(
+    28,
+    byteRate,
+    true,
+  );
+
+  view.setUint16(
+    32,
+    blockAlign,
+    true,
+  );
+
+  view.setUint16(
+    34,
+    bitsPerSample,
+    true,
+  );
+
+  writeString(
+    36,
+    "data",
+  );
+
+  view.setUint32(
+    40,
+    pcm.length,
+    true,
+  );
+
+  new Uint8Array(
+    buffer,
+    44,
+  ).set(pcm);
+
+  return new Uint8Array(
+    buffer,
+  );
+}
+
+function extractAudioBase64(
+  data: unknown,
+): string | null {
+  if (
+    !data ||
+    typeof data !==
+      "object"
+  ) {
+    return null;
+  }
+
+  const candidates =
+    (
+      data as {
+        candidates?: unknown;
+      }
+    ).candidates;
+
+  if (
+    !Array.isArray(
+      candidates,
+    )
+  ) {
+    return null;
+  }
+
+  for (
+    const candidate of candidates
+  ) {
+    if (
+      !candidate ||
+      typeof candidate !==
+        "object"
+    ) {
+      continue;
+    }
+
+    const content =
+      (
+        candidate as {
+          content?: unknown;
+        }
+      ).content;
+
+    if (
+      !content ||
+      typeof content !==
+        "object"
+    ) {
+      continue;
+    }
+
+    const parts =
+      (
+        content as {
+          parts?: unknown;
+        }
+      ).parts;
+
+    if (
+      !Array.isArray(parts)
+    ) {
+      continue;
+    }
+
+    for (
+      const part of parts
+    ) {
+      if (
+        !part ||
+        typeof part !==
+          "object"
+      ) {
+        continue;
+      }
+
+      const inlineData =
+        (
+          part as {
+            inlineData?: unknown;
+          }
+        ).inlineData;
+
+      if (
+        !inlineData ||
+        typeof inlineData !==
+          "object"
+      ) {
+        continue;
+      }
+
+      const mimeType =
+        (
+          inlineData as {
+            mimeType?: unknown;
+          }
+        ).mimeType;
+
+      const base64 =
+        (
+          inlineData as {
+            data?: unknown;
+          }
+        ).data;
+
+      if (
+        typeof base64 ===
+          "string" &&
+        base64.length > 0
+      ) {
+        return base64;
+      }
+    }
+  }
+
+  return null;
+}
+
+async function generateSpeech(
+  text: string,
+) {
+  if (!GEMINI_API_KEY) {
+    throw new Error(
+      "GEMINI_API_KEY is not configured.",
+    );
+  }
+
+  const endpoint =
+    `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(
+      GEMINI_TTS_MODEL,
+    )}:generateContent`;
+
+  const apiResponse =
+    await fetch(
+      endpoint,
+      {
+        method:
+          "POST",
+
+        headers: {
+          "Content-Type":
+            "application/json",
+
+          "x-goog-api-key":
+            GEMINI_API_KEY,
+        },
+
+        body: JSON.stringify({
+          contents: [
+            {
+              role:
+                "user",
+
+              parts: [
+                {
+                  text,
+                },
+              ],
+            },
+          ],
+
+          generationConfig: {
+            responseModalities: [
+              "AUDIO",
+            ],
+
+            speechConfig: {
+              voiceConfig: {
+                voice:
+                  "Kore",
+              },
+            },
+          },
+        }),
+      },
+    );
+
+  const raw =
+    await apiResponse.text();
+
+  let data:
+    Record<string, unknown> = {};
 
   try {
-    if (!KEY) {
+    data = raw
+      ? JSON.parse(raw)
+      : {};
+  } catch {
+    data = {
+      raw,
+    };
+  }
+
+  if (
+    !apiResponse.ok
+  ) {
+    const errorObject =
+      data.error;
+
+    const message =
+      errorObject &&
+      typeof errorObject ===
+        "object"
+        ? (
+            errorObject as {
+              message?: unknown;
+            }
+          ).message
+        : undefined;
+
+    throw new Error(
+      typeof message ===
+        "string"
+        ? message
+        : `Gemini TTS failed (${apiResponse.status}).`,
+    );
+  }
+
+  const base64 =
+    extractAudioBase64(
+      data,
+    );
+
+  if (!base64) {
+    throw new Error(
+      "Gemini TTS did not return audio data.",
+    );
+  }
+
+  return Uint8Array.from(
+    atob(base64),
+    (character) =>
+      character.charCodeAt(0),
+  );
+}
+
+Deno.serve(
+  async (req) => {
+    if (
+      req.method ===
+      "OPTIONS"
+    ) {
+      return new Response(
+        "ok",
+        {
+          headers:
+            CORS_HEADERS,
+        },
+      );
+    }
+
+    if (
+      req.method !==
+      "POST"
+    ) {
       return json(
         {
           success: false,
-          error: "OPENAI_API_KEY is not configured.",
+          error:
+            "Method not allowed.",
+        },
+        405,
+      );
+    }
+
+    let generationId =
+      "";
+
+    let userId =
+      "";
+
+    try {
+      const currentUser =
+        await getUser(
+          req,
+        );
+
+      if (!currentUser) {
+        return json(
+          {
+            success: false,
+            error:
+              "Authentication required.",
+          },
+          401,
+        );
+      }
+
+      userId =
+        currentUser.id;
+
+      const body =
+        (await req.json()) as Record<
+          string,
+          unknown
+        >;
+
+      generationId =
+        typeof body.generationId ===
+        "string"
+          ? body.generationId.trim()
+          : "";
+
+      const text =
+        typeof body.text ===
+        "string"
+          ? body.text.trim()
+          : "";
+
+      if (!generationId) {
+        return json(
+          {
+            success: false,
+            error:
+              "Generation ID is required.",
+          },
+          400,
+        );
+      }
+
+      if (!text) {
+        return json(
+          {
+            success: false,
+            error:
+              "Text is required.",
+          },
+          400,
+        );
+      }
+
+      if (
+        text.length >
+        32000
+      ) {
+        return json(
+          {
+            success: false,
+            error:
+              "Voice text is too long.",
+          },
+          400,
+        );
+      }
+
+      await getGenerationForUser(
+        generationId,
+        userId,
+        "voice",
+      );
+
+      await updateGeneration({
+        generationId,
+        userId,
+        expectedType:
+          "voice",
+        status:
+          "processing",
+      });
+
+      const pcm =
+        await generateSpeech(
+          text,
+        );
+
+      const wav =
+        pcmToWav(
+          pcm,
+        );
+
+      await ensureBucket();
+
+      const stored =
+        await storeAssetAndGetSignedUrl({
+          bucket:
+            BUCKET,
+
+          path:
+            `${userId}/${generationId}.wav`,
+
+          data:
+            wav,
+
+          contentType:
+            "audio/wav",
+
+          expiresIn:
+            60 * 60,
+        });
+
+      await updateGeneration({
+        generationId,
+        userId,
+        expectedType:
+          "voice",
+        status:
+          "completed",
+        provider:
+          "gemini",
+        model:
+          GEMINI_TTS_MODEL,
+        resultUrl:
+          stored.url,
+        metadata: {
+          storageBucket:
+            BUCKET,
+
+          storagePath:
+            stored.path,
+
+          provider:
+            "gemini",
+        },
+      });
+
+      return json({
+        success: true,
+
+        generationId,
+
+        audioUrl:
+          stored.url,
+
+        model:
+          GEMINI_TTS_MODEL,
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Voice generation failed.";
+
+      if (
+        generationId &&
+        userId
+      ) {
+        try {
+          await updateGeneration({
+            generationId,
+            userId,
+            expectedType:
+              "voice",
+            status:
+              "failed",
+            errorMessage:
+              message,
+          });
+        } catch (
+          updateError
+        ) {
+          console.error(
+            "Failed to mark voice generation as failed:",
+            updateError,
+          );
+        }
+      }
+
+      console.error(
+        "voice-generate Gemini error:",
+        error,
+      );
+
+      return json(
+        {
+          success: false,
+
+          generationId:
+            generationId ||
+            undefined,
+
+          error:
+            message,
         },
         500,
       );
     }
-
-    const u = await user(req);
-
-    if (!u) {
-      return json(
-        {
-          success: false,
-          error: "Authentication required.",
-        },
-        401,
-      );
-    }
-
-    userId = u.id;
-
-    const b = await req.json();
-
-    generationId =
-      typeof b.generationId === "string"
-        ? b.generationId.trim()
-        : "";
-
-    const text =
-      typeof b.text === "string"
-        ? b.text.trim()
-        : "";
-
-    if (!generationId || !text) {
-      return json(
-        {
-          success: false,
-          error: !generationId
-            ? "Generation ID is required."
-            : "Text is required.",
-        },
-        400,
-      );
-    }
-
-    await getGenerationForUser(
-      generationId,
-      userId,
-      "voice",
-    );
-
-    await updateGeneration({
-      generationId,
-      userId,
-      expectedType: "voice",
-      status: "processing",
-    });
-
-    const speech = await new OpenAI({
-      apiKey: KEY,
-    }).audio.speech.create({
-      model: "tts-1",
-      voice: "alloy",
-      input: text,
-      response_format: "mp3",
-    });
-
-    const buffer = await speech.arrayBuffer();
-
-    if (!buffer.byteLength) {
-      throw new Error(
-        "Audio generation returned empty data.",
-      );
-    }
-
-    await ensureBucket();
-
-    // NOTE: storeAssetAndGetSignedUrl() takes a `data` field, not
-    // `body` - the previous code passed `body: buffer`, so no
-    // actual bytes were ever uploaded.
-    const stored = await storeAssetAndGetSignedUrl({
-      bucket: BUCKET,
-      path: `${userId}/${generationId}.mp3`,
-      data: buffer,
-      contentType: "audio/mpeg",
-    });
-
-    await updateGeneration({
-      generationId,
-      userId,
-      expectedType: "voice",
-      status: "completed",
-      provider: "openai",
-      model: "tts-1",
-      resultUrl: stored.url,
-      metadata: {
-        storageBucket: BUCKET,
-        storagePath: stored.path,
-      },
-    });
-
-    return json({
-      success: true,
-      generationId,
-      audioUrl: stored.url,
-    });
-  } catch (error) {
-    const message =
-      error instanceof Error
-        ? error.message
-        : "Voice generation failed.";
-
-    if (generationId && userId) {
-      try {
-        await updateGeneration({
-          generationId,
-          userId,
-          expectedType: "voice",
-          status: "failed",
-          errorMessage: message,
-        });
-      } catch (e) {
-        console.error(e);
-      }
-    }
-
-    return json(
-      {
-        success: false,
-        generationId: generationId || undefined,
-        error: message,
-      },
-      500,
-    );
-  }
-});
+  },
+);
