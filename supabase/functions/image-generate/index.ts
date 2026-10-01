@@ -1,6 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 
 import { createClient } from "npm:@supabase/supabase-js@2.57.0";
+
 import {
   getGenerationForUser,
   updateGeneration,
@@ -12,16 +13,17 @@ const SUPABASE_URL =
 
 const SUPABASE_SERVICE_ROLE_KEY =
   Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ??
+  Deno.env.get("SUPABASE_SECRET_KEY") ??
   "";
 
-const OPENAI_API_KEY =
-  Deno.env.get("OPENAI_API_KEY") ?? "";
+const GEMINI_API_KEY =
+  Deno.env.get("GEMINI_API_KEY") ?? "";
 
 const IMAGE_MODEL =
-  Deno.env.get("OPENAI_IMAGE_MODEL") ??
-  "gpt-image-1";
+  Deno.env.get("GEMINI_IMAGE_MODEL") ??
+  "gemini-3.1-flash-image";
 
-const corsHeaders = {
+const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
@@ -44,7 +46,7 @@ function response(
     JSON.stringify(body),
     {
       status,
-      headers: corsHeaders,
+      headers: CORS_HEADERS,
     },
   );
 }
@@ -96,14 +98,11 @@ async function getUser(
     return null;
   }
 
-  const admin =
-    getAdminClient();
-
   const {
     data,
     error,
   } =
-    await admin.auth.getUser(
+    await getAdminClient().auth.getUser(
       token,
     );
 
@@ -128,6 +127,37 @@ function isValidSize(
   );
 }
 
+function imageConfig(
+  size: ImageSize,
+) {
+  switch (size) {
+    case "1536x1024":
+      return {
+        aspectRatio: "3:2",
+        imageSize: "1K",
+      };
+
+    case "1024x1536":
+      return {
+        aspectRatio: "2:3",
+        imageSize: "1K",
+      };
+
+    case "auto":
+      return {
+        aspectRatio: "1:1",
+        imageSize: "1K",
+      };
+
+    case "1024x1024":
+    default:
+      return {
+        aspectRatio: "1:1",
+        imageSize: "1K",
+      };
+  }
+}
+
 function extractImageBase64(
   result: unknown,
 ): string | null {
@@ -138,36 +168,204 @@ function extractImageBase64(
     return null;
   }
 
-  const data =
+  const candidates =
     (
       result as {
-        data?: unknown;
+        candidates?: unknown;
       }
-    ).data;
-
-  if (!Array.isArray(data)) {
-    return null;
-  }
-
-  const first =
-    data[0];
+    ).candidates;
 
   if (
-    !first ||
-    typeof first !== "object"
+    !Array.isArray(
+      candidates,
+    )
   ) {
     return null;
   }
 
-  const image =
-    first as {
-      b64_json?: unknown;
-    };
+  for (
+    const candidate of candidates
+  ) {
+    if (
+      !candidate ||
+      typeof candidate !== "object"
+    ) {
+      continue;
+    }
 
-  return typeof image.b64_json ===
-    "string"
-    ? image.b64_json
-    : null;
+    const content =
+      (
+        candidate as {
+          content?: unknown;
+        }
+      ).content;
+
+    if (
+      !content ||
+      typeof content !== "object"
+    ) {
+      continue;
+    }
+
+    const parts =
+      (
+        content as {
+          parts?: unknown;
+        }
+      ).parts;
+
+    if (
+      !Array.isArray(parts)
+    ) {
+      continue;
+    }
+
+    for (
+      const part of parts
+    ) {
+      if (
+        !part ||
+        typeof part !== "object"
+      ) {
+        continue;
+      }
+
+      const inlineData =
+        (
+          part as {
+            inlineData?: unknown;
+          }
+        ).inlineData;
+
+      if (
+        !inlineData ||
+        typeof inlineData !== "object"
+      ) {
+        continue;
+      }
+
+      const data =
+        (
+          inlineData as {
+            data?: unknown;
+          }
+        ).data;
+
+      if (
+        typeof data === "string" &&
+        data.length > 0
+      ) {
+        return data;
+      }
+    }
+  }
+
+  return null;
+}
+
+async function callGeminiImage(
+  prompt: string,
+  size: ImageSize,
+) {
+  if (!GEMINI_API_KEY) {
+    throw new Error(
+      "GEMINI_API_KEY is not configured.",
+    );
+  }
+
+  const config =
+    imageConfig(size);
+
+  const url =
+    `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(
+      IMAGE_MODEL,
+    )}:generateContent`;
+
+  const apiResponse =
+    await fetch(
+      url,
+      {
+        method: "POST",
+
+        headers: {
+          "Content-Type":
+            "application/json",
+
+          "x-goog-api-key":
+            GEMINI_API_KEY,
+        },
+
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                {
+                  text: prompt,
+                },
+              ],
+            },
+          ],
+
+          generationConfig: {
+            responseModalities: [
+              "IMAGE",
+            ],
+
+            responseFormat: {
+              image: {
+                aspectRatio:
+                  config.aspectRatio,
+
+                imageSize:
+                  config.imageSize,
+              },
+            },
+          },
+        }),
+      },
+    );
+
+  const raw =
+    await apiResponse.text();
+
+  let data:
+    Record<string, unknown> = {};
+
+  try {
+    data = raw
+      ? JSON.parse(raw)
+      : {};
+  } catch {
+    data = {
+      raw,
+    };
+  }
+
+  if (
+    !apiResponse.ok
+  ) {
+    const errorObject =
+      data.error;
+
+    const message =
+      errorObject &&
+      typeof errorObject ===
+        "object"
+        ? (
+            errorObject as {
+              message?: unknown;
+            }
+          ).message
+        : undefined;
+
+    throw new Error(
+      typeof message === "string"
+        ? message
+        : `Gemini image generation failed (${apiResponse.status}).`,
+    );
+  }
+
+  return data;
 }
 
 Deno.serve(
@@ -180,7 +378,7 @@ Deno.serve(
         "ok",
         {
           headers:
-            corsHeaders,
+            CORS_HEADERS,
         },
       );
     }
@@ -203,12 +401,12 @@ Deno.serve(
     let userId = "";
 
     try {
-      if (!OPENAI_API_KEY) {
+      if (!GEMINI_API_KEY) {
         return response(
           {
             success: false,
             error:
-              "OPENAI_API_KEY is not configured.",
+              "GEMINI_API_KEY is not configured.",
           },
           500,
         );
@@ -234,10 +432,7 @@ Deno.serve(
         user.id;
 
       let body:
-        Record<
-          string,
-          unknown
-        >;
+        Record<string, unknown>;
 
       try {
         body =
@@ -291,8 +486,7 @@ Deno.serve(
       }
 
       if (
-        prompt.length >
-        10000
+        prompt.length > 10000
       ) {
         return response(
           {
@@ -311,22 +505,12 @@ Deno.serve(
           ? body.size
           : "1024x1024";
 
-      /*
-       * Verify ownership and generation type
-       * before contacting the paid provider.
-       */
       await getGenerationForUser(
         generationId,
         userId,
         "image",
       );
 
-      /*
-       * Claim the generation.
-       *
-       * Only the request that successfully changes
-       * queued -> processing is allowed to call OpenAI.
-       */
       await updateGeneration({
         generationId,
         userId,
@@ -336,85 +520,11 @@ Deno.serve(
           "image",
       });
 
-      const openAIResponse =
-        await fetch(
-          "https://api.openai.com/v1/images/generations",
-          {
-            method:
-              "POST",
-
-            headers: {
-              "Content-Type":
-                "application/json",
-
-              Authorization:
-                `Bearer ${OPENAI_API_KEY}`,
-            },
-
-            body:
-              JSON.stringify({
-                model:
-                  IMAGE_MODEL,
-
-                prompt,
-
-                size,
-
-                response_format:
-                  "b64_json",
-              }),
-          },
+      const result =
+        await callGeminiImage(
+          prompt,
+          size,
         );
-
-      const raw =
-        await openAIResponse.text();
-
-      let result:
-        Record<
-          string,
-          unknown
-        > = {};
-
-      try {
-        result =
-          raw
-            ? (JSON.parse(
-                raw,
-              ) as Record<
-                string,
-                unknown
-              >)
-            : {};
-      } catch {
-        result = {
-          raw,
-        };
-      }
-
-      if (
-        !openAIResponse.ok
-      ) {
-        const errorObject =
-          result.error;
-
-        const errorMessage =
-          errorObject &&
-          typeof errorObject ===
-            "object"
-            ? (
-                errorObject as {
-                  message?: unknown;
-                }
-              ).message
-            : undefined;
-
-        throw new Error(
-          typeof errorMessage ===
-            "string"
-            ? errorMessage
-            : "OpenAI image generation failed.",
-        );
-      }
 
       const base64 =
         extractImageBase64(
@@ -423,16 +533,10 @@ Deno.serve(
 
       if (!base64) {
         throw new Error(
-          "OpenAI did not return image data.",
+          "Gemini did not return image data.",
         );
       }
 
-      /*
-       * Decode base64 and store the image in a PRIVATE
-       * Supabase Storage bucket.
-       *
-       * The client receives only a temporary signed URL.
-       */
       const binary =
         Uint8Array.from(
           atob(base64),
@@ -442,14 +546,9 @@ Deno.serve(
             ),
         );
 
-      /*
-       * storeAssetAndGetSignedUrl() returns { url, path }, not a
-       * bare string - destructure `url` here so every use below
-       * is the actual signed URL string. The previous version
-       * assigned the whole object to assetUrl and sent it to the
-       * client as-is, which broke imageUrl.
-       */
-      const { url: assetUrl } =
+      const {
+        url: assetUrl,
+      } =
         await storeAssetAndGetSignedUrl({
           bucket:
             "generation-assets",
@@ -473,7 +572,7 @@ Deno.serve(
         status:
           "completed",
         provider:
-          "openai",
+          "gemini",
         model:
           IMAGE_MODEL,
         resultText:
@@ -481,8 +580,13 @@ Deno.serve(
         metadata: {
           assetType:
             "image",
+
           assetUrl,
+
           size,
+
+          provider:
+            "gemini",
         },
         expectedType:
           "image",
@@ -508,10 +612,6 @@ Deno.serve(
           ? error.message
           : "Image generation failed.";
 
-      /*
-       * updateGeneration() handles the failed state
-       * and refund logic when appropriate.
-       */
       if (
         generationId &&
         userId
@@ -537,7 +637,7 @@ Deno.serve(
       }
 
       console.error(
-        "image-generate error:",
+        "image-generate Gemini error:",
         error,
       );
 
