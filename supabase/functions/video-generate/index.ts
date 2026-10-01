@@ -5,26 +5,23 @@ import {
 } from "npm:@supabase/supabase-js@2.57.0";
 
 import {
+  getGenerationForUser,
   updateGeneration,
 } from "../_shared/generation.ts";
 
-const OPENAI_API_KEY =
-  Deno.env.get(
-    "OPENAI_API_KEY",
-  ) ?? "";
+const GEMINI_API_KEY =
+  Deno.env.get("GEMINI_API_KEY") ?? "";
+
+const GEMINI_VIDEO_MODEL =
+  Deno.env.get("GEMINI_VIDEO_MODEL") ??
+  "veo-3.1-lite-generate-preview";
 
 const SUPABASE_URL =
-  Deno.env.get(
-    "SUPABASE_URL",
-  ) ?? "";
+  Deno.env.get("SUPABASE_URL") ?? "";
 
 const SUPABASE_SERVICE_ROLE_KEY =
-  Deno.env.get(
-    "SUPABASE_SERVICE_ROLE_KEY",
-  ) ??
-  Deno.env.get(
-    "SUPABASE_SECRET_KEY",
-  ) ??
+  Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ??
+  Deno.env.get("SUPABASE_SECRET_KEY") ??
   "";
 
 const VIDEO_BUCKET =
@@ -32,10 +29,13 @@ const VIDEO_BUCKET =
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
+
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
+
   "Access-Control-Allow-Methods":
     "POST, OPTIONS",
+
   "Content-Type":
     "application/json",
 };
@@ -57,7 +57,7 @@ function json(
   );
 }
 
-function getAdminClient() {
+function admin() {
   if (
     !SUPABASE_URL ||
     !SUPABASE_SERVICE_ROLE_KEY
@@ -79,7 +79,7 @@ function getAdminClient() {
   );
 }
 
-async function requireUser(
+async function getUser(
   req: Request,
 ) {
   const authorization =
@@ -104,14 +104,11 @@ async function requireUser(
     return null;
   }
 
-  const admin =
-    getAdminClient();
-
   const {
     data,
     error,
   } =
-    await admin.auth.getUser(
+    await admin().auth.getUser(
       token,
     );
 
@@ -125,36 +122,96 @@ async function requireUser(
   return data.user;
 }
 
-async function openAI(
-  path: string,
-  options: RequestInit = {},
-) {
-  if (!OPENAI_API_KEY) {
+async function ensureVideoBucket() {
+  const client =
+    admin();
+
+  const {
+    data,
+    error,
+  } =
+    await client.storage.listBuckets();
+
+  if (error) {
     throw new Error(
-      "OPENAI_API_KEY is not configured.",
+      error.message,
+    );
+  }
+
+  if (
+    data?.some(
+      (bucket) =>
+        bucket.name ===
+        VIDEO_BUCKET,
+    )
+  ) {
+    return;
+  }
+
+  const {
+    error:
+      createError,
+  } =
+    await client.storage.createBucket(
+      VIDEO_BUCKET,
+      {
+        public: false,
+
+        allowedMimeTypes: [
+          "video/mp4",
+        ],
+      },
+    );
+
+  if (
+    createError &&
+    !createError.message
+      .toLowerCase()
+      .includes(
+        "already exists",
+      )
+  ) {
+    throw new Error(
+      createError.message,
+    );
+  }
+}
+
+async function geminiRequest(
+  url: string,
+  init: RequestInit,
+) {
+  if (!GEMINI_API_KEY) {
+    throw new Error(
+      "GEMINI_API_KEY is not configured.",
     );
   }
 
   const headers =
     new Headers(
-      options.headers,
+      init.headers,
     );
 
   headers.set(
-    "Authorization",
-    `Bearer ${OPENAI_API_KEY}`,
+    "x-goog-api-key",
+    GEMINI_API_KEY,
+  );
+
+  headers.set(
+    "Content-Type",
+    "application/json",
   );
 
   return fetch(
-    `https://api.openai.com/v1${path}`,
+    url,
     {
-      ...options,
+      ...init,
       headers,
     },
   );
 }
 
-async function readJson(
+async function parseJson(
   response: Response,
 ): Promise<JsonObject> {
   const text =
@@ -175,7 +232,7 @@ async function readJson(
   }
 }
 
-function getApiError(
+function apiError(
   data: JsonObject,
   fallback: string,
 ) {
@@ -209,92 +266,266 @@ function getApiError(
   return fallback;
 }
 
-async function ensureVideoBucket() {
-  const admin =
-    getAdminClient();
+async function createVideo(
+  prompt: string,
+) {
+  const endpoint =
+    `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(
+      GEMINI_VIDEO_MODEL,
+    )}:predictLongRunning`;
 
-  const {
-    data: buckets,
-    error,
-  } =
-    await admin.storage.listBuckets();
+  const response =
+    await geminiRequest(
+      endpoint,
+      {
+        method:
+          "POST",
 
-  if (error) {
+        body: JSON.stringify({
+          instances: [
+            {
+              prompt,
+            },
+          ],
+
+          parameters: {
+            numberOfVideos:
+              1,
+
+            resolution:
+              "720p",
+
+            aspectRatio:
+              "16:9",
+          },
+        }),
+      },
+    );
+
+  const data =
+    await parseJson(
+      response,
+    );
+
+  if (
+    !response.ok
+  ) {
     throw new Error(
-      error.message,
+      apiError(
+        data,
+        `Gemini video generation failed (${response.status}).`,
+      ),
     );
   }
 
-  const exists =
-    buckets?.some(
-      (bucket) =>
-        bucket.name ===
-        VIDEO_BUCKET,
-    ) ?? false;
+  const operationName =
+    typeof data.name ===
+    "string"
+      ? data.name
+      : "";
 
-  if (exists) {
-    return;
+  if (!operationName) {
+    throw new Error(
+      "Gemini did not return an operation name.",
+    );
   }
 
-  const {
-    error: createError,
-  } =
-    await admin.storage.createBucket(
-      VIDEO_BUCKET,
+  return {
+    operationName,
+    data,
+  };
+}
+
+async function getOperation(
+  operationName: string,
+) {
+  const normalized =
+    operationName.startsWith(
+      "http",
+    )
+      ? operationName
+      : `https://generativelanguage.googleapis.com/v1beta/${operationName}`;
+
+  const response =
+    await geminiRequest(
+      normalized,
       {
-        public: false,
-        allowedMimeTypes: [
-          "video/mp4",
-        ],
+        method:
+          "GET",
+      },
+    );
+
+  const data =
+    await parseJson(
+      response,
+    );
+
+  if (
+    !response.ok
+  ) {
+    throw new Error(
+      apiError(
+        data,
+        `Unable to retrieve Gemini video operation (${response.status}).`,
+      ),
+    );
+  }
+
+  return data;
+}
+
+function extractVideoUri(
+  data: JsonObject,
+): string | null {
+  const response =
+    data.response;
+
+  if (
+    !response ||
+    typeof response !==
+      "object"
+  ) {
+    return null;
+  }
+
+  const videoResponse =
+    (
+      response as {
+        generateVideoResponse?: unknown;
+      }
+    ).generateVideoResponse;
+
+  if (
+    videoResponse &&
+    typeof videoResponse ===
+      "object"
+  ) {
+    const samples =
+      (
+        videoResponse as {
+          generatedSamples?: unknown;
+        }
+      ).generatedSamples;
+
+    if (
+      Array.isArray(
+        samples,
+      )
+    ) {
+      const first =
+        samples[0];
+
+      if (
+        first &&
+        typeof first ===
+          "object"
+      ) {
+        const video =
+          (
+            first as {
+              video?: unknown;
+            }
+          ).video;
+
+        if (
+          video &&
+          typeof video ===
+            "object"
+        ) {
+          const uri =
+            (
+              video as {
+                uri?: unknown;
+              }
+            ).uri;
+
+          if (
+            typeof uri ===
+            "string"
+          ) {
+            return uri;
+          }
+        }
+      }
+    }
+  }
+
+  const generatedVideos =
+    (
+      response as {
+        generatedVideos?: unknown;
+      }
+    ).generatedVideos;
+
+  if (
+    Array.isArray(
+      generatedVideos,
+    )
+  ) {
+    const first =
+      generatedVideos[0];
+
+    if (
+      first &&
+      typeof first ===
+        "object"
+    ) {
+      const video =
+        (
+          first as {
+            video?: unknown;
+          }
+        ).video;
+
+      if (
+        video &&
+        typeof video ===
+          "object"
+      ) {
+        const uri =
+          (
+            video as {
+              uri?: unknown;
+            }
+          ).uri;
+
+        if (
+          typeof uri ===
+          "string"
+        ) {
+          return uri;
+        }
+      }
+    }
+  }
+
+  return null;
+}
+
+async function downloadVideo(
+  uri: string,
+) {
+  const response =
+    await geminiRequest(
+      uri,
+      {
+        method:
+          "GET",
       },
     );
 
   if (
-    createError &&
-    !createError.message
-      .toLowerCase()
-      .includes(
-        "already exists",
-      )
+    !response.ok
   ) {
-    throw new Error(
-      createError.message,
-    );
-  }
-}
-
-async function storeVideo(
-  videoId: string,
-): Promise<string> {
-  const admin =
-    getAdminClient();
-
-  await ensureVideoBucket();
-
-  const response =
-    await openAI(
-      `/videos/${encodeURIComponent(
-        videoId,
-      )}/content`,
-      {
-        method: "GET",
-        headers: {
-          Accept:
-            "video/mp4",
-        },
-      },
-    );
-
-  if (!response.ok) {
-    const errorData =
-      await readJson(
+    const data =
+      await parseJson(
         response,
       );
 
     throw new Error(
-      getApiError(
-        errorData,
-        `Video download failed with status ${response.status}.`,
+      apiError(
+        data,
+        `Video download failed (${response.status}).`,
       ),
     );
   }
@@ -311,21 +542,52 @@ async function storeVideo(
     );
   }
 
-  const storagePath =
-    `${videoId}.mp4`;
+  return buffer;
+}
+
+async function storeVideo(
+  videoId: string,
+  operation: JsonObject,
+) {
+  const uri =
+    extractVideoUri(
+      operation,
+    );
+
+  if (!uri) {
+    throw new Error(
+      "Gemini completed the operation but did not return a video URI.",
+    );
+  }
+
+  const buffer =
+    await downloadVideo(
+      uri,
+    );
+
+  await ensureVideoBucket();
+
+  const path =
+    `${crypto.randomUUID()}.mp4`;
 
   const {
-    error: uploadError,
+    error:
+      uploadError,
   } =
-    await admin.storage
-      .from(VIDEO_BUCKET)
+    await admin()
+      .storage
+      .from(
+        VIDEO_BUCKET,
+      )
       .upload(
-        storagePath,
+        path,
         buffer,
         {
           contentType:
             "video/mp4",
-          upsert: true,
+
+          upsert:
+            false,
         },
       );
 
@@ -338,26 +600,36 @@ async function storeVideo(
   const {
     data,
     error:
-      signedUrlError,
+      signedError,
   } =
-    await admin.storage
-      .from(VIDEO_BUCKET)
+    await admin()
+      .storage
+      .from(
+        VIDEO_BUCKET,
+      )
       .createSignedUrl(
-        storagePath,
-        3600,
+        path,
+        60 * 60,
       );
 
   if (
-    signedUrlError ||
+    signedError ||
     !data?.signedUrl
   ) {
     throw new Error(
-      signedUrlError?.message ??
+      signedError?.message ??
         "Unable to create signed video URL.",
     );
   }
 
-  return data.signedUrl;
+  return {
+    url:
+      data.signedUrl,
+
+    path,
+
+    videoId,
+  };
 }
 
 async function saveVideoMetadata(
@@ -365,18 +637,17 @@ async function saveVideoMetadata(
   userId: string,
   videoId: string,
 ) {
-  const admin =
-    getAdminClient();
-
   const {
-    data: generation,
+    data,
     error,
   } =
-    await admin
+    await admin()
       .from(
         "generation_history",
       )
-      .select("metadata")
+      .select(
+        "metadata",
+      )
       .eq(
         "id",
         generationId,
@@ -394,29 +665,37 @@ async function saveVideoMetadata(
   }
 
   const metadata =
-    generation?.metadata &&
-    typeof generation.metadata ===
+    data?.metadata &&
+    typeof data.metadata ===
       "object" &&
     !Array.isArray(
-      generation.metadata,
+      data.metadata,
     )
-      ? generation.metadata as Record<
+      ? data.metadata as Record<
           string,
           unknown
         >
       : {};
 
   const {
-    error: updateError,
+    error:
+      updateError,
   } =
-    await admin
+    await admin()
       .from(
         "generation_history",
       )
       .update({
         metadata: {
           ...metadata,
+
           videoId,
+
+          provider:
+            "gemini",
+
+          model:
+            GEMINI_VIDEO_MODEL,
         },
       })
       .eq(
@@ -451,7 +730,8 @@ Deno.serve(
     }
 
     if (
-      req.method !== "POST"
+      req.method !==
+      "POST"
     ) {
       return json(
         {
@@ -465,16 +745,28 @@ Deno.serve(
 
     let generationId =
       "";
+
     let userId =
       "";
 
     try {
-      const user =
-        await requireUser(
+      if (!GEMINI_API_KEY) {
+        return json(
+          {
+            success: false,
+            error:
+              "GEMINI_API_KEY is not configured.",
+          },
+          500,
+        );
+      }
+
+      const currentUser =
+        await getUser(
           req,
         );
 
-      if (!user) {
+      if (!currentUser) {
         return json(
           {
             success: false,
@@ -486,23 +778,10 @@ Deno.serve(
       }
 
       userId =
-        user.id;
+        currentUser.id;
 
-      let body: JsonObject;
-
-      try {
-        body =
-          (await req.json()) as JsonObject;
-      } catch {
-        return json(
-          {
-            success: false,
-            error:
-              "Invalid JSON request body.",
-          },
-          400,
-        );
-      }
+      const body =
+        (await req.json()) as JsonObject;
 
       const action =
         typeof body.action ===
@@ -528,7 +807,8 @@ Deno.serve(
       }
 
       if (
-        action === "create"
+        action ===
+        "create"
       ) {
         const prompt =
           typeof body.prompt ===
@@ -547,115 +827,42 @@ Deno.serve(
           );
         }
 
-        const generation =
-          await getAdminClient()
-            .from(
-              "generation_history",
-            )
-            .select("id, user_id, type, status")
-            .eq(
-              "id",
-              generationId,
-            )
-            .eq(
-              "user_id",
-              userId,
-            )
-            .maybeSingle();
-
         if (
-          generation.error
-        ) {
-          throw new Error(
-            generation.error.message,
-          );
-        }
-
-        if (
-          !generation.data
+          prompt.length >
+          10000
         ) {
           return json(
             {
               success: false,
               error:
-                "Generation not found.",
+                "Video prompt is too long.",
             },
-            404,
+            400,
           );
         }
 
-        if (
-          generation.data.type !==
-          "video"
-        ) {
-          return json(
-            {
-              success: false,
-              error:
-                "Generation type must be video.",
-            },
-            409,
-          );
-        }
+        await getGenerationForUser(
+          generationId,
+          userId,
+          "video",
+        );
 
         await updateGeneration({
           generationId,
           userId,
           status:
             "processing",
+          expectedType:
+            "video",
         });
 
-        const form =
-          new FormData();
-
-        form.append(
-          "model",
-          "sora-2",
-        );
-
-        form.append(
-          "prompt",
-          prompt,
-        );
-
-        const response =
-          await openAI(
-            "/videos",
-            {
-              method:
-                "POST",
-              body:
-                form,
-            },
+        const created =
+          await createVideo(
+            prompt,
           );
-
-        const data =
-          await readJson(
-            response,
-          );
-
-        if (
-          !response.ok
-        ) {
-          throw new Error(
-            getApiError(
-              data,
-              "Video generation failed.",
-            ),
-          );
-        }
 
         const videoId =
-          typeof data.id ===
-          "string"
-            ? data.id
-            : "";
-
-        if (!videoId) {
-          throw new Error(
-            "OpenAI did not return a video ID.",
-          );
-        }
+          created.operationName;
 
         await saveVideoMetadata(
           generationId,
@@ -665,29 +872,25 @@ Deno.serve(
 
         return json({
           success: true,
+
           generationId,
+
           videoId,
+
           status:
-            typeof data.status ===
-            "string"
-              ? data.status
-              : "queued",
+            "processing",
+
           progress:
-            typeof data.progress ===
-            "number"
-              ? Math.max(
-                  0,
-                  Math.min(
-                    100,
-                    data.progress,
-                  ),
-                )
-              : 0,
+            0,
+
+          model:
+            GEMINI_VIDEO_MODEL,
         });
       }
 
       if (
-        action === "status"
+        action ===
+        "status"
       ) {
         const videoId =
           typeof body.videoId ===
@@ -706,137 +909,82 @@ Deno.serve(
           );
         }
 
-        const generation =
-          await getAdminClient()
-            .from(
-              "generation_history",
-            )
-            .select(
-              "id, user_id, type, metadata",
-            )
-            .eq(
-              "id",
-              generationId,
-            )
-            .eq(
-              "user_id",
-              userId,
-            )
-            .maybeSingle();
+        await getGenerationForUser(
+          generationId,
+          userId,
+          "video",
+        );
+
+        const operation =
+          await getOperation(
+            videoId,
+          );
 
         if (
-          generation.error
+          operation.error
         ) {
           throw new Error(
-            generation.error.message,
-          );
-        }
-
-        if (
-          !generation.data
-        ) {
-          return json(
-            {
-              success: false,
-              error:
-                "Generation not found.",
-            },
-            404,
-          );
-        }
-
-        const metadata =
-          generation.data
-            .metadata;
-
-        if (
-          metadata &&
-          typeof metadata ===
-            "object" &&
-          !Array.isArray(
-            metadata,
-          )
-        ) {
-          const storedVideoId =
-            (
-              metadata as Record<
-                string,
-                unknown
-              >
-            ).videoId;
-
-          if (
-            typeof storedVideoId ===
-              "string" &&
-            storedVideoId !==
-              videoId
-          ) {
-            return json(
-              {
-                success: false,
-                error:
-                  "Video ID does not match the generation.",
-              },
-              403,
-            );
-          }
-        }
-
-        const response =
-          await openAI(
-            `/videos/${encodeURIComponent(
-              videoId,
-            )}`,
-            {
-              method:
-                "GET",
-            },
-          );
-
-        const data =
-          await readJson(
-            response,
-          );
-
-        if (
-          !response.ok
-        ) {
-          throw new Error(
-            getApiError(
-              data,
-              "Unable to retrieve video status.",
+            apiError(
+              operation,
+              "Gemini video operation failed.",
             ),
           );
         }
 
-        const status =
-          typeof data.status ===
-          "string"
-            ? data.status
-            : "queued";
-
-        const progress =
-          typeof data.progress ===
-          "number"
-            ? Math.max(
-                0,
-                Math.min(
-                  100,
-                  data.progress,
-                ),
-              )
-            : status ===
-              "completed"
-            ? 100
-            : 0;
-
         if (
-          status ===
-          "completed"
+          operation.done ===
+          true
         ) {
-          const videoUrl =
+          const error =
+            operation.error;
+
+          if (error) {
+            const message =
+              apiError(
+                operation,
+                "Gemini video generation failed.",
+              );
+
+            await updateGeneration({
+              generationId,
+              userId,
+              status:
+                "failed",
+              provider:
+                "gemini",
+              model:
+                GEMINI_VIDEO_MODEL,
+              errorMessage:
+                message,
+              expectedType:
+                "video",
+            });
+
+            return json(
+              {
+                success: false,
+
+                generationId,
+
+                videoId,
+
+                status:
+                  "failed",
+
+                progress:
+                  0,
+
+                error:
+                  message,
+              },
+              200,
+            );
+          }
+
+          const stored =
             await storeVideo(
               videoId,
+              operation,
             );
 
           await updateGeneration({
@@ -845,74 +993,67 @@ Deno.serve(
             status:
               "completed",
             provider:
-              "openai",
+              "gemini",
             model:
-              "sora-2",
+              GEMINI_VIDEO_MODEL,
             resultUrl:
-              videoUrl,
+              stored.url,
+            metadata: {
+              videoId,
+
+              storageBucket:
+                VIDEO_BUCKET,
+
+              storagePath:
+                stored.path,
+
+              provider:
+                "gemini",
+            },
+            expectedType:
+              "video",
           });
 
           return json({
             success: true,
+
             generationId,
+
             videoId,
-            videoUrl,
+
+            videoUrl:
+              stored.url,
+
             status:
               "completed",
-            progress: 100,
-          });
-        }
 
-        if (
-          status ===
-            "failed" ||
-          status ===
-            "cancelled"
-        ) {
-          const errorMessage =
-            getApiError(
-              data,
-              `Video generation ${status}.`,
-            );
+            progress:
+              100,
 
-          await updateGeneration({
-            generationId,
-            userId,
-            status:
-              "failed",
-            provider:
-              "openai",
             model:
-              "sora-2",
-            errorMessage,
+              GEMINI_VIDEO_MODEL,
           });
-
-          return json(
-            {
-              success: false,
-              generationId,
-              videoId,
-              status,
-              progress,
-              error:
-                errorMessage,
-            },
-            200,
-          );
         }
 
         return json({
           success: true,
+
           generationId,
+
           videoId,
-          status,
-          progress,
+
+          status:
+            "processing",
+
+          progress:
+            50,
         });
       }
 
       return json(
         {
           success: false,
+
           error:
             "Unknown action. Use 'create' or 'status'.",
         },
@@ -935,11 +1076,13 @@ Deno.serve(
             status:
               "failed",
             provider:
-              "openai",
+              "gemini",
             model:
-              "sora-2",
+              GEMINI_VIDEO_MODEL,
             errorMessage:
               message,
+            expectedType:
+              "video",
           });
         } catch (
           updateError
@@ -952,16 +1095,18 @@ Deno.serve(
       }
 
       console.error(
-        "video-generate error:",
+        "video-generate Gemini error:",
         error,
       );
 
       return json(
         {
           success: false,
+
           generationId:
             generationId ||
             undefined,
+
           error:
             message,
         },
