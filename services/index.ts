@@ -24,11 +24,6 @@ export {
 } from "./voice";
 
 export {
-  generateOpenAIChat,
-  chatWithOpenAI,
-} from "./openai";
-
-export {
   generateAI,
 } from "./ai";
 
@@ -71,10 +66,6 @@ export type {
 export type {
   VoiceResponse,
 } from "./voice";
-
-export type {
-  OpenAIResponse,
-} from "./openai";
 
 export type {
   AIFeature,
