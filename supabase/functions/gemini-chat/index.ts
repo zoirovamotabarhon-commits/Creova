@@ -1142,15 +1142,49 @@ Deno.serve(
       /*
        * Usage information.
        *
-       * Gemini returns:
-       *
-       * usageMetadata
+       * Gemini returns usageMetadata with promptTokenCount /
+       * candidatesTokenCount / totalTokenCount. The mobile client
+       * (core/ai/AIClient.ts) reads the OpenAI-style field names
+       * prompt_tokens / completion_tokens / total_tokens - without
+       * this mapping, Gemini's field names don't match what the
+       * client looks for, so usage always showed as 0 even though
+       * Gemini did return real numbers.
        */
-      const usage =
+      const rawUsage =
         result.usageMetadata &&
         typeof result.usageMetadata ===
           "object"
-          ? result.usageMetadata
+          ? (result.usageMetadata as {
+              promptTokenCount?: number;
+              candidatesTokenCount?: number;
+              totalTokenCount?: number;
+            })
+          : undefined;
+
+      const usage =
+        rawUsage
+          ? {
+              prompt_tokens:
+                Number(
+                  rawUsage
+                    .promptTokenCount ??
+                    0,
+                ),
+
+              completion_tokens:
+                Number(
+                  rawUsage
+                    .candidatesTokenCount ??
+                    0,
+                ),
+
+              total_tokens:
+                Number(
+                  rawUsage
+                    .totalTokenCount ??
+                    0,
+                ),
+            }
           : undefined;
 
       /*
