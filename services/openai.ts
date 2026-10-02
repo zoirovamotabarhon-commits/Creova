@@ -9,7 +9,7 @@ import type {
  * services/index.ts re-exports it). Unlike chat.ts, it does not
  * call createGeneration() itself and expects an already-created
  * generationId to be passed in. Kept working and consistent with
- * the openai-chat contract in case something still imports it
+ * the gemini-chat contract in case something still imports it
  * directly, but prefer services/chat.ts for new code.
  */
 
@@ -55,14 +55,14 @@ export async function generateOpenAIChat(
       message?: string;
       error?: string;
     }>(
-      "openai-chat",
+      "gemini-chat",
       {
         body: {
           generationId,
 
-          // NOTE: openai-chat requires generationType (without it,
+          // NOTE: gemini-chat requires generationType (without it,
           // it immediately rejects the request with "Invalid
-          // generation type.") - this was previously missing here.
+          // generation type.").
           generationType:
             "chat",
 
@@ -87,7 +87,7 @@ export async function generateOpenAIChat(
         generationId,
       error:
         data?.error ??
-        "OpenAI request failed.",
+        "AI request failed.",
     };
   }
 
