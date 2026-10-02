@@ -60,15 +60,15 @@ export async function generateCode(
       message?: string;
       error?: string;
     }>(
-      "openai-chat",
+      "gemini-chat",
       {
         body: {
           generationId:
             generation.generationId,
 
-          // NOTE: openai-chat requires generationType (without it,
+          // NOTE: gemini-chat requires generationType (without it,
           // it immediately rejects the request with "Invalid
-          // generation type.") - this was previously missing here.
+          // generation type.").
           generationType:
             "code",
 
