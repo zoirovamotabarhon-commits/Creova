@@ -99,7 +99,7 @@ export class AIClient {
           };
           error?: string;
         }>(
-          "openai-chat",
+          "gemini-chat",
           {
             body: {
               generationId,
@@ -193,4 +193,4 @@ export class AIClient {
       throw error;
     }
   }
-    }
+          }
