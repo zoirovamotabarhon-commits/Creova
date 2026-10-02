@@ -71,7 +71,7 @@ export async function generateChat(
       message?: string;
       text?: string;
       error?: string;
-    }>("openai-chat", {
+    }>("gemini-chat", {
       body: {
         generationId: generation.generationId,
 
@@ -112,4 +112,4 @@ export async function sendMessage(
   history: AIMessage[] = [],
 ): Promise<ChatResult> {
   return generateChat(message, history);
-}
+      }
