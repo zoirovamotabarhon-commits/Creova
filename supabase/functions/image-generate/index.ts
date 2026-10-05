@@ -2,12 +2,6 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 
 import { createClient } from "npm:@supabase/supabase-js@2.57.0";
 
-import {
-  getGenerationForUser,
-  updateGeneration,
-  storeAssetAndGetSignedUrl,
-} from "../_shared/generation.ts";
-
 const SUPABASE_URL =
   Deno.env.get("SUPABASE_URL") ?? "";
 
@@ -72,6 +66,183 @@ function getAdminClient() {
     },
   );
 }
+
+// ---- inlined from _shared/generation.ts (standalone - no cross-function import) ----
+
+type SharedGenerationType =
+  | "chat" | "code" | "image" | "video" | "music" | "voice" | "vision";
+
+type SharedGenerationStatus =
+  | "queued" | "processing" | "completed" | "failed" | "cancelled";
+
+async function sharedGetGeneration(
+  supabase: ReturnType<typeof createClient>,
+  userId: string,
+  generationId: string,
+  expectedType?: SharedGenerationType,
+) {
+  const { data, error } = await supabase
+    .from("generation_history")
+    .select("*")
+    .eq("id", generationId)
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (error) throw error;
+  if (!data) throw new Error("Generation not found");
+
+  if (expectedType && data.type !== expectedType) {
+    throw new Error(
+      `Generation type mismatch: expected ${expectedType}, got ${data.type}`,
+    );
+  }
+
+  return data;
+}
+
+function sharedAssertCanStart(generation: { status: string }) {
+  if (generation.status !== "queued") {
+    throw new Error(
+      `Generation cannot start from status "${generation.status}"`,
+    );
+  }
+}
+
+function sharedAssertCanUpdate(generation: { status: string }) {
+  if (
+    generation.status === "completed" ||
+    generation.status === "failed" ||
+    generation.status === "cancelled"
+  ) {
+    throw new Error(`Generation is already terminal: ${generation.status}`);
+  }
+}
+
+async function getGenerationForUser(
+  generationId: string,
+  userId: string,
+  expectedType?: SharedGenerationType,
+) {
+  return sharedGetGeneration(
+    getAdminClient(),
+    userId,
+    generationId,
+    expectedType,
+  );
+}
+
+async function updateGeneration(input: {
+  generationId: string;
+  userId: string;
+  status: SharedGenerationStatus;
+  expectedType?: SharedGenerationType;
+  provider?: string;
+  model?: string;
+  resultText?: string;
+  resultUrl?: string;
+  errorMessage?: string;
+  usage?: Record<string, unknown>;
+  metadata?: Record<string, unknown>;
+}) {
+  const supabase = getAdminClient();
+  const {
+    generationId, userId, status, expectedType,
+    provider, model, resultText, resultUrl, errorMessage, usage, metadata,
+  } = input;
+
+  const current = await sharedGetGeneration(
+    supabase, userId, generationId, expectedType,
+  );
+
+  if (status === "processing") {
+    sharedAssertCanStart(current);
+
+    const { data, error } = await supabase
+      .from("generation_history")
+      .update({ status: "processing", started_at: new Date().toISOString() })
+      .eq("id", generationId)
+      .eq("user_id", userId)
+      .eq("status", "queued")
+      .select("*")
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!data) {
+      throw new Error("Generation was already claimed or is no longer available");
+    }
+    return data;
+  }
+
+  sharedAssertCanUpdate(current);
+
+  const mergedMetadata = {
+    ...((current.metadata as Record<string, unknown>) ?? {}),
+    ...(metadata ?? {}),
+    ...(usage ? { usage } : {}),
+  };
+
+  const update: Record<string, unknown> = {
+    status,
+    metadata: mergedMetadata,
+    updated_at: new Date().toISOString(),
+  };
+
+  if (provider !== undefined) update.provider = provider;
+  if (model !== undefined) update.model = model;
+  if (resultText !== undefined) update.result_text = resultText;
+  if (resultUrl !== undefined) update.result_url = resultUrl;
+  if (errorMessage !== undefined) update.error_message = errorMessage;
+
+  if (status === "completed" || status === "failed" || status === "cancelled") {
+    update.completed_at = new Date().toISOString();
+  }
+
+  const { data, error } = await supabase
+    .from("generation_history")
+    .update(update)
+    .eq("id", generationId)
+    .eq("user_id", userId)
+    .select("*")
+    .maybeSingle();
+
+  if (error) throw error;
+  if (!data) throw new Error("Generation not found while updating.");
+
+  return data;
+}
+
+async function storeAssetAndGetSignedUrl(input: {
+  bucket: string;
+  path: string;
+  data: Uint8Array | ArrayBuffer;
+  contentType: string;
+  expiresIn?: number;
+}) {
+  const supabase = getAdminClient();
+  const { bucket, path, data, contentType, expiresIn = 60 * 60 } = input;
+
+  const { error: uploadError } = await supabase.storage
+    .from(bucket)
+    .upload(path, data, { contentType, upsert: true });
+
+  if (uploadError) {
+    throw new Error(`Asset upload failed: ${uploadError.message}`);
+  }
+
+  const { data: signed, error: signError } = await supabase.storage
+    .from(bucket)
+    .createSignedUrl(path, expiresIn);
+
+  if (signError || !signed?.signedUrl) {
+    throw new Error(
+      signError?.message ?? "Unable to create a signed URL for the asset.",
+    );
+  }
+
+  return { url: signed.signedUrl, path };
+}
+
+// ---- end inlined ----
 
 async function getUser(
   request: Request,
@@ -311,13 +482,6 @@ async function callGeminiImage(
               "IMAGE",
             ],
 
-            // NOTE: Gemini's image generation config field is
-            // `imageConfig`, placed directly under
-            // generationConfig - there is no `responseFormat`
-            // wrapper in the actual API. The previous version used
-            // `responseFormat.image`, which Gemini silently ignores
-            // (unknown field), so the requested aspect ratio / size
-            // was never actually applied.
             imageConfig: {
               aspectRatio:
                 config.aspectRatio,
