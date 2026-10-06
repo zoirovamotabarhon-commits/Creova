@@ -787,7 +787,71 @@ function getTopP(
   return 0.95;
 }
 
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/*
+ * Gemini occasionally returns 503 ("model is currently
+ * experiencing high demand") for a moment, especially on newer
+ * models under load. Google's own guidance is to retry such
+ * requests. This retries automatically (short delay, a couple of
+ * attempts) before giving up, so a transient overload does not
+ * surface as a failed chat message to the user.
+ */
 async function callGemini(
+  model: string,
+  systemPrompt: string,
+  contents: GeminiContent[],
+  generationType: GenerationType,
+  maxOutputTokens: number,
+  temperature: number,
+  topP: number,
+) {
+  const maxAttempts = 3;
+  const delaysMs = [800, 1600];
+
+  let lastError: unknown;
+
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    try {
+      return await callGeminiOnce(
+        model,
+        systemPrompt,
+        contents,
+        generationType,
+        maxOutputTokens,
+        temperature,
+        topP,
+      );
+    } catch (error) {
+      lastError = error;
+
+      const message =
+        error instanceof Error ? error.message.toLowerCase() : "";
+
+      const isOverloaded =
+        message.includes("high demand") ||
+        message.includes("overloaded") ||
+        message.includes("unavailable") ||
+        message.includes("503");
+
+      const hasMoreAttempts = attempt < maxAttempts - 1;
+
+      if (!isOverloaded || !hasMoreAttempts) {
+        throw error;
+      }
+
+      await sleep(delaysMs[attempt] ?? 1600);
+    }
+  }
+
+  throw lastError instanceof Error
+    ? lastError
+    : new Error("Gemini API request failed.");
+}
+
+async function callGeminiOnce(
   model: string,
   systemPrompt: string,
   contents: GeminiContent[],
@@ -1334,14 +1398,6 @@ Deno.serve(
 
       /*
        * Usage information.
-       *
-       * Gemini returns usageMetadata with promptTokenCount /
-       * candidatesTokenCount / totalTokenCount. The mobile client
-       * (core/ai/AIClient.ts) reads the OpenAI-style field names
-       * prompt_tokens / completion_tokens / total_tokens - without
-       * this mapping, Gemini's field names don't match what the
-       * client looks for, so usage always showed as 0 even though
-       * Gemini did return real numbers.
        */
       const rawUsage =
         result.usageMetadata &&
@@ -1405,18 +1461,6 @@ Deno.serve(
           generationType,
       });
 
-      /*
-       * Return successful response.
-       *
-       * Keep the same response shape
-       * used by the existing mobile app:
-       *
-       * success
-       * generationId
-       * text
-       * model
-       * usage
-       */
       return json({
         success: true,
 
@@ -1436,10 +1480,6 @@ Deno.serve(
           ? error.message
           : "Gemini generation failed.";
 
-      /*
-       * Try to mark generation
-       * as failed.
-       */
       if (
         generationId &&
         userId
@@ -1469,7 +1509,7 @@ Deno.serve(
       }
 
       console.error(
-        "openai-chat Gemini error:",
+        "gemini-chat error:",
         error,
       );
 
