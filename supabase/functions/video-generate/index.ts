@@ -4,11 +4,6 @@ import {
   createClient,
 } from "npm:@supabase/supabase-js@2.57.0";
 
-import {
-  getGenerationForUser,
-  updateGeneration,
-} from "../_shared/generation.ts";
-
 const GEMINI_API_KEY =
   Deno.env.get("GEMINI_API_KEY") ?? "";
 
@@ -78,6 +73,152 @@ function admin() {
     },
   );
 }
+
+// ---- inlined from _shared/generation.ts (standalone - no cross-function import) ----
+
+type SharedGenerationType =
+  | "chat" | "code" | "image" | "video" | "music" | "voice" | "vision";
+
+type SharedGenerationStatus =
+  | "queued" | "processing" | "completed" | "failed" | "cancelled";
+
+async function sharedGetGeneration(
+  supabase: ReturnType<typeof createClient>,
+  userId: string,
+  generationId: string,
+  expectedType?: SharedGenerationType,
+) {
+  const { data, error } = await supabase
+    .from("generation_history")
+    .select("*")
+    .eq("id", generationId)
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (error) throw error;
+  if (!data) throw new Error("Generation not found");
+
+  if (expectedType && data.type !== expectedType) {
+    throw new Error(
+      `Generation type mismatch: expected ${expectedType}, got ${data.type}`,
+    );
+  }
+
+  return data;
+}
+
+function sharedAssertCanStart(generation: { status: string }) {
+  if (generation.status !== "queued") {
+    throw new Error(
+      `Generation cannot start from status "${generation.status}"`,
+    );
+  }
+}
+
+function sharedAssertCanUpdate(generation: { status: string }) {
+  if (
+    generation.status === "completed" ||
+    generation.status === "failed" ||
+    generation.status === "cancelled"
+  ) {
+    throw new Error(`Generation is already terminal: ${generation.status}`);
+  }
+}
+
+async function getGenerationForUser(
+  generationId: string,
+  userId: string,
+  expectedType?: SharedGenerationType,
+) {
+  return sharedGetGeneration(
+    admin(),
+    userId,
+    generationId,
+    expectedType,
+  );
+}
+
+async function updateGeneration(input: {
+  generationId: string;
+  userId: string;
+  status: SharedGenerationStatus;
+  expectedType?: SharedGenerationType;
+  provider?: string;
+  model?: string;
+  resultText?: string;
+  resultUrl?: string;
+  errorMessage?: string;
+  usage?: Record<string, unknown>;
+  metadata?: Record<string, unknown>;
+}) {
+  const supabase = admin();
+  const {
+    generationId, userId, status, expectedType,
+    provider, model, resultText, resultUrl, errorMessage, usage, metadata,
+  } = input;
+
+  const current = await sharedGetGeneration(
+    supabase, userId, generationId, expectedType,
+  );
+
+  if (status === "processing") {
+    sharedAssertCanStart(current);
+
+    const { data, error } = await supabase
+      .from("generation_history")
+      .update({ status: "processing", started_at: new Date().toISOString() })
+      .eq("id", generationId)
+      .eq("user_id", userId)
+      .eq("status", "queued")
+      .select("*")
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!data) {
+      throw new Error("Generation was already claimed or is no longer available");
+    }
+    return data;
+  }
+
+  sharedAssertCanUpdate(current);
+
+  const mergedMetadata = {
+    ...((current.metadata as Record<string, unknown>) ?? {}),
+    ...(metadata ?? {}),
+    ...(usage ? { usage } : {}),
+  };
+
+  const update: Record<string, unknown> = {
+    status,
+    metadata: mergedMetadata,
+    updated_at: new Date().toISOString(),
+  };
+
+  if (provider !== undefined) update.provider = provider;
+  if (model !== undefined) update.model = model;
+  if (resultText !== undefined) update.result_text = resultText;
+  if (resultUrl !== undefined) update.result_url = resultUrl;
+  if (errorMessage !== undefined) update.error_message = errorMessage;
+
+  if (status === "completed" || status === "failed" || status === "cancelled") {
+    update.completed_at = new Date().toISOString();
+  }
+
+  const { data, error } = await supabase
+    .from("generation_history")
+    .update(update)
+    .eq("id", generationId)
+    .eq("user_id", userId)
+    .select("*")
+    .maybeSingle();
+
+  if (error) throw error;
+  if (!data) throw new Error("Generation not found while updating.");
+
+  return data;
+}
+
+// ---- end inlined ----
 
 async function getUser(
   req: Request,
