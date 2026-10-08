@@ -1,19 +1,72 @@
 import {
+  invokeEdgeFunction,
+} from "./edgeFunctions";
+
+import {
   createGeneration,
 } from "./generation";
 
 import {
-  invokeEdgeFunction,
-} from "./edgeFunctions";
+  supabase,
+} from "./supabase";
+
 
 export interface AIMessage {
+  id?: string;
+
   role:
     | "user"
     | "assistant"
     | "system";
 
   content: string;
+
+  messageType?:
+    | "text"
+    | "voice"
+    | "image"
+    | "file";
 }
+
+
+export interface ChatConversation {
+  id: string;
+
+  user_id: string;
+
+  title: string;
+
+  created_at: string;
+
+  updated_at: string;
+}
+
+
+export interface ChatMessage {
+  id: string;
+
+  conversation_id: string;
+
+  user_id: string;
+
+  generation_id: string | null;
+
+  role:
+    | "user"
+    | "assistant"
+    | "system";
+
+  content: string;
+
+  message_type:
+    | "text"
+    | "voice"
+    | "image"
+    | "file";
+
+  created_at: string;
+}
+
 
 export interface ChatResult {
   success: boolean;
@@ -29,8 +82,149 @@ export interface ChatResult {
   conversationId?: string;
 }
 
-export type ChatResponse =
-  ChatResult;
+
+export async function listConversations(): Promise<
+  ChatConversation[]
+> {
+  const {
+    data,
+    error,
+  } =
+    await supabase
+      .from(
+        "chat_conversations",
+      )
+      .select(
+        "id,user_id,title,created_at,updated_at",
+      )
+      .order(
+        "updated_at",
+        {
+          ascending: false,
+        },
+      );
+
+  if (error) {
+    throw error;
+  }
+
+  return (
+    data ?? []
+  ) as ChatConversation[];
+}
+
+
+export async function createConversation(
+  title = "New chat",
+): Promise<ChatConversation> {
+  const {
+    data: {
+      user,
+    },
+    error:
+      authError,
+  } =
+    await supabase.auth.getUser();
+
+  if (
+    authError ||
+    !user
+  ) {
+    throw new Error(
+      "You must be signed in.",
+    );
+  }
+
+  const {
+    data,
+    error,
+  } =
+    await supabase
+      .from(
+        "chat_conversations",
+      )
+      .insert({
+        user_id:
+          user.id,
+
+        title:
+          title
+            .trim()
+            .slice(
+              0,
+              120,
+            ) ||
+          "New chat",
+      })
+      .select(
+        "id,user_id,title,created_at,updated_at",
+      )
+      .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return data as ChatConversation;
+}
+
+
+export async function getConversationMessages(
+  conversationId: string,
+): Promise<ChatMessage[]> {
+  const {
+    data,
+    error,
+  } =
+    await supabase
+      .from(
+        "chat_messages",
+      )
+      .select(
+        "id,conversation_id,user_id,generation_id,role,content,message_type,created_at",
+      )
+      .eq(
+        "conversation_id",
+        conversationId,
+      )
+      .order(
+        "created_at",
+        {
+          ascending: true,
+        },
+      );
+
+  if (error) {
+    throw error;
+  }
+
+  return (
+    data ?? []
+  ) as ChatMessage[];
+}
+
+
+export async function deleteConversation(
+  conversationId: string,
+): Promise<void> {
+  const {
+    error,
+  } =
+    await supabase
+      .from(
+        "chat_conversations",
+      )
+      .delete()
+      .eq(
+        "id",
+        conversationId,
+      );
+
+  if (error) {
+    throw error;
+  }
+}
+
 
 export async function generateChat(
   message: string,
@@ -43,6 +237,7 @@ export async function generateChat(
   if (!cleanMessage) {
     return {
       success: false,
+
       error:
         "Message is required.",
     };
@@ -54,7 +249,12 @@ export async function generateChat(
       undefined,
       cleanMessage,
       {
-        feature: "chat",
+        feature:
+          "chat",
+
+        conversationId:
+          conversationId ??
+          null,
       },
     );
 
@@ -64,24 +264,19 @@ export async function generateChat(
   ) {
     return {
       success: false,
+
       error:
         generation.error ??
         "Generation could not be created.",
     };
   }
 
-  /*
-   * The server is responsible for
-   * persistent Chat History.
-   *
-   * We still send history for backward
-   * compatibility with the current
-   * Edge Function during migration.
-   */
-  const messages: AIMessage[] = [
-    ...history
+  const cleanHistory =
+    history
       .filter(
-        (item) =>
+        (
+          item,
+        ) =>
           item &&
           (
             item.role ===
@@ -97,10 +292,14 @@ export async function generateChat(
             .trim()
             .length > 0,
       )
-      .slice(-39),
+      .slice(-39);
+
+  const messages: AIMessage[] = [
+    ...cleanHistory,
 
     {
       role: "user",
+
       content:
         cleanMessage,
     },
@@ -134,7 +333,9 @@ export async function generateChat(
 
           messages,
 
-          conversationId,
+          conversationId:
+            conversationId ??
+            undefined,
         },
       },
     );
@@ -151,7 +352,9 @@ export async function generateChat(
     };
   }
 
-  if (!data?.success) {
+  if (
+    !data?.success
+  ) {
     return {
       success: false,
 
@@ -184,6 +387,7 @@ export async function generateChat(
   };
 }
 
+
 export async function sendMessage(
   message: string,
   history: AIMessage[] = [],
@@ -194,4 +398,4 @@ export async function sendMessage(
     history,
     conversationId,
   );
-          }
+}
