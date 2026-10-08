@@ -33,6 +33,13 @@ export class AIRouter {
         prompt,
       );
 
+    /*
+     * Vision always goes through the VisionAgent.
+     *
+     * The VisionAgent uses HybridRouter underneath.
+     * Because it supplies imageUrl, the request is sent
+     * as a real multimodal request.
+     */
     if (intent === "vision") {
       const agent =
         this.agentManager.getAgent(
@@ -51,6 +58,10 @@ export class AIRouter {
       );
     }
 
+    /*
+     * Normal chat/code/media requests are handled
+     * by the hybrid layer first.
+     */
     const messages: AIMessage[] = [
       {
         role: "user",
@@ -69,6 +80,9 @@ export class AIRouter {
         },
       );
 
+    /*
+     * Offline requests cannot produce a normal AIResponse.
+     */
     if (
       hybrid.routedTo ===
       "queued-offline"
@@ -86,15 +100,22 @@ export class AIRouter {
         hybrid.model ??
         "creova-hybrid",
 
+      /*
+       * Local answers intentionally do not create
+       * a paid generation record.
+       *
+       * This identifier is only an internal marker.
+       */
       generationId:
         hybrid.routedTo === "local"
           ? "local"
           : "hybrid-cloud",
 
       routedTo:
-        hybrid.routedTo === "local"
+        hybrid.routedTo ===
+        "local"
           ? "local"
           : "cloud",
     };
   }
-            }
+          }
