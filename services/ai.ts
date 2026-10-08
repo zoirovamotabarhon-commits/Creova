@@ -2,6 +2,7 @@ import {
   generateChat,
   AIMessage,
 } from "./chat";
+
 import { generateCode } from "./code";
 import { generateImage } from "./image";
 import { generateMusic } from "./music";
@@ -71,4 +72,4 @@ export async function generateAI(
           "Unsupported AI feature.",
       };
   }
-  }
+}
