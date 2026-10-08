@@ -84,102 +84,129 @@ export class AIClient {
         generation.generationId;
     }
 
-    const { data, error } =
-      await invokeEdgeFunction<{
-        success: boolean;
-        generationId?: string;
-        text?: string;
-        content?: string;
-        model?: string;
+    try {
+      const { data, error } =
+        await invokeEdgeFunction<{
+          success: boolean;
 
-        usage?: {
-          prompt_tokens?: number;
-          completion_tokens?: number;
-          total_tokens?: number;
-        };
+          text?: string;
 
-        error?: string;
-      }>(
-        "gemini-chat",
-        {
-          body: {
-            generationId,
-            generationType,
-            messages: cleanMessages,
+          content?: string;
 
-            max_tokens:
-              options.maxTokens ?? 2000,
+          choices?: Array<{
+            message?: {
+              content?: string;
+            };
+          }>;
 
-            imageUrl:
-              options.imageUrl,
+          model?: string;
+
+          usage?: {
+            prompt_tokens?: number;
+            completion_tokens?: number;
+            total_tokens?: number;
+          };
+
+          error?: string;
+        }>(
+          "gemini-chat",
+          {
+            body: {
+              generationId,
+
+              generationType,
+
+              messages: cleanMessages,
+
+              max_tokens:
+                options.maxTokens ?? 2000,
+
+              imageUrl:
+                options.imageUrl,
+            },
           },
-        },
+        );
+
+      if (error) {
+        throw new Error(
+          `AI request failed: ${error.message}`,
+        );
+      }
+
+      if (
+        !data ||
+        data.success !== true
+      ) {
+        throw new Error(
+          data?.error ??
+            "AI request failed.",
+        );
+      }
+
+      const content =
+        typeof data.text === "string"
+          ? data.text
+          : typeof data.content === "string"
+            ? data.content
+            : typeof data.choices?.[0]
+                  ?.message?.content ===
+                "string"
+              ? data.choices[0].message.content
+              : "";
+
+      if (!content.trim()) {
+        throw new Error(
+          "AI returned an empty response.",
+        );
+      }
+
+      const model =
+        typeof data.model === "string" &&
+        data.model.trim()
+          ? data.model
+          : "gemini-3.8-flash";
+
+      return {
+        content:
+          content.trim(),
+
+        model,
+
+        generationId,
+
+        routedTo: "cloud",
+
+        usage:
+          data.usage &&
+          typeof data.usage === "object"
+            ? {
+                promptTokens:
+                  Number(
+                    data.usage
+                      .prompt_tokens ?? 0,
+                  ),
+
+                completionTokens:
+                  Number(
+                    data.usage
+                      .completion_tokens ?? 0,
+                  ),
+
+                totalTokens:
+                  Number(
+                    data.usage
+                      .total_tokens ?? 0,
+                  ),
+              }
+            : undefined,
+      };
+    } catch (error) {
+      console.error(
+        "AIClient Error:",
+        error,
       );
 
-    if (error) {
-      throw new Error(
-        `AI request failed: ${error.message}`,
-      );
+      throw error;
     }
-
-    if (
-      !data ||
-      data.success !== true
-    ) {
-      throw new Error(
-        data?.error ??
-          "AI request failed.",
-      );
-    }
-
-    const content =
-      typeof data.text === "string"
-        ? data.text
-        : typeof data.content === "string"
-          ? data.content
-          : "";
-
-    if (!content.trim()) {
-      throw new Error(
-        "AI returned an empty response.",
-      );
-    }
-
-    const model =
-      typeof data.model === "string" &&
-      data.model.trim()
-        ? data.model
-        : "gemini-3.8-flash";
-
-    return {
-      content: content.trim(),
-
-      model,
-
-      generationId,
-
-      routedTo: "cloud",
-
-      usage:
-        data.usage &&
-        typeof data.usage === "object"
-          ? {
-              promptTokens:
-                Number(
-                  data.usage.prompt_tokens ?? 0,
-                ),
-
-              completionTokens:
-                Number(
-                  data.usage.completion_tokens ?? 0,
-                ),
-
-              totalTokens:
-                Number(
-                  data.usage.total_tokens ?? 0,
-                ),
-            }
-          : undefined,
-    };
   }
-  }
+        }
