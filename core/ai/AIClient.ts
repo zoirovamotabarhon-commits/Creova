@@ -4,8 +4,13 @@ import type {
   AIResponse,
 } from "./AIProvider";
 
-import { invokeEdgeFunction } from "../../services/edgeFunctions";
-import { createGeneration } from "../../services/generation";
+import {
+  invokeEdgeFunction,
+} from "../../services/edgeFunctions";
+
+import {
+  createGeneration,
+} from "../../services/generation";
 
 export class AIClient {
   private static instance: AIClient;
@@ -14,7 +19,8 @@ export class AIClient {
 
   public static getInstance(): AIClient {
     if (!AIClient.instance) {
-      AIClient.instance = new AIClient();
+      AIClient.instance =
+        new AIClient();
     }
 
     return AIClient.instance;
@@ -24,33 +30,49 @@ export class AIClient {
     messages: AIMessage[],
     options: AIOptions = {},
   ): Promise<AIResponse> {
-    const cleanMessages = messages.filter(
-      (message) =>
-        typeof message.content === "string" &&
-        message.content.trim().length > 0,
-    );
+    const cleanMessages =
+      messages.filter(
+        (message) =>
+          typeof message.content ===
+            "string" &&
+          message.content
+            .trim()
+            .length > 0,
+      );
 
-    if (cleanMessages.length === 0) {
-      throw new Error("At least one AI message is required.");
+    if (
+      cleanMessages.length === 0
+    ) {
+      throw new Error(
+        "At least one AI message is required.",
+      );
     }
 
     const generationType =
-      options.generationType ?? "chat";
+      options.generationType ??
+      "chat";
 
     let generationId =
       options.generationId;
 
+    /*
+     * Create a generation only when
+     * the caller did not provide one.
+     */
     if (!generationId) {
       const lastUserMessage =
         [...cleanMessages]
           .reverse()
           .find(
             (message) =>
-              message.role === "user",
+              message.role ===
+              "user",
           );
 
       const prompt =
-        lastUserMessage?.content?.trim();
+        lastUserMessage
+          ?.content
+          ?.trim();
 
       if (!prompt) {
         throw new Error(
@@ -64,7 +86,8 @@ export class AIClient {
           undefined,
           prompt,
           {
-            feature: generationType,
+            feature:
+              generationType,
           },
         );
 
@@ -83,37 +106,55 @@ export class AIClient {
     }
 
     try {
-      const { data, error } =
+      const {
+        data,
+        error,
+      } =
         await invokeEdgeFunction<{
           success: boolean;
+
           text?: string;
+
           content?: string;
+
           choices?: Array<{
-            message?: { content?: string };
+            message?: {
+              content?: string;
+            };
           }>;
+
           model?: string;
+
           usage?: {
             prompt_tokens?: number;
             completion_tokens?: number;
             total_tokens?: number;
           };
+
           error?: string;
         }>(
           "gemini-chat",
           {
             body: {
               generationId,
+
               generationType,
+
               messages: cleanMessages,
 
-              temperature:
-                options.temperature ?? 0.7,
-
+              /*
+               * Gemini 3.8 Flash:
+               *
+               * Do NOT send:
+               * - temperature
+               * - top_p
+               *
+               * max_tokens is translated by the
+               * Edge Function into maxOutputTokens.
+               */
               max_tokens:
-                options.maxTokens ?? 2000,
-
-              top_p:
-                options.topP,
+                options.maxTokens ??
+                4000,
 
               imageUrl:
                 options.imageUrl,
@@ -123,7 +164,7 @@ export class AIClient {
 
       if (error) {
         throw new Error(
-          `AI request failed: ${error.message}`,
+          error.message,
         );
       }
 
@@ -138,48 +179,73 @@ export class AIClient {
       }
 
       const content =
-        typeof data.text === "string"
+        typeof data.text ===
+          "string"
           ? data.text
-          : typeof data.content === "string"
+          : typeof data.content ===
+              "string"
             ? data.content
-            : typeof data.choices?.[0]
-                  ?.message?.content === "string"
-              ? data.choices[0].message.content
+            : typeof data
+                  .choices?.[0]
+                  ?.message
+                  ?.content ===
+                "string"
+              ? data
+                  .choices[0]
+                  .message
+                  .content
               : "";
 
-      if (!content.trim()) {
+      if (
+        !content.trim()
+      ) {
         throw new Error(
           "AI returned an empty response.",
         );
       }
 
       const model =
-        typeof data.model === "string" &&
+        typeof data.model ===
+          "string" &&
         data.model.trim()
           ? data.model
-          : "unknown";
+          : "gemini-3.8-flash";
 
       return {
-        content: content.trim(),
+        content:
+          content.trim(),
+
         model,
+
         generationId,
-        routedTo: "cloud",
+
+        routedTo:
+          "cloud",
 
         usage:
           data.usage &&
-          typeof data.usage === "object"
+          typeof data.usage ===
+            "object"
             ? {
                 promptTokens:
                   Number(
-                    data.usage.prompt_tokens ?? 0,
+                    data.usage
+                      .prompt_tokens ??
+                      0,
                   ),
+
                 completionTokens:
                   Number(
-                    data.usage.completion_tokens ?? 0,
+                    data.usage
+                      .completion_tokens ??
+                      0,
                   ),
+
                 totalTokens:
                   Number(
-                    data.usage.total_tokens ?? 0,
+                    data.usage
+                      .total_tokens ??
+                      0,
                   ),
               }
             : undefined,
@@ -193,4 +259,4 @@ export class AIClient {
       throw error;
     }
   }
-          }
+                }
