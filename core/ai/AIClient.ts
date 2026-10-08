@@ -12,13 +12,19 @@ import {
   createGeneration,
 } from "../../services/generation";
 
+
 export class AIClient {
-  private static instance: AIClient;
+  private static instance:
+    AIClient;
+
 
   private constructor() {}
 
+
   public static getInstance(): AIClient {
-    if (!AIClient.instance) {
+    if (
+      !AIClient.instance
+    ) {
       AIClient.instance =
         new AIClient();
     }
@@ -26,13 +32,16 @@ export class AIClient {
     return AIClient.instance;
   }
 
+
   public async chat(
     messages: AIMessage[],
     options: AIOptions = {},
   ): Promise<AIResponse> {
     const cleanMessages =
       messages.filter(
-        (message) =>
+        (
+          message,
+        ) =>
           typeof message.content ===
             "string" &&
           message.content
@@ -41,7 +50,8 @@ export class AIClient {
       );
 
     if (
-      cleanMessages.length === 0
+      cleanMessages.length ===
+      0
     ) {
       throw new Error(
         "At least one AI message is required.",
@@ -55,16 +65,18 @@ export class AIClient {
     let generationId =
       options.generationId;
 
-    /*
-     * Create a generation only when
-     * the caller did not provide one.
-     */
-    if (!generationId) {
+    if (
+      !generationId
+    ) {
       const lastUserMessage =
-        [...cleanMessages]
+        [
+          ...cleanMessages,
+        ]
           .reverse()
           .find(
-            (message) =>
+            (
+              message,
+            ) =>
               message.role ===
               "user",
           );
@@ -88,6 +100,10 @@ export class AIClient {
           {
             feature:
               generationType,
+
+            conversationId:
+              options.conversationId ??
+              null,
           },
         );
 
@@ -105,158 +121,141 @@ export class AIClient {
         generation.generationId;
     }
 
-    try {
-      const {
-        data,
-        error,
-      } =
-        await invokeEdgeFunction<{
-          success: boolean;
+    const {
+      data,
+      error,
+    } =
+      await invokeEdgeFunction<{
+        success: boolean;
 
-          text?: string;
+        text?: string;
 
-          content?: string;
+        content?: string;
 
-          choices?: Array<{
-            message?: {
-              content?: string;
-            };
-          }>;
+        model?: string;
 
-          model?: string;
+        error?: string;
 
-          usage?: {
-            prompt_tokens?: number;
-            completion_tokens?: number;
-            total_tokens?: number;
+        conversationId?: string;
+
+        usage?: {
+          prompt_tokens?: number;
+
+          completion_tokens?: number;
+
+          total_tokens?: number;
+        };
+
+        choices?: Array<{
+          message?: {
+            content?: string;
           };
+        }>;
+      }>(
+        "gemini-chat",
+        {
+          body: {
+            generationId,
 
-          error?: string;
-        }>(
-          "gemini-chat",
-          {
-            body: {
-              generationId,
+            generationType,
 
-              generationType,
+            messages:
+              cleanMessages,
 
-              messages: cleanMessages,
+            max_tokens:
+              options.maxTokens ??
+              4000,
 
-              /*
-               * Gemini 3.8 Flash:
-               *
-               * Do NOT send:
-               * - temperature
-               * - top_p
-               *
-               * max_tokens is translated by the
-               * Edge Function into maxOutputTokens.
-               */
-              max_tokens:
-                options.maxTokens ??
-                4000,
+            imageUrl:
+              options.imageUrl,
 
-              imageUrl:
-                options.imageUrl,
-            },
+            conversationId:
+              options.conversationId,
           },
-        );
-
-      if (error) {
-        throw new Error(
-          error.message,
-        );
-      }
-
-      if (
-        !data ||
-        data.success !== true
-      ) {
-        throw new Error(
-          data?.error ??
-            "AI request failed.",
-        );
-      }
-
-      const content =
-        typeof data.text ===
-          "string"
-          ? data.text
-          : typeof data.content ===
-              "string"
-            ? data.content
-            : typeof data
-                  .choices?.[0]
-                  ?.message
-                  ?.content ===
-                "string"
-              ? data
-                  .choices[0]
-                  .message
-                  .content
-              : "";
-
-      if (
-        !content.trim()
-      ) {
-        throw new Error(
-          "AI returned an empty response.",
-        );
-      }
-
-      const model =
-        typeof data.model ===
-          "string" &&
-        data.model.trim()
-          ? data.model
-          : "gemini-3.8-flash";
-
-      return {
-        content:
-          content.trim(),
-
-        model,
-
-        generationId,
-
-        routedTo:
-          "cloud",
-
-        usage:
-          data.usage &&
-          typeof data.usage ===
-            "object"
-            ? {
-                promptTokens:
-                  Number(
-                    data.usage
-                      .prompt_tokens ??
-                      0,
-                  ),
-
-                completionTokens:
-                  Number(
-                    data.usage
-                      .completion_tokens ??
-                      0,
-                  ),
-
-                totalTokens:
-                  Number(
-                    data.usage
-                      .total_tokens ??
-                      0,
-                  ),
-              }
-            : undefined,
-      };
-    } catch (error) {
-      console.error(
-        "AIClient Error:",
-        error,
+        },
       );
 
-      throw error;
+    if (error) {
+      throw new Error(
+        error.message,
+      );
     }
+
+    if (
+      !data ||
+      data.success !==
+        true
+    ) {
+      throw new Error(
+        data?.error ??
+          "AI request failed.",
+      );
+    }
+
+    const content =
+      typeof data.text ===
+        "string"
+        ? data.text
+        : typeof data.content ===
+            "string"
+          ? data.content
+          : typeof data
+                .choices?.[0]
+                ?.message
+                ?.content ===
+              "string"
+            ? data
+                .choices[0]
+                .message
+                .content
+            : "";
+
+    if (
+      !content.trim()
+    ) {
+      throw new Error(
+        "AI returned an empty response.",
+      );
+    }
+
+    return {
+      content:
+        content.trim(),
+
+      model:
+        data.model ??
+        "gemini-3.8-flash",
+
+      generationId,
+
+      routedTo:
+        "cloud",
+
+      usage:
+        data.usage
+          ? {
+              promptTokens:
+                Number(
+                  data.usage
+                    .prompt_tokens ??
+                    0,
+                ),
+
+              completionTokens:
+                Number(
+                  data.usage
+                    .completion_tokens ??
+                    0,
+                ),
+
+              totalTokens:
+                Number(
+                  data.usage
+                    .total_tokens ??
+                    0,
+                ),
+            }
+          : undefined,
+    };
   }
-                }
+  }
