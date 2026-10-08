@@ -1,544 +1,263 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 
 import {
-  createClient,
-} from "npm:@supabase/supabase-js@2.57.0";
+createClient,
+type SupabaseClient,
+} from "https://esm.sh/@supabase/supabase-js@2";
+
+type ChatRole =
+| "user"
+| "assistant"
+| "system";
+
+type GenerationType =
+| "chat"
+| "code"
+| "vision";
+
+interface AIMessage {
+role: ChatRole;
+content: string;
+}
+
+interface RequestBody {
+generationId?: string;
+generationType?: GenerationType;
+messages?: AIMessage[];
+max_tokens?: number;
+imageUrl?: string;
+}
+
+interface GenerationRow {
+id: string;
+user_id: string;
+generation_type: string;
+status: string;
+}
+
+interface GeminiPart {
+text?: string;
+inlineData?: {
+mimeType: string;
+data: string;
+};
+}
+
+interface GeminiContent {
+role: "user" | "model";
+parts: GeminiPart[];
+}
+
+interface GeminiResponse {
+candidates?: Array<{
+content?: {
+parts?: Array<{
+text?: string;
+}>;
+};
+finishReason?: string;
+}>;
+usageMetadata?: {
+promptTokenCount?: number;
+candidatesTokenCount?: number;
+totalTokenCount?: number;
+};
+error?: {
+message?: string;
+status?: string;
+code?: number;
+};
+}
 
 const SUPABASE_URL =
-  Deno.env.get(
-    "SUPABASE_URL",
-  ) ?? "";
+Deno.env.get("SUPABASE_URL") ?? "";
 
 const SUPABASE_SERVICE_ROLE_KEY =
-  Deno.env.get(
-    "SUPABASE_SERVICE_ROLE_KEY",
-  ) ??
-  Deno.env.get(
-    "SUPABASE_SECRET_KEY",
-  ) ??
-  "";
+Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ??
+Deno.env.get("SUPABASE_SECRET_KEY") ??
+"";
 
 const GEMINI_API_KEY =
-  Deno.env.get(
-    "GEMINI_API_KEY",
-  ) ?? "";
+Deno.env.get("GEMINI_API_KEY") ?? "";
 
-const GEMINI_CHAT_MODEL =
-  Deno.env.get(
-    "GEMINI_CHAT_MODEL",
-  ) ??
+/**
+
+* Primary model:
+* Stable, proven Gemini 3.5 Flash.
+  */
+  const GEMINI_PRIMARY_MODEL =
+  Deno.env.get("GEMINI_CHAT_MODEL") ??
+  "gemini-3.5-flash";
+
+/**
+
+* Fallback model:
+* Newer Gemini 3.8 Flash.
+  */
+  const GEMINI_FALLBACK_MODEL =
+  Deno.env.get("GEMINI_CHAT_FALLBACK_MODEL") ??
   "gemini-3.8-flash";
 
 const GEMINI_VISION_MODEL =
-  Deno.env.get(
-    "GEMINI_VISION_MODEL",
-  ) ??
-  "gemini-3.8-flash";
+Deno.env.get("GEMINI_VISION_MODEL") ??
+"gemini-3.5-flash";
 
-const DEFAULT_SYSTEM_PROMPT =
-  "You are CREOVA AI Assistant. Give clear, useful and accurate answers.";
+const GEMINI_VISION_FALLBACK_MODEL =
+Deno.env.get(
+"GEMINI_VISION_FALLBACK_MODEL",
+) ??
+"gemini-3.8-flash";
 
 const MAX_MESSAGES = 40;
+const MAX_CONTENT_LENGTH = 12_000;
+const MAX_IMAGE_URL_LENGTH = 12_000_000;
 
-const MAX_CONTENT_LENGTH =
-  12000;
+const RETRY_DELAYS_MS = [
+800,
+1600,
+];
 
-const MAX_IMAGE_URL_LENGTH =
-  12_000_000;
-
-type MessageRole =
-  | "user"
-  | "assistant"
-  | "system";
-
-type GenerationType =
-  | "chat"
-  | "code"
-  | "vision";
-
-type TextMessage = {
-  role: MessageRole;
-  content: string;
+const corsHeaders = {
+"Access-Control-Allow-Origin": "*",
+"Access-Control-Allow-Headers":
+"authorization, x-client-info, apikey, content-type",
+"Access-Control-Allow-Methods":
+"POST, OPTIONS",
+"Content-Type": "application/json",
 };
 
-type GeminiPart = {
-  text?: string;
-
-  inlineData?: {
-    mimeType: string;
-    data: string;
-  };
-};
-
-type GeminiContent = {
-  role: "user" | "model";
-  parts: GeminiPart[];
-};
-
-const CORS_HEADERS = {
-  "Access-Control-Allow-Origin":
-    "*",
-
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-
-  "Access-Control-Allow-Methods":
-    "POST, OPTIONS",
-
-  "Content-Type":
-    "application/json",
-};
-
-function json(
-  body: Record<
-    string,
-    unknown
-  >,
-  status = 200,
-) {
-  return new Response(
-    JSON.stringify(body),
-    {
-      status,
-      headers:
-        CORS_HEADERS,
-    },
-  );
-}
-
-function getAdminClient() {
-  if (
-    !SUPABASE_URL ||
-    !SUPABASE_SERVICE_ROLE_KEY
-  ) {
-    throw new Error(
-      "Supabase server configuration is missing.",
-    );
-  }
-
-  return createClient(
-    SUPABASE_URL,
-    SUPABASE_SERVICE_ROLE_KEY,
-    {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-      },
-    },
-  );
-}
-
-// ---- inlined from _shared/generation.ts (standalone - no cross-function import) ----
-
-type SharedGenerationType =
-  | "chat"
-  | "code"
-  | "image"
-  | "video"
-  | "music"
-  | "voice"
-  | "vision";
-
-type SharedGenerationStatus =
-  | "queued"
-  | "processing"
-  | "completed"
-  | "failed"
-  | "cancelled";
-
-async function sharedGetGeneration(
-  supabase: ReturnType<typeof createClient>,
-  userId: string,
-  generationId: string,
-  expectedType?: SharedGenerationType,
-) {
-  const { data, error } = await supabase
-    .from("generation_history")
-    .select("*")
-    .eq("id", generationId)
-    .eq("user_id", userId)
-    .maybeSingle();
-
-  if (error) {
-    throw error;
-  }
-
-  if (!data) {
-    throw new Error("Generation not found");
-  }
-
-  if (expectedType && data.type !== expectedType) {
-    throw new Error(
-      `Generation type mismatch: expected ${expectedType}, got ${data.type}`,
-    );
-  }
-
-  return data;
-}
-
-function sharedAssertCanStart(generation: {
-  status: string;
-}) {
-  if (generation.status !== "queued") {
-    throw new Error(
-      `Generation cannot start from status "${generation.status}"`,
-    );
-  }
-}
-
-function sharedAssertCanUpdate(generation: {
-  status: string;
-}) {
-  if (
-    generation.status === "completed" ||
-    generation.status === "failed" ||
-    generation.status === "cancelled"
-  ) {
-    throw new Error(
-      `Generation is already terminal: ${generation.status}`,
-    );
-  }
-}
-
-async function getGenerationForUser(
-  generationId: string,
-  userId: string,
-  expectedType?: SharedGenerationType,
-) {
-  return sharedGetGeneration(
-    getAdminClient(),
-    userId,
-    generationId,
-    expectedType,
-  );
-}
-
-async function updateGeneration(input: {
-  generationId: string;
-  userId: string;
-  status: SharedGenerationStatus;
-  expectedType?: SharedGenerationType;
-  provider?: string;
-  model?: string;
-  resultText?: string;
-  resultUrl?: string;
-  errorMessage?: string;
-  usage?: Record<string, unknown>;
-  metadata?: Record<string, unknown>;
-}) {
-  const supabase = getAdminClient();
-
-  const {
-    generationId,
-    userId,
-    status,
-    expectedType,
-    provider,
-    model,
-    resultText,
-    resultUrl,
-    errorMessage,
-    usage,
-    metadata,
-  } = input;
-
-  const current = await sharedGetGeneration(
-    supabase,
-    userId,
-    generationId,
-    expectedType,
-  );
-
-  if (status === "processing") {
-    sharedAssertCanStart(current);
-
-    const { data, error } = await supabase
-      .from("generation_history")
-      .update({
-        status: "processing",
-        started_at: new Date().toISOString(),
-      })
-      .eq("id", generationId)
-      .eq("user_id", userId)
-      .eq("status", "queued")
-      .select("*")
-      .maybeSingle();
-
-    if (error) {
-      throw error;
-    }
-
-    if (!data) {
-      throw new Error(
-        "Generation was already claimed or is no longer available",
-      );
-    }
-
-    return data;
-  }
-
-  sharedAssertCanUpdate(current);
-
-  const mergedMetadata = {
-    ...((current.metadata as Record<string, unknown>) ?? {}),
-    ...(metadata ?? {}),
-    ...(usage ? { usage } : {}),
-  };
-
-  const update: Record<string, unknown> = {
-    status,
-    metadata: mergedMetadata,
-    updated_at: new Date().toISOString(),
-  };
-
-  if (provider !== undefined) update.provider = provider;
-  if (model !== undefined) update.model = model;
-  if (resultText !== undefined) update.result_text = resultText;
-  if (resultUrl !== undefined) update.result_url = resultUrl;
-  if (errorMessage !== undefined) update.error_message = errorMessage;
-
-  if (
-    status === "completed" ||
-    status === "failed" ||
-    status === "cancelled"
-  ) {
-    update.completed_at = new Date().toISOString();
-  }
-
-  const { data, error } = await supabase
-    .from("generation_history")
-    .update(update)
-    .eq("id", generationId)
-    .eq("user_id", userId)
-    .select("*")
-    .maybeSingle();
-
-  if (error) {
-    throw error;
-  }
-
-  if (!data) {
-    throw new Error("Generation not found while updating.");
-  }
-
-  return data;
-}
-
-// ---- end inlined ----
-
-async function requireUser(
-  req: Request,
-) {
-  const authorization =
-    req.headers.get(
-      "Authorization",
-    );
-
-  if (
-    !authorization?.startsWith(
-      "Bearer ",
-    )
-  ) {
-    return null;
-  }
-
-  const token =
-    authorization
-      .slice(
-        "Bearer ".length,
-      )
-      .trim();
-
-  if (!token) {
-    return null;
-  }
-
-  const {
-    data,
-    error,
-  } =
-    await getAdminClient().auth.getUser(
-      token,
-    );
-
-  if (
-    error ||
-    !data.user
-  ) {
-    return null;
-  }
-
-  return data.user;
+function jsonResponse(
+body: unknown,
+status = 200,
+): Response {
+return new Response(
+JSON.stringify(body),
+{
+status,
+headers: corsHeaders,
+},
+);
 }
 
 function normalizeMessages(
-  value: unknown,
-): TextMessage[] {
-  if (
-    !Array.isArray(value)
-  ) {
-    return [];
-  }
-
-  return value
-    .filter(
-      (message) => {
-        if (
-          !message ||
-          typeof message !==
-            "object"
-        ) {
-          return false;
-        }
-
-        const item =
-          message as Record<
-            string,
-            unknown
-          >;
-
-        return (
-          (
-            item.role ===
-              "user" ||
-            item.role ===
-              "assistant" ||
-            item.role ===
-              "system"
-          ) &&
-          typeof item.content ===
-            "string" &&
-          item.content
-            .trim()
-            .length > 0
-        );
-      },
-    )
-    .slice(-MAX_MESSAGES)
-    .map(
-      (message) => {
-        const item =
-          message as Record<
-            string,
-            unknown
-          >;
-
-        return {
-          role:
-            item.role as MessageRole,
-
-          content:
-            String(
-              item.content,
-            )
-              .trim()
-              .slice(
-                0,
-                MAX_CONTENT_LENGTH,
-              ),
-        };
-      },
-    );
+messages: AIMessage[],
+): AIMessage[] {
+return messages
+.filter(
+(message) =>
+message &&
+(
+message.role === "user" ||
+message.role === "assistant" ||
+message.role === "system"
+) &&
+typeof message.content === "string" &&
+message.content.trim().length > 0,
+)
+.slice(-MAX_MESSAGES)
+.map((message) => ({
+role: message.role,
+content: message.content
+.trim()
+.slice(0, MAX_CONTENT_LENGTH),
+}));
 }
 
-function parseGenerationType(
-  value: unknown,
-): GenerationType {
-  if (
-    value === "chat" ||
-    value === "code" ||
-    value === "vision"
-  ) {
-    return value;
-  }
+function isRetryableGeminiError(
+error: unknown,
+): boolean {
+const message =
+error instanceof Error
+? error.message.toLowerCase()
+: String(error).toLowerCase();
 
+return (
+message.includes("429") ||
+message.includes("500") ||
+message.includes("502") ||
+message.includes("503") ||
+message.includes("504") ||
+message.includes("resource_exhausted") ||
+message.includes("resource exhausted") ||
+message.includes("rate limit") ||
+message.includes("rate_limit") ||
+message.includes("overloaded") ||
+message.includes("overload") ||
+message.includes("temporarily unavailable") ||
+message.includes("temporary unavailable") ||
+message.includes("high demand") ||
+message.includes("service unavailable") ||
+message.includes("deadline exceeded") ||
+message.includes("fetch failed")
+);
+}
+
+function getMaxOutputTokens(
+generationType: GenerationType,
+requested?: number,
+): number {
+const defaultValue =
+generationType === "code"
+? 8_000
+: generationType === "vision"
+? 4_000
+: 4_000;
+
+const value =
+Number.isFinite(requested)
+? Number(requested)
+: defaultValue;
+
+return Math.max(
+256,
+Math.min(value, 32_000),
+);
+}
+
+function toGeminiContents(
+messages: AIMessage[],
+imageUrl?: string,
+): GeminiContent[] {
+const contents: GeminiContent[] = [];
+
+for (const message of messages) {
+const role =
+message.role === "assistant"
+? "model"
+: "user";
+
+contents.push({
+  role,
+  parts: [
+    {
+      text: message.content,
+    },
+  ],
+});
+
+}
+
+if (imageUrl) {
+const last =
+contents[contents.length - 1];
+
+if (!last) {
   throw new Error(
-    "Invalid generation type.",
+    "A user message is required with an image.",
   );
 }
 
-function normalizeImageUrl(
-  value: unknown,
-): string | undefined {
-  if (
-    typeof value !==
-    "string"
-  ) {
-    return undefined;
-  }
+const trimmed =
+  imageUrl.trim();
 
-  const imageUrl =
-    value.trim();
-
-  if (!imageUrl) {
-    return undefined;
-  }
-
-  if (
-    imageUrl.length >
-    MAX_IMAGE_URL_LENGTH
-  ) {
-    throw new Error(
-      "Image URL or data is too large.",
-    );
-  }
-
-  if (
-    imageUrl.startsWith(
-      "https://",
-    ) ||
-    imageUrl.startsWith(
-      "http://",
-    ) ||
-    imageUrl.startsWith(
-      "data:image/",
-    )
-  ) {
-    return imageUrl;
-  }
-
-  throw new Error(
-    "imageUrl must be an HTTP(S) URL or image data URL.",
-  );
-}
-
-function getSystemPrompt(
-  body: Record<
-    string,
-    unknown
-  >,
-): string {
-  if (
-    typeof body.systemPrompt ===
-      "string" &&
-    body.systemPrompt.trim()
-  ) {
-    return body.systemPrompt
-      .trim()
-      .slice(
-        0,
-        MAX_CONTENT_LENGTH,
-      );
-  }
-
-  return DEFAULT_SYSTEM_PROMPT;
-}
-
-function convertRole(
-  role: MessageRole,
-): "user" | "model" {
-  return role ===
-    "assistant"
-    ? "model"
-    : "user";
-}
-
-function dataUrlToInlineData(
-  imageUrl: string,
+if (
+  trimmed.startsWith(
+    "data:",
+  )
 ) {
   const match =
-    imageUrl.match(
-      /^data:(image\/[^;]+);base64,(.+)$/s,
+    trimmed.match(
+      /^data:([^;]+);base64,(.+)$/s,
     );
 
   if (!match) {
@@ -547,986 +266,646 @@ function dataUrlToInlineData(
     );
   }
 
-  return {
-    mimeType:
-      match[1],
-    data:
-      match[2],
-  };
-}
+  const mimeType =
+    match[1];
 
-async function urlToInlineData(
-  imageUrl: string,
-) {
-  const response =
-    await fetch(imageUrl);
+  const data =
+    match[2];
 
-  if (!response.ok) {
-    throw new Error(
-      "Unable to download image for vision request.",
-    );
-  }
-
-  const contentType =
-    response.headers.get(
-      "content-type",
-    ) ?? "image/jpeg";
-
-  if (
-    !contentType.startsWith(
-      "image/",
-    )
-  ) {
-    throw new Error(
-      "The supplied URL does not contain an image.",
-    );
-  }
-
-  const bytes =
-    new Uint8Array(
-      await response.arrayBuffer(),
-    );
-
-  if (
-    bytes.length >
-    MAX_IMAGE_URL_LENGTH
-  ) {
-    throw new Error(
-      "Image is too large.",
-    );
-  }
-
-  let binary = "";
-
-  const chunkSize =
-    0x8000;
-
-  for (
-    let i = 0;
-    i < bytes.length;
-    i += chunkSize
-  ) {
-    binary +=
-      String.fromCharCode(
-        ...bytes.subarray(
-          i,
-          Math.min(
-            i + chunkSize,
-            bytes.length,
-          ),
-        ),
-      );
-  }
-
-  return {
-    mimeType:
-      contentType,
-    data:
-      btoa(binary),
-  };
-}
-
-async function imageToInlineData(
-  imageUrl: string,
-) {
-  if (
-    imageUrl.startsWith(
-      "data:image/",
-    )
-  ) {
-    return dataUrlToInlineData(
-      imageUrl,
-    );
-  }
-
-  return urlToInlineData(
-    imageUrl,
-  );
-}
-
-function buildGeminiContents(
-  messages: TextMessage[],
-): GeminiContent[] {
-  return messages.map(
-    (message) => ({
-      role:
-        convertRole(
-          message.role,
-        ),
-
-      parts: [
-        {
-          text:
-            message.content,
-        },
-      ],
-    }),
-  );
-}
-
-async function addVisionImage(
-  contents: GeminiContent[],
-  imageUrl: string,
-) {
-  let lastUser =
-    -1;
-
-  for (
-    let index =
-      contents.length - 1;
-    index >= 0;
-    index -= 1
-  ) {
-    if (
-      contents[index]?.role ===
-      "user"
-    ) {
-      lastUser =
-        index;
-      break;
-    }
-  }
-
-  if (
-    lastUser < 0
-  ) {
-    throw new Error(
-      "A user message is required for vision generation.",
-    );
-  }
-
-  const image =
-    await imageToInlineData(
-      imageUrl,
-    );
-
-  contents[
-    lastUser
-  ].parts.push({
+  last.parts.push({
     inlineData: {
-      mimeType:
-        image.mimeType,
-      data:
-        image.data,
+      mimeType,
+      data,
     },
   });
+
+  return contents;
 }
 
-function getMaxOutputTokens(
-  generationType: GenerationType,
-  value: unknown,
-): number {
-  if (
-    typeof value ===
-      "number" &&
-    Number.isInteger(value)
-  ) {
-    return Math.max(
-      1,
-      Math.min(
-        32000,
-        value,
-      ),
-    );
-  }
+last.parts.push({
+  text:
+    `\n\nImage URL:\n${trimmed}`,
+});
 
-  if (
-    generationType ===
-    "code"
-  ) {
-    return 8000;
-  }
-
-  if (
-    generationType ===
-    "vision"
-  ) {
-    return 4000;
-  }
-
-  return 4000;
 }
 
-function getTemperature(
-  value: unknown,
-) {
-  if (
-    typeof value ===
-      "number" &&
-    Number.isFinite(value)
-  ) {
-    return Math.max(
-      0,
-      Math.min(
-        2,
-        value,
-      ),
-    );
-  }
-
-  return 0.7;
-}
-
-function getTopP(
-  value: unknown,
-) {
-  if (
-    typeof value ===
-      "number" &&
-    Number.isFinite(value)
-  ) {
-    return Math.max(
-      0,
-      Math.min(
-        1,
-        value,
-      ),
-    );
-  }
-
-  return 0.95;
-}
-
-function sleep(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-/*
- * Gemini occasionally returns 503 ("model is currently
- * experiencing high demand") for a moment, especially on newer
- * models under load. Google's own guidance is to retry such
- * requests. This retries automatically (short delay, a couple of
- * attempts) before giving up, so a transient overload does not
- * surface as a failed chat message to the user.
- */
-async function callGemini(
-  model: string,
-  systemPrompt: string,
-  contents: GeminiContent[],
-  generationType: GenerationType,
-  maxOutputTokens: number,
-  temperature: number,
-  topP: number,
-) {
-  const maxAttempts = 3;
-  const delaysMs = [800, 1600];
-
-  let lastError: unknown;
-
-  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
-    try {
-      return await callGeminiOnce(
-        model,
-        systemPrompt,
-        contents,
-        generationType,
-        maxOutputTokens,
-        temperature,
-        topP,
-      );
-    } catch (error) {
-      lastError = error;
-
-      const message =
-        error instanceof Error ? error.message.toLowerCase() : "";
-
-      const isOverloaded =
-        message.includes("high demand") ||
-        message.includes("overloaded") ||
-        message.includes("unavailable") ||
-        message.includes("503");
-
-      const hasMoreAttempts = attempt < maxAttempts - 1;
-
-      if (!isOverloaded || !hasMoreAttempts) {
-        throw error;
-      }
-
-      await sleep(delaysMs[attempt] ?? 1600);
-    }
-  }
-
-  throw lastError instanceof Error
-    ? lastError
-    : new Error("Gemini API request failed.");
-}
-
-async function callGeminiOnce(
-  model: string,
-  systemPrompt: string,
-  contents: GeminiContent[],
-  generationType: GenerationType,
-  maxOutputTokens: number,
-  temperature: number,
-  topP: number,
-) {
-  if (!GEMINI_API_KEY) {
-    throw new Error(
-      "GEMINI_API_KEY is not configured.",
-    );
-  }
-
-  const endpoint =
-    `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(
-      model,
-    )}:generateContent`;
-
-  const response =
-    await fetch(
-      endpoint,
-      {
-        method:
-          "POST",
-
-        headers: {
-          "Content-Type":
-            "application/json",
-
-          "x-goog-api-key":
-            GEMINI_API_KEY,
-        },
-
-        body: JSON.stringify({
-          systemInstruction: {
-            parts: [
-              {
-                text:
-                  systemPrompt,
-              },
-            ],
-          },
-
-          contents,
-
-          generationConfig: {
-            temperature,
-            topP,
-            maxOutputTokens,
-
-            ...(generationType ===
-              "vision"
-              ? {}
-              : {}),
-          },
-        }),
-      },
-    );
-
-  const rawText =
-    await response.text();
-
-  let result:
-    Record<
-      string,
-      unknown
-    > = {};
-
-  try {
-    result =
-      rawText
-        ? (JSON.parse(
-            rawText,
-          ) as Record<
-            string,
-            unknown
-          >)
-        : {};
-  } catch {
-    result = {
-      raw: rawText,
-    };
-  }
-
-  if (!response.ok) {
-    const errorObject =
-      result.error;
-
-    const message =
-      errorObject &&
-      typeof errorObject ===
-        "object"
-        ? (
-            errorObject as {
-              message?: unknown;
-            }
-          ).message
-        : undefined;
-
-    throw new Error(
-      typeof message ===
-        "string"
-        ? message
-        : `Gemini API request failed (${response.status}).`,
-    );
-  }
-
-  return result;
+return contents;
 }
 
 function extractGeminiText(
-  result: Record<
-    string,
-    unknown
-  >,
+response: GeminiResponse,
 ): string {
-  const candidates =
-    Array.isArray(
-      result.candidates,
-    )
-      ? result.candidates
-      : [];
+const text =
+response.candidates
+?.flatMap(
+(candidate) =>
+candidate.content?.parts ??
+[],
+)
+.map(
+(part) =>
+typeof part.text === "string"
+? part.text
+: "",
+)
+.join("")
+.trim() ?? "";
 
-  const firstCandidate =
-    candidates[0];
+return text;
+}
 
-  if (
-    !firstCandidate ||
-    typeof firstCandidate !==
-      "object"
+async function callGeminiOnce(
+model: string,
+contents: GeminiContent[],
+maxOutputTokens: number,
+): Promise<{
+text: string;
+model: string;
+usage?: {
+prompt_tokens: number;
+completion_tokens: number;
+total_tokens: number;
+};
+}> {
+const endpoint =
+"https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent( model, )}:generateContent";
+
+const response =
+await fetch(endpoint, {
+method: "POST",
+headers: {
+"Content-Type":
+"application/json",
+"x-goog-api-key":
+GEMINI_API_KEY,
+},
+body: JSON.stringify({
+contents,
+generationConfig: {
+maxOutputTokens,
+},
+}),
+});
+
+const rawText =
+await response.text();
+
+let data:
+| GeminiResponse
+| null = null;
+
+try {
+data =
+JSON.parse(
+rawText,
+) as GeminiResponse;
+} catch {
+data = null;
+}
+
+if (!response.ok) {
+const apiMessage =
+data?.error?.message ??
+rawText ??
+"Gemini request failed with status ${response.status}.";
+
+throw new Error(
+  `Gemini ${model} failed (${response.status}): ${apiMessage}`,
+);
+
+}
+
+if (!data) {
+throw new Error(
+"Gemini ${model} returned invalid JSON.",
+);
+}
+
+const text =
+extractGeminiText(data);
+
+if (!text) {
+const finishReason =
+data.candidates?.[0]
+?.finishReason;
+
+throw new Error(
+  finishReason
+    ? `Gemini ${model} returned no text. Finish reason: ${finishReason}.`
+    : `Gemini ${model} returned an empty response.`,
+);
+
+}
+
+const usage =
+data.usageMetadata;
+
+return {
+text,
+model,
+usage: usage
+? {
+prompt_tokens:
+Number(
+usage.promptTokenCount ??
+0,
+),
+completion_tokens:
+Number(
+usage.candidatesTokenCount ??
+0,
+),
+total_tokens:
+Number(
+usage.totalTokenCount ??
+0,
+),
+}
+: undefined,
+};
+}
+
+async function callGemini(
+generationType: GenerationType,
+contents: GeminiContent[],
+maxOutputTokens: number,
+): Promise<{
+text: string;
+model: string;
+usage?: {
+prompt_tokens: number;
+completion_tokens: number;
+total_tokens: number;
+};
+}> {
+const primaryModel =
+generationType === "vision"
+? GEMINI_VISION_MODEL
+: GEMINI_PRIMARY_MODEL;
+
+const fallbackModel =
+generationType === "vision"
+? GEMINI_VISION_FALLBACK_MODEL
+: GEMINI_FALLBACK_MODEL;
+
+let lastError: unknown = null;
+
+/**
+
+* 1. Try the primary model.
+
+* 
+
+* We deliberately give Gemini 3.5 Flash
+
+* priority for normal CREOVA requests.
+  */
+  for (
+  let attempt = 0;
+  attempt <= RETRY_DELAYS_MS.length;
+  attempt++
   ) {
-    return "";
+  try {
+  return await callGeminiOnce(
+  primaryModel,
+  contents,
+  maxOutputTokens,
+  );
+  } catch (error) {
+  lastError = error;
+  
+  if (
+  !isRetryableGeminiError(
+  error,
+  )
+  ) {
+  break;
+  }
+  
+  if (
+  attempt <
+  RETRY_DELAYS_MS.length
+  ) {
+  await new Promise(
+  (resolve) =>
+  setTimeout(
+  resolve,
+  RETRY_DELAYS_MS[
+  attempt
+  ],
+  ),
+  );
+  }
+  }
   }
 
-  const content =
-    (
-      firstCandidate as {
-        content?: unknown;
-      }
-    ).content;
+/**
 
+* 2. Primary model failed.
+* 
+* Switch to Gemini 3.8 Flash.
+  */
   if (
-    !content ||
-    typeof content !==
-      "object"
+  fallbackModel !==
+  primaryModel
   ) {
-    return "";
+  try {
+  return await callGeminiOnce(
+  fallbackModel,
+  contents,
+  maxOutputTokens,
+  );
+  } catch (fallbackError) {
+  lastError =
+  fallbackError;
+  }
   }
 
-  const parts =
-    Array.isArray(
-      (
-        content as {
-          parts?: unknown;
-        }
-      ).parts,
-    )
-      ? (
-          content as {
-            parts: unknown[];
-          }
-        ).parts
-      : [];
+throw (
+lastError instanceof Error
+? lastError
+: new Error(
+"Gemini request failed.",
+)
+);
+}
 
-  return parts
-    .filter(
-      (part) =>
-        part &&
-        typeof part ===
-          "object" &&
-        typeof (
-          part as {
-            text?: unknown;
-          }
-        ).text ===
-          "string",
-    )
-    .map(
-      (part) =>
-        String(
-          (
-            part as {
-              text: string;
-            }
-          ).text,
-        ),
-    )
-    .join("\n")
-    .trim();
+async function requireUser(
+request: Request,
+supabaseAdmin: SupabaseClient,
+) {
+const authorization =
+request.headers.get(
+"Authorization",
+);
+
+if (!authorization) {
+throw new Error(
+"Missing authorization header.",
+);
+}
+
+const token =
+authorization.replace(
+/^Bearer\s+/i,
+"",
+).trim();
+
+if (!token) {
+throw new Error(
+"Missing access token.",
+);
+}
+
+const {
+data,
+error,
+} =
+await supabaseAdmin.auth.getUser(
+token,
+);
+
+if (
+error ||
+!data.user
+) {
+throw new Error(
+"Invalid or expired authentication token.",
+);
+}
+
+return data.user;
+}
+
+async function getGeneration(
+supabaseAdmin: SupabaseClient,
+generationId: string,
+userId: string,
+): Promise<GenerationRow> {
+const {
+data,
+error,
+} =
+await supabaseAdmin
+.from(
+"generation_history",
+)
+.select(
+"id, user_id, generation_type, status",
+)
+.eq(
+"id",
+generationId,
+)
+.eq(
+"user_id",
+userId,
+)
+.maybeSingle();
+
+if (error) {
+throw new Error(
+"Unable to load generation: ${error.message}",
+);
+}
+
+if (!data) {
+throw new Error(
+"Generation not found.",
+);
+}
+
+return data as GenerationRow;
 }
 
 Deno.serve(
-  async (req) => {
-    /*
-     * CORS.
-     */
-    if (
-      req.method ===
-      "OPTIONS"
-    ) {
-      return new Response(
-        "ok",
-        {
-          headers:
-            CORS_HEADERS,
-        },
-      );
-    }
+async (request) => {
+if (
+request.method ===
+"OPTIONS"
+) {
+return new Response(
+"ok",
+{
+headers:
+corsHeaders,
+},
+);
+}
 
-    /*
-     * Only POST.
-     */
-    if (
-      req.method !==
-      "POST"
-    ) {
-      return json(
-        {
-          success:
-            false,
+if (
+  request.method !==
+  "POST"
+) {
+  return jsonResponse(
+    {
+      success: false,
+      error:
+        "Method not allowed.",
+    },
+    405,
+  );
+}
 
-          error:
-            "Method not allowed.",
-        },
-        405,
-      );
-    }
+if (
+  !SUPABASE_URL ||
+  !SUPABASE_SERVICE_ROLE_KEY
+) {
+  return jsonResponse(
+    {
+      success: false,
+      error:
+        "Supabase server configuration is missing.",
+    },
+    500,
+  );
+}
 
-    let generationId =
-      "";
+if (!GEMINI_API_KEY) {
+  return jsonResponse(
+    {
+      success: false,
+      error:
+        "Gemini API key is not configured.",
+    },
+    500,
+  );
+}
 
-    let userId =
-      "";
+const supabaseAdmin =
+  createClient(
+    SUPABASE_URL,
+    SUPABASE_SERVICE_ROLE_KEY,
+    {
+      auth: {
+        persistSession:
+          false,
+        autoRefreshToken:
+          false,
+      },
+    },
+  );
 
-    let generationType:
-      GenerationType =
-        "chat";
+try {
+  const body =
+    (await request.json()) as RequestBody;
 
-    try {
-      /*
-       * Gemini API key must exist.
-       */
-      if (
-        !GEMINI_API_KEY
-      ) {
-        return json(
-          {
-            success:
-              false,
+  const generationId =
+    body.generationId?.trim();
 
-            error:
-              "GEMINI_API_KEY is not configured.",
-          },
-          500,
-        );
-      }
+  const generationType =
+    body.generationType ??
+    "chat";
 
-      /*
-       * Authenticate user.
-       */
-      const user =
-        await requireUser(
-          req,
-        );
-
-      if (!user) {
-        return json(
-          {
-            success:
-              false,
-
-            error:
-              "Authentication required.",
-          },
-          401,
-        );
-      }
-
-      userId =
-        user.id;
-
-      /*
-       * Parse body.
-       */
-      let body: Record<
-        string,
-        unknown
-      >;
-
-      try {
-        body =
-          (await req.json()) as Record<
-            string,
-            unknown
-          >;
-      } catch {
-        return json(
-          {
-            success:
-              false,
-
-            error:
-              "Invalid JSON request body.",
-          },
-          400,
-        );
-      }
-
-      /*
-       * Generation ID.
-       */
-      generationId =
-        typeof body.generationId ===
-        "string"
-          ? body.generationId
-              .trim()
-          : "";
-
-      if (
-        !generationId
-      ) {
-        return json(
-          {
-            success:
-              false,
-
-            error:
-              "Generation ID is required.",
-          },
-          400,
-        );
-      }
-
-      /*
-       * Generation type.
-       */
-      generationType =
-        parseGenerationType(
-          body.generationType,
-        );
-
-      /*
-       * Optional image.
-       */
-      const imageUrl =
-        normalizeImageUrl(
-          body.imageUrl,
-        );
-
-      /*
-       * Vision requires image.
-       */
-      if (
-        generationType ===
-          "vision" &&
-        !imageUrl
-      ) {
-        return json(
-          {
-            success:
-              false,
-
-            error:
-              "imageUrl is required for vision generation.",
-          },
-          400,
-        );
-      }
-
-      /*
-       * Image is not allowed for
-       * regular chat/code.
-       */
-      if (
-        generationType !==
-          "vision" &&
-        imageUrl
-      ) {
-        return json(
-          {
-            success:
-              false,
-
-            error:
-              "imageUrl is only allowed for vision generation.",
-          },
-          400,
-        );
-      }
-
-      /*
-       * Verify generation:
-       *
-       * - exists
-       * - belongs to user
-       * - type matches
-       */
-      await getGenerationForUser(
-        generationId,
-        userId,
-        generationType,
-      );
-
-      /*
-       * Normalize messages.
-       */
-      const messages =
-        normalizeMessages(
+  const messages =
+    Array.isArray(
+      body.messages,
+    )
+      ? normalizeMessages(
           body.messages,
-        );
+        )
+      : [];
 
-      if (
-        messages.length ===
-        0
-      ) {
-        return json(
-          {
-            success:
-              false,
+  if (!generationId) {
+    return jsonResponse(
+      {
+        success: false,
+        error:
+          "generationId is required.",
+      },
+      400,
+    );
+  }
 
-            error:
-              "At least one message is required.",
-          },
-          400,
-        );
-      }
+  if (
+    ![
+      "chat",
+      "code",
+      "vision",
+    ].includes(
+      generationType,
+    )
+  ) {
+    return jsonResponse(
+      {
+        success: false,
+        error:
+          "Unsupported generation type.",
+      },
+      400,
+    );
+  }
 
-      /*
-       * System prompt.
-       */
-      const systemPrompt =
-        getSystemPrompt(
-          body,
-        );
+  if (
+    messages.length === 0
+  ) {
+    return jsonResponse(
+      {
+        success: false,
+        error:
+          "At least one message is required.",
+      },
+      400,
+    );
+  }
 
-      /*
-       * Gemini model.
-       *
-       * We do not accept arbitrary
-       * client-selected provider models.
-       * This prevents a client from
-       * bypassing the server model policy.
-       */
-      const model =
-        generationType ===
+  if (
+    generationType ===
+    "vision" &&
+    !body.imageUrl
+  ) {
+    return jsonResponse(
+      {
+        success: false,
+        error:
+          "imageUrl is required for vision requests.",
+      },
+      400,
+    );
+  }
+
+  if (
+    body.imageUrl &&
+    body.imageUrl.length >
+      MAX_IMAGE_URL_LENGTH
+  ) {
+    return jsonResponse(
+      {
+        success: false,
+        error:
+          "Image URL is too large.",
+      },
+      400,
+    );
+  }
+
+  const user =
+    await requireUser(
+      request,
+      supabaseAdmin,
+    );
+
+  const generation =
+    await getGeneration(
+      supabaseAdmin,
+      generationId,
+      user.id,
+    );
+
+  if (
+    generation.generation_type !==
+    generationType
+  ) {
+    return jsonResponse(
+      {
+        success: false,
+        error:
+          "Generation type does not match the requested operation.",
+      },
+      400,
+    );
+  }
+
+  await supabaseAdmin
+    .from(
+      "generation_history",
+    )
+    .update({
+      status:
+        "processing",
+    })
+    .eq(
+      "id",
+      generationId,
+    )
+    .eq(
+      "user_id",
+      user.id,
+    );
+
+  const contents =
+    toGeminiContents(
+      messages,
+      generationType ===
         "vision"
-          ? GEMINI_VISION_MODEL
-          : GEMINI_CHAT_MODEL;
+        ? body.imageUrl
+        : undefined,
+    );
 
-      /*
-       * Generation settings.
-       */
-      const temperature =
-        getTemperature(
-          body.temperature,
-        );
+  const maxOutputTokens =
+    getMaxOutputTokens(
+      generationType,
+      body.max_tokens,
+    );
 
-      const topP =
-        getTopP(
-          body.top_p,
-        );
+  const result =
+    await callGemini(
+      generationType,
+      contents,
+      maxOutputTokens,
+    );
 
-      const maxOutputTokens =
-        getMaxOutputTokens(
-          generationType,
-          body.max_tokens,
-        );
-
-      /*
-       * Convert OpenAI-style messages
-       * already used by the mobile app
-       * into Gemini contents.
-       */
-      const contents =
-        buildGeminiContents(
-          messages,
-        );
-
-      /*
-       * Add image to the last user
-       * message for Vision.
-       */
-      if (
-        generationType ===
-          "vision" &&
-        imageUrl
-      ) {
-        await addVisionImage(
-          contents,
-          imageUrl,
-        );
-      }
-
-      /*
-       * Claim generation:
-       *
-       * queued -> processing
-       */
-      await updateGeneration({
-        generationId,
-
-        userId,
-
-        status:
-          "processing",
-
-        expectedType:
-          generationType,
-      });
-
-      /*
-       * Call Gemini.
-       */
-      const result =
-        await callGemini(
-          model,
-          systemPrompt,
-          contents,
-          generationType,
-          maxOutputTokens,
-          temperature,
-          topP,
-        );
-
-      /*
-       * Extract generated text.
-       */
-      const text =
-        extractGeminiText(
-          result,
-        );
-
-      /*
-       * Empty response is failure.
-       */
-      if (
-        !text.trim()
-      ) {
-        throw new Error(
-          "Gemini returned an empty response.",
-        );
-      }
-
-      /*
-       * Usage information.
-       */
-      const rawUsage =
-        result.usageMetadata &&
-        typeof result.usageMetadata ===
-          "object"
-          ? (result.usageMetadata as {
-              promptTokenCount?: number;
-              candidatesTokenCount?: number;
-              totalTokenCount?: number;
-            })
-          : undefined;
-
-      const usage =
-        rawUsage
+  await supabaseAdmin
+    .from(
+      "generation_history",
+    )
+    .update({
+      status:
+        "completed",
+      provider:
+        "gemini",
+      model:
+        result.model,
+      result:
+        result.text,
+      output:
+        result.text,
+      metadata:
+        result.usage
           ? {
-              prompt_tokens:
-                Number(
-                  rawUsage
-                    .promptTokenCount ??
-                    0,
-                ),
-
-              completion_tokens:
-                Number(
-                  rawUsage
-                    .candidatesTokenCount ??
-                    0,
-                ),
-
-              total_tokens:
-                Number(
-                  rawUsage
-                    .totalTokenCount ??
-                    0,
-                ),
+              usage:
+                result.usage,
             }
-          : undefined;
+          : undefined,
+    })
+    .eq(
+      "id",
+      generationId,
+    )
+    .eq(
+      "user_id",
+      user.id,
+    );
 
-      /*
-       * Save completed generation.
-       */
-      await updateGeneration({
-        generationId,
+  return jsonResponse({
+    success: true,
+    text:
+      result.text,
+    content:
+      result.text,
+    model:
+      result.model,
+    generationId,
+    usage:
+      result.usage,
+  });
+} catch (error) {
+  console.error(
+    "gemini-chat error:",
+    error,
+  );
 
-        userId,
-
-        status:
-          "completed",
-
-        provider:
-          "gemini",
-
-        model,
-
-        resultText:
-          text.trim(),
-
-        usage,
-
-        expectedType:
-          generationType,
-      });
-
-      return json({
-        success: true,
-
-        generationId,
-
-        text:
-          text.trim(),
-
-        model,
-
-        usage,
-      });
-    } catch (error) {
-      const errorMessage =
-        error instanceof
-        Error
+  return jsonResponse(
+    {
+      success: false,
+      error:
+        error instanceof Error
           ? error.message
-          : "Gemini generation failed.";
+          : "Gemini request failed.",
+    },
+    500,
+  );
+}
 
-      if (
-        generationId &&
-        userId
-      ) {
-        try {
-          await updateGeneration({
-            generationId,
-
-            userId,
-
-            status:
-              "failed",
-
-            errorMessage,
-
-            expectedType:
-              generationType,
-          });
-        } catch (
-          updateError
-        ) {
-          console.error(
-            "Generation failure update failed:",
-            updateError,
-          );
-        }
-      }
-
-      console.error(
-        "gemini-chat error:",
-        error,
-      );
-
-      return json(
-        {
-          success:
-            false,
-
-          generationId:
-            generationId ||
-            undefined,
-
-          error:
-            errorMessage,
-        },
-        500,
-      );
-    }
-  },
+},
 );
