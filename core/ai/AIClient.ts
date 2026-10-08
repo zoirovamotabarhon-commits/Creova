@@ -167,8 +167,7 @@ export class AIClient {
           : "gemini-3.8-flash";
 
       return {
-        content:
-          content.trim(),
+        content: content.trim(),
 
         model,
 
