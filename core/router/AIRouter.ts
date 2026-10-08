@@ -12,8 +12,7 @@
           : "hybrid-cloud",
 
       routedTo:
-        hybrid.routedTo ===
-        "local"
+        hybrid.routedTo === "local"
           ? "local"
           : "cloud",
     };
