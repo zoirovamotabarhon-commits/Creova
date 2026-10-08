@@ -1,6 +1,6 @@
 import type { GenerationType } from "../../services/generation";
 
-export type AIProviderName = "openai";
+export type AIProviderName = "gemini";
 
 export interface AIProviderConfig {
   name: AIProviderName;
@@ -11,9 +11,9 @@ export const AI_PROVIDERS: Record<
   AIProviderName,
   AIProviderConfig
 > = {
-  openai: {
-    name: "openai",
-    model: "gpt-5.6",
+  gemini: {
+    name: "gemini",
+    model: "gemini-3.8-flash",
   },
 };
 
@@ -33,10 +33,23 @@ export interface AIOptions {
 
   generationId?: string;
 
+  /**
+   * Kept for backward compatibility with
+   * existing callers.
+   *
+   * Gemini 3.8 Flash does not send these
+   * values to the API.
+   */
   temperature?: number;
 
   maxTokens?: number;
 
+  /**
+   * Kept for backward compatibility.
+   *
+   * Gemini 3.8 Flash does not send topP
+   * to the API.
+   */
   topP?: number;
 
   /**
@@ -69,4 +82,4 @@ export interface AIResponse {
   routedTo?:
     | "local"
     | "cloud";
-}
+  }
