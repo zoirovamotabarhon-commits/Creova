@@ -1,18 +1,11 @@
-import type {
-  GenerationType,
-} from "../../services/generation";
+import type { GenerationType } from "../../services/generation";
 
-
-export type AIProviderName =
-  "gemini";
-
+export type AIProviderName = "gemini";
 
 export interface AIProviderConfig {
   name: AIProviderName;
-
   model: string;
 }
-
 
 export const AI_PROVIDERS: Record<
   AIProviderName,
@@ -20,12 +13,9 @@ export const AI_PROVIDERS: Record<
 > = {
   gemini: {
     name: "gemini",
-
-    model:
-      "gemini-3.8-flash",
+    model: "gemini-3.8-flash",
   },
 };
-
 
 export interface AIMessage {
   id?: string;
@@ -38,20 +28,15 @@ export interface AIMessage {
   content: string;
 }
 
-
 export interface AIOptions {
-  generationType?:
-    GenerationType;
+  generationType?: GenerationType;
 
   generationId?: string;
 
   maxTokens?: number;
 
   imageUrl?: string;
-
-  conversationId?: string;
 }
-
 
 export interface AIUsage {
   promptTokens: number;
@@ -60,7 +45,6 @@ export interface AIUsage {
 
   totalTokens: number;
 }
-
 
 export interface AIResponse {
   content: string;
