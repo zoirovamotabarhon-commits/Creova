@@ -1,16 +1,14 @@
 export const AI_CONFIG = {
-  defaultProvider: "openai",
+  defaultProvider: "gemini",
 
-  model: "gpt-5.6",
+  model: "gemini-3.8-flash",
 
   maxTokens: 4096,
-
-  temperature: 0.7,
 
   timeout: 60000,
 } as const;
 
-export const OPENAI_MODEL =
+export const GEMINI_MODEL =
   AI_CONFIG.model;
 
 export const APP_CONFIG = {
