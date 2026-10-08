@@ -35,6 +35,13 @@ export interface AIOptions {
 
   maxTokens?: number;
 
+  /**
+   * Image URL used for multimodal Vision requests.
+   *
+   * Supported formats:
+   * - https://...
+   * - data:image/...;base64,...
+   */
   imageUrl?: string;
 }
 
