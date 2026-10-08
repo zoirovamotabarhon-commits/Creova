@@ -4,81 +4,42 @@ import {
   useState,
 } from "react";
 
-import {
-  AIRouter,
-} from "../core/router/AIRouter";
-
-import type {
-  AgentContext,
-} from "../core/agents/AgentContext";
-
-import type {
-  AIMessage,
-} from "../core/ai/AIProvider";
-
-import {
-  useAuthContext,
-} from "../providers/AuthProvider";
-
+import { AIRouter } from "../core/router/AIRouter";
+import type { AgentContext } from "../core/agents/AgentContext";
+import type { AIMessage } from "../core/ai/AIProvider";
+import { useAuthContext } from "../providers/AuthProvider";
 
 export interface UseAIOptions {
   projectId?: string;
-
   conversationId?: string;
-
   imageUrl?: string;
 }
-
 
 export function useAI(
   options: UseAIOptions = {},
 ) {
-  const {
-    user,
-  } =
+  const { user } =
     useAuthContext();
 
-  const [
-    loading,
-    setLoading,
-  ] =
+  const [loading, setLoading] =
     useState(false);
 
-  const [
-    error,
-    setError,
-  ] =
-    useState<
-      string | null
-    >(null);
+  const [error, setError] =
+    useState<string | null>(null);
 
-  const [
-    messages,
-    setMessages,
-  ] =
-    useState<
-      AIMessage[]
-    >([]);
+  const [messages, setMessages] =
+    useState<AIMessage[]>([]);
 
   const router =
     useMemo(
-      () =>
-        new AIRouter(),
+      () => new AIRouter(),
       [],
     );
 
-
   const sendMessage =
     useCallback(
-      async (
-        input: string,
-      ) => {
-        const cleanInput =
-          input.trim();
-
-        if (
-          !cleanInput
-        ) {
+      async (input: string) => {
+        if (!input.trim()) {
           return;
         }
 
@@ -86,41 +47,27 @@ export function useAI(
           setError(
             "You must be signed in to use AI features.",
           );
-
           return;
         }
 
-        setLoading(
-          true,
-        );
+        setLoading(true);
+        setError(null);
 
-        setError(
-          null,
-        );
-
-        const userMessage:
-          AIMessage = {
-            role:
-              "user",
-
-            content:
-              cleanInput,
-          };
+        const userMessage: AIMessage = {
+          role: "user",
+          content: input.trim(),
+        };
 
         setMessages(
-          (
-            previous,
-          ) => [
+          (previous) => [
             ...previous,
             userMessage,
           ],
         );
 
         try {
-          const context:
-            AgentContext = {
-            userId:
-              user.id,
+          const context: AgentContext = {
+            userId: user.id,
 
             imageUrl:
               options.imageUrl,
@@ -136,23 +83,19 @@ export function useAI(
 
           const response =
             await router.routeAndExecute(
-              cleanInput,
+              input.trim(),
               context,
             );
 
           const assistantMessage:
             AIMessage = {
-            role:
-              "assistant",
-
-            content:
-              response.content,
-          };
+              role: "assistant",
+              content:
+                response.content,
+            };
 
           setMessages(
-            (
-              previous,
-            ) => [
+            (previous) => [
               ...previous,
               assistantMessage,
             ],
@@ -162,61 +105,43 @@ export function useAI(
         } catch (
           err: unknown
         ) {
-          const message =
+          const errorMessage =
             err instanceof Error
               ? err.message
               : "An error occurred while processing AI request.";
 
           setError(
-            message,
+            errorMessage,
           );
 
           console.error(
             "useAI Error:",
             err,
           );
-
-          return undefined;
         } finally {
-          setLoading(
-            false,
-          );
+          setLoading(false);
         }
       },
       [
-        options.imageUrl,
         options.projectId,
         options.conversationId,
-        router,
+        options.imageUrl,
         user,
+        router,
       ],
     );
 
-
   const clearMessages =
-    useCallback(
-      () => {
-        setMessages(
-          [],
-        );
-
-        setError(
-          null,
-        );
-      },
-      [],
-    );
-
+    useCallback(() => {
+      setMessages([]);
+      setError(null);
+    }, []);
 
   return {
     messages,
-
     loading,
-
     error,
-
     sendMessage,
-
     clearMessages,
   };
 }
