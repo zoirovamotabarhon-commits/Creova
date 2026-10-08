@@ -4,87 +4,55 @@ import type {
   AIResponse,
 } from "./AIProvider";
 
-import {
-  invokeEdgeFunction,
-} from "../../services/edgeFunctions";
-
-import {
-  createGeneration,
-} from "../../services/generation";
-
+import { invokeEdgeFunction } from "../../services/edgeFunctions";
+import { createGeneration } from "../../services/generation";
 
 export class AIClient {
-  private static instance:
-    AIClient;
-
+  private static instance: AIClient;
 
   private constructor() {}
 
-
   public static getInstance(): AIClient {
-    if (
-      !AIClient.instance
-    ) {
-      AIClient.instance =
-        new AIClient();
+    if (!AIClient.instance) {
+      AIClient.instance = new AIClient();
     }
 
     return AIClient.instance;
   }
 
-
   public async chat(
     messages: AIMessage[],
     options: AIOptions = {},
   ): Promise<AIResponse> {
-    const cleanMessages =
-      messages.filter(
-        (
-          message,
-        ) =>
-          typeof message.content ===
-            "string" &&
-          message.content
-            .trim()
-            .length > 0,
-      );
+    const cleanMessages = messages.filter(
+      (message) =>
+        typeof message.content === "string" &&
+        message.content.trim().length > 0,
+    );
 
-    if (
-      cleanMessages.length ===
-      0
-    ) {
+    if (cleanMessages.length === 0) {
       throw new Error(
         "At least one AI message is required.",
       );
     }
 
     const generationType =
-      options.generationType ??
-      "chat";
+      options.generationType ?? "chat";
 
     let generationId =
       options.generationId;
 
-    if (
-      !generationId
-    ) {
+    if (!generationId) {
       const lastUserMessage =
-        [
-          ...cleanMessages,
-        ]
+        [...cleanMessages]
           .reverse()
           .find(
-            (
-              message,
-            ) =>
-              message.role ===
-              "user",
+            (message) =>
+              message.role === "user",
           );
 
       const prompt =
-        lastUserMessage
-          ?.content
-          ?.trim();
+        lastUserMessage?.content?.trim();
 
       if (!prompt) {
         throw new Error(
@@ -98,12 +66,7 @@ export class AIClient {
           undefined,
           prompt,
           {
-            feature:
-              generationType,
-
-            conversationId:
-              options.conversationId ??
-              null,
+            feature: generationType,
           },
         );
 
@@ -121,70 +84,47 @@ export class AIClient {
         generation.generationId;
     }
 
-    const {
-      data,
-      error,
-    } =
+    const { data, error } =
       await invokeEdgeFunction<{
         success: boolean;
-
+        generationId?: string;
         text?: string;
-
         content?: string;
-
         model?: string;
-
-        error?: string;
-
-        conversationId?: string;
 
         usage?: {
           prompt_tokens?: number;
-
           completion_tokens?: number;
-
           total_tokens?: number;
         };
 
-        choices?: Array<{
-          message?: {
-            content?: string;
-          };
-        }>;
+        error?: string;
       }>(
         "gemini-chat",
         {
           body: {
             generationId,
-
             generationType,
-
-            messages:
-              cleanMessages,
+            messages: cleanMessages,
 
             max_tokens:
-              options.maxTokens ??
-              4000,
+              options.maxTokens ?? 2000,
 
             imageUrl:
               options.imageUrl,
-
-            conversationId:
-              options.conversationId,
           },
         },
       );
 
     if (error) {
       throw new Error(
-        error.message,
+        `AI request failed: ${error.message}`,
       );
     }
 
     if (
       !data ||
-      data.success !==
-        true
+      data.success !== true
     ) {
       throw new Error(
         data?.error ??
@@ -193,66 +133,50 @@ export class AIClient {
     }
 
     const content =
-      typeof data.text ===
-        "string"
+      typeof data.text === "string"
         ? data.text
-        : typeof data.content ===
-            "string"
+        : typeof data.content === "string"
           ? data.content
-          : typeof data
-                .choices?.[0]
-                ?.message
-                ?.content ===
-              "string"
-            ? data
-                .choices[0]
-                .message
-                .content
-            : "";
+          : "";
 
-    if (
-      !content.trim()
-    ) {
+    if (!content.trim()) {
       throw new Error(
         "AI returned an empty response.",
       );
     }
 
-    return {
-      content:
-        content.trim(),
+    const model =
+      typeof data.model === "string" &&
+      data.model.trim()
+        ? data.model
+        : "gemini-3.8-flash";
 
-      model:
-        data.model ??
-        "gemini-3.8-flash",
+    return {
+      content: content.trim(),
+
+      model,
 
       generationId,
 
-      routedTo:
-        "cloud",
+      routedTo: "cloud",
 
       usage:
-        data.usage
+        data.usage &&
+        typeof data.usage === "object"
           ? {
               promptTokens:
                 Number(
-                  data.usage
-                    .prompt_tokens ??
-                    0,
+                  data.usage.prompt_tokens ?? 0,
                 ),
 
               completionTokens:
                 Number(
-                  data.usage
-                    .completion_tokens ??
-                    0,
+                  data.usage.completion_tokens ?? 0,
                 ),
 
               totalTokens:
                 Number(
-                  data.usage
-                    .total_tokens ??
-                    0,
+                  data.usage.total_tokens ?? 0,
                 ),
             }
           : undefined,
