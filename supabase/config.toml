@@ -23,3 +23,6 @@ verify_jwt = true
 
 [functions.generation-update]
 verify_jwt = true
+
+[functions.chat-voice-message]
+verify_jwt = true
