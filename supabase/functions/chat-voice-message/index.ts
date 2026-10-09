@@ -56,10 +56,7 @@ Deno.serve(async (request) => {
   }
 
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-    },
+    auth: { persistSession: false, autoRefreshToken: false },
   });
 
   try {
@@ -84,13 +81,9 @@ Deno.serve(async (request) => {
 
     const conversationId = body.conversationId?.trim();
     const filePath = body.filePath?.trim();
-
     const durationMs = Math.max(
       0,
-      Math.min(
-        600000,
-        Math.round(Number(body.durationMs ?? 0)),
-      ),
+      Math.min(600000, Math.round(Number(body.durationMs ?? 0))),
     );
 
     if (!conversationId || !filePath) {
@@ -103,63 +96,52 @@ Deno.serve(async (request) => {
       );
     }
 
-    const expectedPrefix =
-      `${authData.user.id}/${conversationId}/`;
+    const expectedPrefix = `${authData.user.id}/${conversationId}/`;
 
     if (!filePath.startsWith(expectedPrefix)) {
       return jsonResponse(
-        {
-          success: false,
-          error: "Invalid voice file path.",
-        },
+        { success: false, error: "Invalid voice file path." },
         403,
       );
     }
 
-    const {
-      data: conversation,
-      error: conversationError,
-    } = await admin
-      .from("chat_conversations")
-      .select("id")
-      .eq("id", conversationId)
-      .eq("user_id", authData.user.id)
-      .maybeSingle();
+    const { data: conversation, error: conversationError } =
+      await admin
+        .from("chat_conversations")
+        .select("id")
+        .eq("id", conversationId)
+        .eq("user_id", authData.user.id)
+        .maybeSingle();
 
     if (conversationError || !conversation) {
       return jsonResponse(
-        {
-          success: false,
-          error: "Conversation not found.",
-        },
+        { success: false, error: "Conversation not found." },
         404,
       );
     }
 
-    const { data: inserted, error: insertError } =
-      await admin
-        .from("chat_messages")
-        .insert({
-          conversation_id: conversationId,
-          user_id: authData.user.id,
-          role: "user",
-          content: "Voice message",
-          message_type: "voice",
-          audio_url: filePath,
-          audio_duration_ms: durationMs,
-        })
-        .select(
-          "id,conversation_id,user_id,generation_id,role,content,message_type,audio_url,audio_duration_ms,created_at",
-        )
-        .single();
+    const { data: inserted, error: insertError } = await admin
+      .from("chat_messages")
+      .insert({
+        conversation_id: conversationId,
+        user_id: authData.user.id,
+        role: "user",
+        content: "Voice message",
+        message_type: "voice",
+        audio_url: filePath,
+        audio_duration_ms: durationMs,
+      })
+      .select(
+        "id,conversation_id,user_id,generation_id,role,content,message_type,audio_url,audio_duration_ms,created_at",
+      )
+      .single();
 
     if (insertError || !inserted) {
       return jsonResponse(
         {
           success: false,
           error:
-            insertError?.message ??
-            "Unable to save voice message.",
+            insertError?.message ?? "Unable to save voice message.",
         },
         500,
       );
@@ -167,9 +149,7 @@ Deno.serve(async (request) => {
 
     await admin
       .from("chat_conversations")
-      .update({
-        updated_at: new Date().toISOString(),
-      })
+      .update({ updated_at: new Date().toISOString() })
       .eq("id", conversationId)
       .eq("user_id", authData.user.id);
 
