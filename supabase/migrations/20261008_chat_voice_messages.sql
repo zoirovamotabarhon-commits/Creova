@@ -29,7 +29,6 @@ where id = 'generation-assets';
 --   <user_id>/<conversation_id>/<timestamp>.m4a
 -- The client may upload only inside its own user folder.
 drop policy if exists "chat_voice_upload_own" on storage.objects;
-
 create policy "chat_voice_upload_own"
 on storage.objects
 for insert
@@ -40,7 +39,6 @@ with check (
 );
 
 drop policy if exists "chat_voice_read_own" on storage.objects;
-
 create policy "chat_voice_read_own"
 on storage.objects
 for select
@@ -51,7 +49,6 @@ using (
 );
 
 drop policy if exists "chat_voice_delete_own" on storage.objects;
-
 create policy "chat_voice_delete_own"
 on storage.objects
 for delete
