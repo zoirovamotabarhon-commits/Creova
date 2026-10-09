@@ -12,7 +12,12 @@
     "plugins": [
       "expo-router",
       "expo-asset",
-      "expo-audio",
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Creova ovozli xabar yuborish uchun mikrofoningizdan foydalanadi."
+        }
+      ],
       [
         "expo-image-picker",
         {
