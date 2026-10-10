@@ -1,12 +1,9 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 
-import {
-  createClient,
-  type SupabaseClient,
-} from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-type GenerationType = "chat" | "code" | "vision";
 type ChatRole = "user" | "assistant" | "system";
+type GenerationType = "chat" | "code" | "vision";
 
 interface AIMessage {
   role: ChatRole;
@@ -22,17 +19,14 @@ interface RequestBody {
   imageUrl?: string;
 }
 
-interface GenerationRow {
-  id: string;
-  user_id: string;
-  type: string;
-  status: string;
+interface GeminiPart {
+  text?: string;
 }
 
 interface GeminiResponse {
   candidates?: Array<{
     content?: {
-      parts?: Array<{ text?: string }>;
+      parts?: GeminiPart[];
     };
     finishReason?: string;
   }>;
@@ -57,14 +51,9 @@ const SUPABASE_SERVICE_ROLE_KEY =
 
 const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY") ?? "";
 
-const PRIMARY_MODEL =
-  Deno.env.get("GEMINI_CHAT_MODEL") ?? "gemini-2.5-flash";
-
-const FALLBACK_MODEL =
-  Deno.env.get("GEMINI_CHAT_FALLBACK_MODEL") ?? "gemini-2.5-pro";
-
-const MAX_MESSAGES = 40;
-const MAX_CONTENT_LENGTH = 12_000;
+// Asosiy va zaxira Gemini modellari.
+const GEMINI_PRIMARY_MODEL = "gemini-3.1-pro-preview";
+const GEMINI_FALLBACK_MODEL = "gemini-3.8-flash";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -74,359 +63,409 @@ const corsHeaders = {
   "Content-Type": "application/json",
 };
 
-function jsonResponse(body: unknown, status = 200): Response {
+function jsonResponse(
+  body: unknown,
+  status = 200,
+): Response {
   return new Response(JSON.stringify(body), {
     status,
     headers: corsHeaders,
   });
 }
 
-function normalizeMessages(messages: AIMessage[]): AIMessage[] {
-  return messages
-    .filter(
-      (message) =>
-        message &&
-        ["user", "assistant", "system"].includes(message.role) &&
-        typeof message.content === "string" &&
-        message.content.trim().length > 0,
-    )
-    .slice(-MAX_MESSAGES)
-    .map((message) => ({
-      role: message.role,
-      content: message.content.trim().slice(0, MAX_CONTENT_LENGTH),
-    }));
-}
-
-async function requireUser(
-  request: Request,
-  admin: SupabaseClient,
-) {
-  const authorization = request.headers.get("Authorization");
-
-  if (!authorization) {
-    throw new Error("Authorization header topilmadi.");
-  }
-
-  const token = authorization.replace(/^Bearer\s+/i, "").trim();
-
-  if (!token) {
-    throw new Error("Access token topilmadi.");
-  }
-
-  const { data, error } = await admin.auth.getUser(token);
-
-  if (error || !data.user) {
-    throw new Error("Sessiya yaroqsiz yoki muddati tugagan.");
-  }
-
-  return data.user;
-}
-
-async function getGeneration(
-  admin: SupabaseClient,
-  generationId: string,
-  userId: string,
-): Promise<GenerationRow> {
-  const { data, error } = await admin
-    .from("generation_history")
-    .select("id,user_id,type,status")
-    .eq("id", generationId)
-    .eq("user_id", userId)
-    .maybeSingle();
-
-  if (error) {
-    throw new Error(`Generation o'qilmadi: ${error.message}`);
-  }
-
-  if (!data) {
-    throw new Error("Generation topilmadi.");
-  }
-
-  return data as GenerationRow;
-}
-
-function toGeminiContents(messages: AIMessage[]) {
-  return messages.map((message) => ({
-    role: message.role === "assistant" ? "model" : "user",
-    parts: [{ text: message.content }],
-  }));
-}
-
-function extractGeminiText(response: GeminiResponse): string {
-  return (
-    response.candidates
-      ?.flatMap((candidate) => candidate.content?.parts ?? [])
-      .map((part) => (typeof part.text === "string" ? part.text : ""))
-      .join("")
-      .trim() ?? ""
-  );
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error
+    ? error.message
+    : "Gemini request failed.";
 }
 
 async function callGemini(
   model: string,
   messages: AIMessage[],
-  maxOutputTokens: number,
+  maxTokens: number,
 ): Promise<{
   text: string;
   model: string;
-  usage?: {
-    prompt_tokens: number;
-    completion_tokens: number;
-    total_tokens: number;
-  };
+  usage?: GeminiResponse["usageMetadata"];
 }> {
-  const endpoint =
-    `https://generativelanguage.googleapis.com/v1beta/models/` +
-    `${encodeURIComponent(model)}:generateContent`;
+  const systemMessages = messages
+    .filter((message) => message.role === "system")
+    .map((message) => message.content.trim())
+    .filter(Boolean);
 
-  const contents = toGeminiContents(messages);
+  const contents = messages
+    .filter(
+      (message) =>
+        (message.role === "user" ||
+          message.role === "assistant") &&
+        message.content.trim().length > 0,
+    )
+    .map((message) => ({
+      role: message.role === "assistant" ? "model" : "user",
+      parts: [{ text: message.content.trim() }],
+    }));
 
-  const response = await fetch(endpoint, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-goog-api-key": GEMINI_API_KEY,
-    },
-    body: JSON.stringify({
-      contents,
-      generationConfig: {
-        maxOutputTokens,
-      },
-    }),
-  });
-
-  const rawText = await response.text();
-
-  let data: GeminiResponse | null = null;
-  try {
-    data = JSON.parse(rawText) as GeminiResponse;
-  } catch {
-    data = null;
+  if (contents.length === 0) {
+    throw new Error("Yuborish uchun xabar topilmadi.");
   }
+
+  const payload: Record<string, unknown> = {
+    contents,
+    generationConfig: {
+      maxOutputTokens: maxTokens,
+      temperature: 0.7,
+    },
+  };
+
+  if (systemMessages.length > 0) {
+    payload.systemInstruction = {
+      parts: [{ text: systemMessages.join("\n\n") }],
+    };
+  }
+
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-goog-api-key": GEMINI_API_KEY,
+      },
+      body: JSON.stringify(payload),
+    },
+  );
+
+  const responseBody = (await response.json()) as GeminiResponse;
 
   if (!response.ok) {
-    throw new Error(
-      `Gemini ${model} (${response.status}): ${
-        data?.error?.message ?? rawText ?? "So'rov bajarilmadi."
-      }`,
-    );
+    const message =
+      responseBody.error?.message ??
+      `Gemini API xatosi: HTTP ${response.status}`;
+
+    throw new Error(message);
   }
 
-  if (!data) {
-    throw new Error("Gemini noto'g'ri javob formatini qaytardi.");
-  }
-
-  const text = extractGeminiText(data);
+  const text = (responseBody.candidates ?? [])
+    .flatMap((candidate) => candidate.content?.parts ?? [])
+    .map((part) => part.text ?? "")
+    .join("")
+    .trim();
 
   if (!text) {
-    const reason = data.candidates?.[0]?.finishReason;
     throw new Error(
-      reason
-        ? `Gemini bo'sh javob qaytardi. Sabab: ${reason}`
-        : "Gemini bo'sh javob qaytardi.",
+      "Gemini javob qaytarmadi. Savolni qayta yuboring.",
     );
   }
-
-  const usage = data.usageMetadata;
 
   return {
     text,
     model,
-    usage: usage
-      ? {
-          prompt_tokens: Number(usage.promptTokenCount ?? 0),
-          completion_tokens: Number(usage.candidatesTokenCount ?? 0),
-          total_tokens: Number(usage.totalTokenCount ?? 0),
-        }
-      : undefined,
+    usage: responseBody.usageMetadata,
   };
 }
 
-async function generateAnswer(
-  messages: AIMessage[],
-  maxOutputTokens: number,
-) {
-  try {
-    return await callGemini(PRIMARY_MODEL, messages, maxOutputTokens);
-  } catch (primaryError) {
-    console.error("Gemini primary model xatosi:", primaryError);
-
-    if (FALLBACK_MODEL === PRIMARY_MODEL) {
-      throw primaryError;
-    }
-
-    // Asosiy model ishlamasa, ikkinchi modelni sinab ko'ramiz.
-    return await callGemini(FALLBACK_MODEL, messages, maxOutputTokens);
-  }
-}
-
-Deno.serve(async (request) => {
+Deno.serve(async (request: Request): Promise<Response> => {
   if (request.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
 
   if (request.method !== "POST") {
     return jsonResponse(
-      { success: false, error: "Faqat POST so'rovi qabul qilinadi." },
+      {
+        success: false,
+        error: "Faqat POST so'rovi qabul qilinadi.",
+      },
       405,
     );
   }
 
-  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+  const authorization = request.headers.get("Authorization");
+  const token = authorization
+    ?.replace(/^Bearer\s+/i, "")
+    .trim();
+
+  if (!token) {
     return jsonResponse(
-      { success: false, error: "Supabase server sozlamalari topilmadi." },
+      {
+        success: false,
+        error: "Tizimga kirish talab qilinadi.",
+      },
+      401,
+    );
+  }
+
+  if (
+    !SUPABASE_URL ||
+    !SUPABASE_SERVICE_ROLE_KEY ||
+    !GEMINI_API_KEY
+  ) {
+    console.error("Server configuration is incomplete.");
+
+    return jsonResponse(
+      {
+        success: false,
+        error:
+          "Server sozlamalari to'liq emas. Supabase Secrets bo'limini tekshiring.",
+      },
       500,
     );
   }
 
-  if (!GEMINI_API_KEY) {
-    return jsonResponse(
-      { success: false, error: "GEMINI_API_KEY sozlanmagan." },
-      500,
-    );
-  }
-
-  const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
+  const supabaseAdmin = createClient(
+    SUPABASE_URL,
+    SUPABASE_SERVICE_ROLE_KEY,
+    {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+      },
     },
-  });
+  );
 
   let generationId: string | undefined;
+  let conversationId: string | undefined;
   let userId: string | undefined;
+  let generationType: GenerationType = "chat";
 
   try {
-    const user = await requireUser(request, admin);
-    userId = user.id;
+    // 1. Foydalanuvchini tekshirish.
+    const { data: authData, error: authError } =
+      await supabaseAdmin.auth.getUser(token);
 
-    const body = (await request.json()) as RequestBody;
-
-    generationId = body.generationId?.trim();
-
-    const generationType = body.generationType ?? "chat";
-    const conversationId = body.conversationId?.trim();
-
-    const messages = Array.isArray(body.messages)
-      ? normalizeMessages(body.messages)
-      : [];
-
-    if (!generationId) {
-      return jsonResponse(
-        { success: false, error: "generationId majburiy." },
-        400,
-      );
-    }
-
-    if (!["chat", "code", "vision"].includes(generationType)) {
-      return jsonResponse(
-        { success: false, error: "Generation turi qo'llab-quvvatlanmaydi." },
-        400,
-      );
-    }
-
-    if (messages.length === 0) {
-      return jsonResponse(
-        { success: false, error: "Kamida bitta xabar yuboring." },
-        400,
-      );
-    }
-
-    if (generationType === "chat" && !conversationId) {
-      return jsonResponse(
-        { success: false, error: "Chat ID yuborilmadi." },
-        400,
-      );
-    }
-
-    const generation = await getGeneration(admin, generationId, user.id);
-
-    if (generation.type !== generationType) {
+    if (authError || !authData.user) {
       return jsonResponse(
         {
           success: false,
-          error: "Generation turi bazadagi yozuvga mos kelmaydi.",
+          error: "Sessiya yaroqsiz yoki muddati tugagan.",
+        },
+        401,
+      );
+    }
+
+    userId = authData.user.id;
+
+    // 2. So'rovni tekshirish.
+    let body: RequestBody;
+
+    try {
+      body = (await request.json()) as RequestBody;
+    } catch {
+      return jsonResponse(
+        {
+          success: false,
+          error: "So'rov ma'lumotlari noto'g'ri.",
         },
         400,
       );
     }
 
+    generationId = body.generationId?.trim() || undefined;
+    conversationId = body.conversationId?.trim() || undefined;
+
+    generationType =
+      body.generationType === "code" ||
+      body.generationType === "vision"
+        ? body.generationType
+        : "chat";
+
+    if (!generationId) {
+      return jsonResponse(
+        {
+          success: false,
+          error: "Generation ID ko'rsatilmagan.",
+        },
+        400,
+      );
+    }
+
+    if (
+      !Array.isArray(body.messages) ||
+      body.messages.length === 0
+    ) {
+      return jsonResponse(
+        {
+          success: false,
+          error: "Xabarlar ro'yxati bo'sh.",
+        },
+        400,
+      );
+    }
+
+    const messages = body.messages
+      .filter(
+        (message): message is AIMessage =>
+          !!message &&
+          ["user", "assistant", "system"].includes(message.role) &&
+          typeof message.content === "string" &&
+          message.content.trim().length > 0,
+      )
+      .slice(-40);
+
+    const lastUserMessage = [...messages]
+      .reverse()
+      .find((message) => message.role === "user");
+
+    if (!lastUserMessage) {
+      return jsonResponse(
+        {
+          success: false,
+          error: "Foydalanuvchi savoli topilmadi.",
+        },
+        400,
+      );
+    }
+
+    // 3. Generation yozuvi shu foydalanuvchiga tegishli ekanini tekshirish.
+    const { data: generation, error: generationError } =
+      await supabaseAdmin
+        .from("generation_history")
+        .select("id,user_id,type,status")
+        .eq("id", generationId)
+        .eq("user_id", userId)
+        .maybeSingle();
+
+    if (generationError) {
+      console.error("Generation lookup failed:", generationError);
+
+      return jsonResponse(
+        {
+          success: false,
+          error: "Generation yozuvini tekshirishda xatolik yuz berdi.",
+        },
+        500,
+      );
+    }
+
+    if (!generation) {
+      return jsonResponse(
+        {
+          success: false,
+          error: "Generation topilmadi yoki ruxsat yo'q.",
+        },
+        404,
+      );
+    }
+
+    // 4. Suhbat foydalanuvchiga tegishli ekanini tekshirish.
     if (generationType === "chat" && conversationId) {
       const { data: conversation, error: conversationError } =
-        await admin
+        await supabaseAdmin
           .from("chat_conversations")
           .select("id")
           .eq("id", conversationId)
-          .eq("user_id", user.id)
+          .eq("user_id", userId)
           .maybeSingle();
 
       if (conversationError) {
-        throw new Error(conversationError.message);
+        console.error(
+          "Conversation lookup failed:",
+          conversationError,
+        );
+
+        return jsonResponse(
+          {
+            success: false,
+            error: "Suhbatni tekshirishda xatolik yuz berdi.",
+          },
+          500,
+        );
       }
 
       if (!conversation) {
         return jsonResponse(
-          { success: false, error: "Chat topilmadi." },
+          {
+            success: false,
+            error: "Suhbat topilmadi yoki ruxsat yo'q.",
+          },
           404,
         );
       }
     }
 
-    // Foydalanuvchi savoli services/chat.ts da oldindan saqlanadi.
-    // Bu yerda ikkinchi marta user xabarini INSERT qilmaymiz.
-
-    const { error: processingError } = await admin
-      .from("generation_history")
-      .update({ status: "processing" })
-      .eq("id", generationId)
-      .eq("user_id", user.id);
-
-    if (processingError) {
-      throw new Error(
-        `Generation holati yangilanmadi: ${processingError.message}`,
-      );
-    }
-
-    const requestedTokens = Number(body.max_tokens ?? 4000);
-    const maxOutputTokens = Number.isFinite(requestedTokens)
-      ? Math.max(256, Math.min(requestedTokens, 32000))
-      : 4000;
-
-    const result = await generateAnswer(messages, maxOutputTokens);
-
-    // Avval Gemini javobini chat_messages ga saqlaymiz.
+    // 5. Foydalanuvchi savolini AI chaqirilishidan oldin saqlash.
+    // chat_messages jadvaliga mavjud bo'lmagan generation_id yozilmaydi.
     if (generationType === "chat" && conversationId) {
-      const { error: assistantMessageError } = await admin
+      const { error: saveUserError } = await supabaseAdmin
         .from("chat_messages")
         .insert({
           conversation_id: conversationId,
-          user_id: user.id,
-          role: "assistant",
-          content: result.text,
+          user_id: userId,
+          role: "user",
+          content: lastUserMessage.content.trim(),
           message_type: "text",
         });
 
-      if (assistantMessageError) {
-        throw new Error(
-          `AI javobi bazaga saqlanmadi: ${assistantMessageError.message}`,
+      if (saveUserError) {
+        console.error(
+          "Failed to save user message:",
+          saveUserError,
+        );
+
+        return jsonResponse(
+          {
+            success: false,
+            error:
+              "Savol chat tarixiga saqlanmadi. Ma'lumotlar bazasi sozlamalarini tekshiring.",
+          },
+          500,
         );
       }
 
-      const { error: conversationUpdateError } = await admin
+      await supabaseAdmin
         .from("chat_conversations")
-        .update({ updated_at: new Date().toISOString() })
+        .update({
+          updated_at: new Date().toISOString(),
+        })
         .eq("id", conversationId)
-        .eq("user_id", user.id);
+        .eq("user_id", userId);
+    }
 
-      if (conversationUpdateError) {
+    // 6. Gemini modeliga so'rov yuborish.
+    const maxTokens = Math.max(
+      256,
+      Math.min(8192, Math.round(body.max_tokens ?? 4096)),
+    );
+
+    let result: {
+      text: string;
+      model: string;
+      usage?: GeminiResponse["usageMetadata"];
+    };
+
+    try {
+      result = await callGemini(
+        GEMINI_PRIMARY_MODEL,
+        messages,
+        maxTokens,
+      );
+    } catch (primaryError) {
+      console.error(
+        `Primary model ${GEMINI_PRIMARY_MODEL} failed:`,
+        getErrorMessage(primaryError),
+      );
+
+      try {
+        result = await callGemini(
+          GEMINI_FALLBACK_MODEL,
+          messages,
+          maxTokens,
+        );
+      } catch (fallbackError) {
         console.error(
-          "Chat vaqti yangilanmadi:",
-          conversationUpdateError.message,
+          `Fallback model ${GEMINI_FALLBACK_MODEL} failed:`,
+          getErrorMessage(fallbackError),
+        );
+
+        throw new Error(
+          `Asosiy va zaxira Gemini modellari ishlamadi. ` +
+            `Asosiy model: ${getErrorMessage(primaryError)}. ` +
+            `Zaxira model: ${getErrorMessage(fallbackError)}`,
         );
       }
     }
 
-    const { error: completedError } = await admin
+    // 7. Generation tarixini yangilash.
+    const { error: historyError } = await supabaseAdmin
       .from("generation_history")
       .update({
         status: "completed",
@@ -434,60 +473,108 @@ Deno.serve(async (request) => {
         model: result.model,
         result_text: result.text,
         error_message: null,
-        completed_at: new Date().toISOString(),
         metadata: {
-          provider: "gemini",
-          model: result.model,
-          ...(result.usage ? { usage: result.usage } : {}),
+          usage: result.usage ?? null,
+          conversationId: conversationId ?? null,
+          generationType,
         },
+        completed_at: new Date().toISOString(),
       })
       .eq("id", generationId)
-      .eq("user_id", user.id);
+      .eq("user_id", userId);
 
-    if (completedError) {
+    if (historyError) {
       console.error(
-        "Generation tarixi yangilanmadi:",
-        completedError.message,
+        "Failed to update generation history:",
+        historyError,
       );
     }
 
+    // 8. Gemini javobini chat tarixiga saqlash.
+    if (generationType === "chat" && conversationId) {
+      const { error: assistantMessageError } =
+        await supabaseAdmin
+          .from("chat_messages")
+          .insert({
+            conversation_id: conversationId,
+            user_id: userId,
+            role: "assistant",
+            content: result.text,
+            message_type: "text",
+          });
+
+      if (assistantMessageError) {
+        console.error(
+          "Failed to save assistant message:",
+          assistantMessageError,
+        );
+
+        return jsonResponse(
+          {
+            success: false,
+            error:
+              "Gemini javob berdi, lekin javob chat tarixiga saqlanmadi. Chat jadvali va RLS sozlamalarini tekshiring.",
+            generationId,
+            conversationId,
+            text: result.text,
+            model: result.model,
+          },
+          500,
+        );
+      }
+
+      await supabaseAdmin
+        .from("chat_conversations")
+        .update({
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", conversationId)
+        .eq("user_id", userId);
+    }
+
+    // 9. Muvaffaqiyatli javob.
     return jsonResponse({
       success: true,
-      message: result.text,
       text: result.text,
       content: result.text,
+      message: result.text,
       model: result.model,
       generationId,
       conversationId,
-      usage: result.usage,
+      usage: result.usage ?? null,
     });
   } catch (error) {
-    const errorMessage =
-      error instanceof Error ? error.message : "Gemini so'rovi bajarilmadi.";
+    const message = getErrorMessage(error);
 
-    console.error("gemini-chat error:", errorMessage);
+    console.error("gemini-chat error:", message);
 
+    // Xato yuz bersa, generation tarixiga xatoni yozish.
     if (generationId && userId) {
-      const { error: updateError } = await admin
+      const { error: updateError } = await supabaseAdmin
         .from("generation_history")
         .update({
           status: "failed",
-          error_message: errorMessage.slice(0, 2000),
+          provider: "gemini",
+          error_message: message.slice(0, 4000),
           completed_at: new Date().toISOString(),
         })
         .eq("id", generationId)
         .eq("user_id", userId);
 
       if (updateError) {
-        console.error("Generation xatosi saqlanmadi:", updateError.message);
+        console.error(
+          "Failed to record generation error:",
+          updateError,
+        );
       }
     }
 
     return jsonResponse(
       {
         success: false,
-        error: errorMessage,
+        error: message,
         generationId,
+        conversationId,
       },
       500,
     );
