@@ -45,9 +45,7 @@ interface GeminiContent {
 interface GeminiResponse {
   candidates?: Array<{
     content?: {
-      parts?: Array<{
-        text?: string;
-      }>;
+      parts?: Array<{ text?: string }>;
     };
     finishReason?: string;
   }>;
@@ -130,10 +128,8 @@ function normalizeMessages(
     .filter(
       (message) =>
         message &&
-        (
-          message.role === "user" ||
-          message.role === "assistant" ||
-          message.role === "system"
+        ["user", "assistant", "system"].includes(
+          message.role,
         ) &&
         typeof message.content === "string" &&
         message.content.trim().length > 0,
@@ -155,25 +151,25 @@ function isRetryableGeminiError(
       ? error.message.toLowerCase()
       : String(error).toLowerCase();
 
-  return (
-    message.includes("429") ||
-    message.includes("500") ||
-    message.includes("502") ||
-    message.includes("503") ||
-    message.includes("504") ||
-    message.includes("resource_exhausted") ||
-    message.includes("resource exhausted") ||
-    message.includes("rate limit") ||
-    message.includes("rate_limit") ||
-    message.includes("overloaded") ||
-    message.includes("overload") ||
-    message.includes("temporarily unavailable") ||
-    message.includes("temporary unavailable") ||
-    message.includes("high demand") ||
-    message.includes("service unavailable") ||
-    message.includes("deadline exceeded") ||
-    message.includes("fetch failed")
-  );
+  return [
+    "429",
+    "500",
+    "502",
+    "503",
+    "504",
+    "resource_exhausted",
+    "resource exhausted",
+    "rate limit",
+    "rate_limit",
+    "overloaded",
+    "overload",
+    "temporarily unavailable",
+    "temporary unavailable",
+    "high demand",
+    "service unavailable",
+    "deadline exceeded",
+    "fetch failed",
+  ].some((term) => message.includes(term));
 }
 
 function getMaxOutputTokens(
@@ -196,15 +192,27 @@ function toGeminiContents(
   messages: AIMessage[],
   imageUrl?: string,
 ): GeminiContent[] {
-  const contents: GeminiContent[] = [];
+  const systemMessages = messages
+    .filter((message) => message.role === "system")
+    .map((message) => message.content);
 
-  for (const message of messages) {
-    const role =
-      message.role === "assistant" ? "model" : "user";
+  const conversationMessages = messages.filter(
+    (message) => message.role !== "system",
+  );
 
-    contents.push({
-      role,
+  const contents: GeminiContent[] =
+    conversationMessages.map((message) => ({
+      role:
+        message.role === "assistant" ? "model" : "user",
       parts: [{ text: message.content }],
+    }));
+
+  if (systemMessages.length > 0 && contents.length > 0) {
+    contents[0].parts.unshift({
+      text:
+        "System instructions:\n" +
+        systemMessages.join("\n\n") +
+        "\n\n",
     });
   }
 
@@ -213,7 +221,7 @@ function toGeminiContents(
 
     if (!last || last.role !== "user") {
       throw new Error(
-        "A final user message is required with an image.",
+        "A user message is required with an image.",
       );
     }
 
@@ -239,6 +247,12 @@ function toGeminiContents(
         text: `\n\nImage URL:\n${trimmed}`,
       });
     }
+  }
+
+  if (contents.length === 0) {
+    throw new Error(
+      "At least one user or assistant message is required.",
+    );
   }
 
   return contents;
@@ -397,8 +411,8 @@ async function callGemini(
         contents,
         maxOutputTokens,
       );
-    } catch (fallbackError) {
-      lastError = fallbackError;
+    } catch (error) {
+      lastError = error;
     }
   }
 
@@ -523,20 +537,6 @@ Deno.serve(async (request: Request) => {
     const generationType =
       body.generationType ?? "chat";
 
-    const messages = Array.isArray(body.messages)
-      ? normalizeMessages(body.messages)
-      : [];
-
-    if (!generationId) {
-      return jsonResponse(
-        {
-          success: false,
-          error: "generationId is required.",
-        },
-        400,
-      );
-    }
-
     if (
       !["chat", "code", "vision"].includes(
         generationType,
@@ -551,47 +551,19 @@ Deno.serve(async (request: Request) => {
       );
     }
 
-    const conversationId =
-      body.conversationId?.trim();
-
-    const user = await requireUser(
-      request,
-      supabaseAdmin,
-    );
-
-    userIdForFailure = user.id;
-
-    if (generationType === "chat" && conversationId) {
-      const {
-        data: conversation,
-        error: conversationError,
-      } = await supabaseAdmin
-        .from("chat_conversations")
-        .select("id, user_id")
-        .eq("id", conversationId)
-        .eq("user_id", user.id)
-        .maybeSingle();
-
-      if (conversationError) {
-        return jsonResponse(
-          {
-            success: false,
-            error: conversationError.message,
-          },
-          500,
-        );
-      }
-
-      if (!conversation) {
-        return jsonResponse(
-          {
-            success: false,
-            error: "Conversation not found.",
-          },
-          404,
-        );
-      }
+    if (!generationId) {
+      return jsonResponse(
+        {
+          success: false,
+          error: "generationId is required.",
+        },
+        400,
+      );
     }
+
+    const messages = Array.isArray(body.messages)
+      ? normalizeMessages(body.messages)
+      : [];
 
     if (messages.length === 0) {
       return jsonResponse(
@@ -602,6 +574,9 @@ Deno.serve(async (request: Request) => {
         400,
       );
     }
+
+    const conversationId =
+      body.conversationId?.trim();
 
     if (
       generationType === "vision" &&
@@ -629,6 +604,41 @@ Deno.serve(async (request: Request) => {
       );
     }
 
+    const user = await requireUser(
+      request,
+      supabaseAdmin,
+    );
+
+    userIdForFailure = user.id;
+
+    if (generationType === "chat" && conversationId) {
+      const {
+        data: conversation,
+        error: conversationError,
+      } = await supabaseAdmin
+        .from("chat_conversations")
+        .select("id, user_id")
+        .eq("id", conversationId)
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (conversationError) {
+        throw new Error(
+          `Unable to load conversation: ${conversationError.message}`,
+        );
+      }
+
+      if (!conversation) {
+        return jsonResponse(
+          {
+            success: false,
+            error: "Conversation not found.",
+          },
+          404,
+        );
+      }
+    }
+
     const generation = await getGeneration(
       supabaseAdmin,
       generationId,
@@ -654,37 +664,29 @@ Deno.serve(async (request: Request) => {
       conversationId &&
       userMessage?.role === "user"
     ) {
-      const { error: userMessageError } =
-        await supabaseAdmin
-          .from("chat_messages")
-          .insert({
-            conversation_id: conversationId,
-            user_id: user.id,
-            generation_id: null,
-            role: "user",
-            content: userMessage.content,
-            message_type: "text",
-          });
+      const { error } = await supabaseAdmin
+        .from("chat_messages")
+        .insert({
+          conversation_id: conversationId,
+          user_id: user.id,
+          role: "user",
+          content: userMessage.content,
+          message_type: "text",
+        });
 
-      if (userMessageError) {
-        return jsonResponse(
-          {
-            success: false,
-            error: userMessageError.message,
-          },
-          500,
+      if (error) {
+        throw new Error(
+          `Unable to save user message: ${error.message}`,
         );
       }
-
-      const nextTitle =
-        userMessage.content.trim().slice(0, 80) ||
-        "New chat";
 
       const { error: titleError } =
         await supabaseAdmin
           .from("chat_conversations")
           .update({
-            title: nextTitle,
+            title:
+              userMessage.content.trim().slice(0, 80) ||
+              "New chat",
             updated_at: new Date().toISOString(),
           })
           .eq("id", conversationId)
@@ -698,12 +700,14 @@ Deno.serve(async (request: Request) => {
       }
     }
 
+    const now = new Date().toISOString();
+
     const { error: processingError } =
       await supabaseAdmin
         .from("generation_history")
         .update({
           status: "processing",
-          updated_at: new Date().toISOString(),
+          updated_at: now,
         })
         .eq("id", generationId)
         .eq("user_id", user.id);
@@ -721,28 +725,18 @@ Deno.serve(async (request: Request) => {
         : undefined,
     );
 
-    const maxOutputTokens = getMaxOutputTokens(
-      generationType,
-      body.max_tokens,
-    );
-
     const result = await callGemini(
       generationType,
       contents,
-      maxOutputTokens,
+      getMaxOutputTokens(
+        generationType,
+        body.max_tokens,
+      ),
     );
 
     const completedAt = new Date().toISOString();
 
-    const generationUpdate: {
-      status: string;
-      provider: string;
-      model: string;
-      result_text: string;
-      completed_at: string;
-      updated_at: string;
-      metadata?: Record<string, unknown>;
-    } = {
+    const generationUpdate: Record<string, unknown> = {
       status: "completed",
       provider: "gemini",
       model: result.model,
@@ -780,7 +774,6 @@ Deno.serve(async (request: Request) => {
           .insert({
             conversation_id: conversationId,
             user_id: user.id,
-            generation_id: generationId,
             role: "assistant",
             content: result.text,
             message_type: "text",
@@ -804,7 +797,7 @@ Deno.serve(async (request: Request) => {
 
       if (conversationUpdateError) {
         console.error(
-          "Failed to update conversation timestamp:",
+          "Failed to update conversation:",
           conversationUpdateError,
         );
       }
