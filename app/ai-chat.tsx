@@ -1,942 +1,218 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import React, { useState, useRef } from "react";
 import {
+  View,
+  TextInput,
+  TouchableOpacity,
+  Text,
   ActivityIndicator,
-  Alert,
   FlatList,
+  StyleSheet,
+  Image,
   KeyboardAvoidingView,
   Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
 } from "react-native";
-import {
-  AudioModule,
-  createAudioPlayer,
-  RecordingPresets,
-  setAudioModeAsync,
-  useAudioRecorder,
-  useAudioRecorderState,
-  type AudioPlayer,
-} from "expo-audio";
+import Markdown from "react-native-markdown-display";
+import * as ImagePicker from "expo-image-picker";
+import { supabase } from "../services/supabase";
 
-import {
-  createConversation,
-  deleteConversation,
-  getConversationMessages,
-  listConversations,
-  sendMessage,
-  uploadVoiceMessage,
-  type AIMessage,
-  type ChatConversation,
-  type ChatMessage,
-} from "../services/chat";
-
-function formatMessageTime(value: string): string {
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return "";
-  }
-
-  return date.toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
-function formatDuration(milliseconds: number | null): string {
-  const totalSeconds = Math.max(
-    0,
-    Math.round((milliseconds ?? 0) / 1000),
-  );
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-
-  return `${minutes}:${String(seconds).padStart(2, "0")}`;
-}
-
-function VoiceMessageBubble({
-  message,
-}: {
-  message: ChatMessage;
-}) {
-  const playerRef = useRef<AudioPlayer | null>(null);
-  const statusSubscriptionRef = useRef<{
-    remove: () => void;
-  } | null>(null);
-  const [playing, setPlaying] = useState(false);
-
-  useEffect(() => {
-    return () => {
-      statusSubscriptionRef.current?.remove();
-      statusSubscriptionRef.current = null;
-      playerRef.current?.remove();
-      playerRef.current = null;
-    };
-  }, []);
-
-  const togglePlayback = () => {
-    if (!message.audio_url) {
-      return;
-    }
-
-    if (!playerRef.current) {
-      const player = createAudioPlayer(message.audio_url);
-      playerRef.current = player;
-
-      statusSubscriptionRef.current = player.addListener(
-        "playbackStatusUpdate",
-        (status) => {
-          setPlaying(status.playing);
-
-          if (status.didJustFinish) {
-            setPlaying(false);
-          }
-        },
-      );
-
-      player.play();
-      setPlaying(true);
-      return;
-    }
-
-    if (playerRef.current.playing) {
-      playerRef.current.pause();
-      setPlaying(false);
-    } else {
-      playerRef.current.play();
-      setPlaying(true);
-    }
-  };
-
-  return (
-    <View style={styles.voiceRow}>
-      <Pressable
-        style={styles.voicePlay}
-        onPress={togglePlayback}
-      >
-        <Text style={styles.voicePlayText}>
-          {playing ? "❚❚" : "▶"}
-        </Text>
-      </Pressable>
-
-      <View style={styles.voiceTrack}>
-        <View style={styles.voiceTrackLine} />
-        <Text style={styles.voiceDuration}>
-          {formatDuration(message.audio_duration_ms)}
-        </Text>
-      </View>
-    </View>
-  );
+interface Message {
+  id: string;
+  sender: "user" | "ai";
+  text: string;
+  imageUri?: string;
+  timestamp: string;
 }
 
 export default function AIChatScreen() {
-  const [conversations, setConversations] = useState<
-    ChatConversation[]
-  >([]);
-  const [conversationId, setConversationId] = useState<
-    string | undefined
-  >();
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [loadingHistory, setLoadingHistory] = useState(true);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [recordingError, setRecordingError] = useState<
-    string | null
-  >(null);
+  const flatListRef = useRef<FlatList>(null);
 
-  const audioRecorder = useAudioRecorder(
-    RecordingPresets.HIGH_QUALITY,
-  );
-  const recorderState = useAudioRecorderState(audioRecorder);
-
-  const loadConversations = useCallback(async () => {
-    try {
-      const result = await listConversations();
-
-      setConversations(result);
-
-      setConversationId((current) => {
-        if (
-          current &&
-          result.some((item) => item.id === current)
-        ) {
-          return current;
-        }
-
-        return result[0]?.id;
-      });
-    } catch (error) {
-      console.error("Load conversations error:", error);
-    }
-  }, []);
-
-  const loadMessages = useCallback(async (id: string) => {
-    setLoadingHistory(true);
-
-    try {
-      const result = await getConversationMessages(id);
-      setMessages(result);
-    } catch (error) {
-      console.error("Load messages error:", error);
-      setMessages([]);
-    } finally {
-      setLoadingHistory(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    void setAudioModeAsync({
-      playsInSilentMode: true,
-      allowsRecording: true,
+  const pickImage = async () => {
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      quality: 0.8,
     });
 
-    const initializeConversations = async () => {
-      await Promise.resolve();
-
-      if (cancelled) {
-        return;
-      }
-
-      await loadConversations();
-    };
-
-    void initializeConversations();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [loadConversations]);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const initializeMessages = async () => {
-      await Promise.resolve();
-
-      if (cancelled) {
-        return;
-      }
-
-      if (!conversationId) {
-        setMessages([]);
-        setLoadingHistory(false);
-        return;
-      }
-
-      setLoadingHistory(true);
-
-      try {
-        const result = await getConversationMessages(
-          conversationId,
-        );
-
-        if (!cancelled) {
-          setMessages(result);
-        }
-      } catch (error) {
-        if (!cancelled) {
-          console.error("Load messages error:", error);
-          setMessages([]);
-        }
-      } finally {
-        if (!cancelled) {
-          setLoadingHistory(false);
-        }
-      }
-    };
-
-    void initializeMessages();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [conversationId]);
-
-  const ensureConversation = useCallback(
-    async (): Promise<string> => {
-      if (conversationId) {
-        return conversationId;
-      }
-
-      const conversation = await createConversation();
-
-      setConversations((previous) => [
-        conversation,
-        ...previous,
-      ]);
-      setConversationId(conversation.id);
-
-      return conversation.id;
-    },
-    [conversationId],
-  );
-
-  const handleNewChat = async () => {
-    try {
-      const conversation = await createConversation();
-
-      setConversations((previous) => [
-        conversation,
-        ...previous,
-      ]);
-      setConversationId(conversation.id);
-      setMessages([]);
-      setInput("");
-      setSidebarOpen(false);
-    } catch (error) {
-      console.error("New conversation error:", error);
-
-      Alert.alert(
-        "CREOVA AI",
-        error instanceof Error
-          ? error.message
-          : "Unable to create chat.",
-      );
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      setSelectedImage(result.assets[0].uri);
     }
   };
 
-  const handleDeleteChat = async (id: string) => {
-    try {
-      await deleteConversation(id);
+  const sendMessage = async () => {
+    if ((!input.trim() && !selectedImage) || loading) return;
 
-      const remaining = conversations.filter(
-        (item) => item.id !== id,
-      );
+    const userText = input.trim();
+    const currentImage = selectedImage;
 
-      setConversations(remaining);
+    const userMsg: Message = {
+      id: Date.now().toString(),
+      sender: "user",
+      text: userText,
+      imageUri: currentImage || undefined,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    };
 
-      if (conversationId === id) {
-        setConversationId(remaining[0]?.id);
-
-        if (!remaining[0]) {
-          setMessages([]);
-        }
-      }
-    } catch (error) {
-      console.error("Delete conversation error:", error);
-
-      Alert.alert(
-        "CREOVA AI",
-        error instanceof Error
-          ? error.message
-          : "Chatni o'chirishda xatolik yuz berdi.",
-      );
-    }
-  };
-
-  const handleSend = async () => {
-    const cleanMessage = input.trim();
-
-    if (
-      !cleanMessage ||
-      loading ||
-      recorderState.isRecording
-    ) {
-      return;
-    }
-
+    setMessages((prev) => [...prev, userMsg]);
     setInput("");
+    setSelectedImage(null);
     setLoading(true);
 
     try {
-      const activeConversationId =
-        await ensureConversation();
+      let endpoint = "gemini-chat";
+      let requestBody: any = { prompt: userText, history: messages.map(m => ({ role: m.sender === "user" ? "user" : "model", text: m.text })) };
 
-      const history: AIMessage[] = messages
-        .filter(
-          (message) => message.message_type === "text",
-        )
-        .map((message) => ({
-          role: message.role,
-          content: message.content,
-        }));
+      const lowerText = userText.toLowerCase();
+      const isImageGen = 
+        lowerText.includes("generate image") || 
+        lowerText.includes("create image") || 
+        lowerText.includes("draw") || 
+        lowerText.includes("rasm yarat");
 
-      const response = await sendMessage(
-        cleanMessage,
-        history,
-        activeConversationId,
-      );
-
-      if (!response.success) {
-        Alert.alert(
-          "CREOVA AI",
-          response.error ??
-            "AI bilan bog'lanishda xatolik yuz berdi.",
-        );
-        return;
+      if (isImageGen) {
+        endpoint = "image-generate";
+      } else if (currentImage) {
+        endpoint = "vision-analyze";
+        requestBody = { prompt: userText, imageUri: currentImage };
       }
 
-      await loadMessages(activeConversationId);
-      await loadConversations();
-    } catch (error) {
-      console.error("AI chat error:", error);
-
-      Alert.alert(
-        "CREOVA AI",
-        error instanceof Error
-          ? error.message
-          : "Kutilmagan xatolik yuz berdi.",
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const startRecording = async () => {
-    setRecordingError(null);
-
-    try {
-      const permission =
-        await AudioModule.requestRecordingPermissionsAsync();
-
-      if (!permission.granted) {
-        setRecordingError("Mikrofon ruxsati berilmadi.");
-        return;
-      }
-
-      await setAudioModeAsync({
-        playsInSilentMode: true,
-        allowsRecording: true,
+      const { data, error } = await supabase.functions.invoke(endpoint, {
+        body: requestBody,
       });
 
-      await ensureConversation();
-      await audioRecorder.prepareToRecordAsync();
-      audioRecorder.record();
-    } catch (error) {
-      console.error("Start recording error:", error);
+      if (error) throw error;
 
-      setRecordingError(
-        error instanceof Error
-          ? error.message
-          : "Ovoz yozishni boshlashda xatolik yuz berdi.",
-      );
-    }
-  };
+      const aiMsg: Message = {
+        id: (Date.now() + 1).toString(),
+        sender: "ai",
+        text: data?.text || data?.description || "Response received successfully.",
+        imageUri: data?.imageUrl || data?.url,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      };
 
-  const stopRecording = async () => {
-    if (!recorderState.isRecording || loading) {
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      const durationMs = recorderState.durationMillis;
-
-      await audioRecorder.stop();
-
-      const uri = audioRecorder.uri;
-      const activeConversationId = conversationId;
-
-      if (!uri || !activeConversationId) {
-        throw new Error("Ovoz yozuvi topilmadi.");
-      }
-
-      await uploadVoiceMessage(
-        activeConversationId,
-        uri,
-        durationMs,
-      );
-
-      await loadMessages(activeConversationId);
-      await loadConversations();
-    } catch (error) {
-      console.error("Send voice message error:", error);
-
-      setRecordingError(
-        error instanceof Error
-          ? error.message
-          : "Ovozli xabarni yuborishda xatolik yuz berdi.",
-      );
+      setMessages((prev) => [...prev, aiMsg]);
+    } catch (err: any) {
+      const errorMsg: Message = {
+        id: (Date.now() + 1).toString(),
+        sender: "ai",
+        text: `Error occurred: ${err.message || "Unknown error"}`,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      };
+      setMessages((prev) => [...prev, errorMsg]);
     } finally {
       setLoading(false);
     }
-  };
-
-  const renderMessage = ({
-    item,
-  }: {
-    item: ChatMessage;
-  }) => {
-    const isUser = item.role === "user";
-
-    return (
-      <View
-        style={[
-          styles.message,
-          isUser
-            ? styles.userMessage
-            : styles.assistantMessage,
-        ]}
-      >
-        <Text style={styles.messageRole}>
-          {isUser ? "Siz" : "CREOVA AI"}
-        </Text>
-
-        {item.message_type === "voice" ? (
-          <VoiceMessageBubble message={item} />
-        ) : (
-          <Text style={styles.messageText}>
-            {item.content}
-          </Text>
-        )}
-
-        <Text style={styles.messageTime}>
-          {formatMessageTime(item.created_at)}
-        </Text>
-      </View>
-    );
   };
 
   return (
     <KeyboardAvoidingView
-      style={styles.container}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
-      keyboardVerticalOffset={Platform.OS === "ios" ? 10 : 0}
+      style={styles.container}
     >
-      <View style={styles.header}>
-        <Pressable
-          onPress={() =>
-            setSidebarOpen((open) => !open)
-          }
-          style={styles.menuButton}
-        >
-          <Text style={styles.menuText}>☰</Text>
-        </Pressable>
-
-        <View style={styles.headerText}>
-          <Text style={styles.title}>🤖 CREOVA AI</Text>
-          <Text style={styles.subtitle}>
-            AI Assistant
-          </Text>
-        </View>
-
-        <Pressable
-          onPress={() => void handleNewChat()}
-          style={styles.newButton}
-        >
-          <Text style={styles.newButtonText}>+</Text>
-        </Pressable>
-      </View>
-
-      {sidebarOpen && (
-        <View style={styles.sidebar}>
-          <Text style={styles.sidebarTitle}>
-            Chat History
-          </Text>
-
-          <Pressable
-            style={styles.newChatButton}
-            onPress={() => void handleNewChat()}
-          >
-            <Text style={styles.newChatText}>
-              + New chat
-            </Text>
-          </Pressable>
-
-          <FlatList
-            data={conversations}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => (
-              <View style={styles.conversationRow}>
-                <Pressable
-                  style={styles.conversationButton}
-                  onPress={() => {
-                    setConversationId(item.id);
-                    setSidebarOpen(false);
-                  }}
-                >
-                  <Text
-                    numberOfLines={1}
-                    style={styles.conversationTitle}
-                  >
-                    {item.title}
-                  </Text>
-
-                  <Text style={styles.conversationTime}>
-                    {formatMessageTime(item.updated_at)}
-                  </Text>
-                </Pressable>
-
-                <Pressable
-                  onPress={() =>
-                    void handleDeleteChat(item.id)
-                  }
-                >
-                  <Text style={styles.deleteText}>×</Text>
-                </Pressable>
-              </View>
-            )}
-          />
-        </View>
-      )}
-
       <FlatList
+        ref={flatListRef}
         data={messages}
         keyExtractor={(item) => item.id}
-        style={styles.list}
-        contentContainerStyle={[
-          styles.listContent,
-          messages.length === 0 &&
-            styles.emptyContent,
-        ]}
-        renderItem={renderMessage}
-        ListEmptyComponent={
-          <View style={styles.empty}>
-            <Text style={styles.emptyTitle}>
-              CREOVA AI
+        contentContainerStyle={styles.listContainer}
+        onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
+        renderItem={({ item }) => (
+          <View
+            style={[
+              styles.bubble,
+              item.sender === "user" ? styles.userBubble : styles.aiBubble,
+            ]}
+          >
+            <Text style={styles.senderText}>
+              {item.sender === "user" ? "You" : "CREOVA AI"}
             </Text>
 
-            <Text style={styles.emptyText}>
-              Men sizning AI Assistant&apos;ingizman.
-              {"\n\n"}
-              Savol bering, g&apos;oya bering yoki vazifa bering.
-            </Text>
+            {item.imageUri ? (
+              <Image source={{ uri: item.imageUri }} style={styles.messageImage} resizeMode="cover" />
+            ) : null}
+
+            {item.text ? (
+              item.sender === "ai" ? (
+                <Markdown style={markdownStyles}>{item.text}</Markdown>
+              ) : (
+                <Text style={styles.userText}>{item.text}</Text>
+              )
+            ) : null}
+
+            <Text style={styles.timeText}>{item.timestamp}</Text>
           </View>
-        }
+        )}
       />
 
-      {loadingHistory && (
-        <View style={styles.loading}>
-          <ActivityIndicator />
-          <Text style={styles.loadingText}>
-            Chat yuklanmoqda...
-          </Text>
+      {selectedImage && (
+        <View style={styles.previewContainer}>
+          <Image source={{ uri: selectedImage }} style={styles.previewImage} />
+          <TouchableOpacity onPress={() => setSelectedImage(null)} style={styles.removePreview}>
+            <Text style={{ color: "#fff", fontWeight: "bold", fontSize: 12 }}>✕</Text>
+          </TouchableOpacity>
         </View>
       )}
 
-      {loading && (
-        <View style={styles.loading}>
-          <ActivityIndicator />
-          <Text style={styles.loadingText}>
-            CREOVA javob tayyorlamoqda...
-          </Text>
-        </View>
-      )}
+      <View style={styles.inputContainer}>
+        <TouchableOpacity style={styles.attachButton} onPress={pickImage} disabled={loading}>
+          <Text style={styles.attachButtonText}>📷</Text>
+        </TouchableOpacity>
 
-      {recordingError && (
-        <Text style={styles.recordingError}>
-          {recordingError}
-        </Text>
-      )}
-
-      <View style={styles.inputArea}>
         <TextInput
           style={styles.input}
+          placeholder="Type a message, attach image or request generation..."
+          placeholderTextColor="#888"
           value={input}
           onChangeText={setInput}
-          placeholder="Xabaringizni yozing..."
-          placeholderTextColor="#64748B"
-          multiline
-          editable={
-            !loading && !recorderState.isRecording
-          }
+          editable={!loading}
         />
 
-        <Pressable
-          style={[
-            styles.voiceButton,
-            recorderState.isRecording &&
-              styles.voiceButtonRecording,
-          ]}
-          onPress={() =>
-            void (
-              recorderState.isRecording
-                ? stopRecording()
-                : startRecording()
-            )
-          }
+        <TouchableOpacity
+          style={[styles.sendButton, loading && styles.disabledButton]}
+          onPress={sendMessage}
           disabled={loading}
         >
-          <Text style={styles.voiceButtonText}>
-            {recorderState.isRecording ? "■" : "🎙"}
-          </Text>
-        </Pressable>
-
-        <Pressable
-          style={[
-            styles.sendButton,
-            (
-              !input.trim() ||
-              loading ||
-              recorderState.isRecording
-            ) && styles.sendButtonDisabled,
-          ]}
-          onPress={() => void handleSend()}
-          disabled={
-            !input.trim() ||
-            loading ||
-            recorderState.isRecording
-          }
-        >
-          <Text style={styles.sendText}>
-            Yuborish
-          </Text>
-        </Pressable>
+          {loading ? (
+            <ActivityIndicator color="#fff" size="small" />
+          ) : (
+            <Text style={styles.sendButtonText}>Send</Text>
+          )}
+        </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#0F172A",
-  },
-  header: {
-    paddingTop: 56,
-    paddingHorizontal: 16,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#1E293B",
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  menuButton: {
-    width: 42,
-    height: 42,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  menuText: {
-    color: "#FFFFFF",
-    fontSize: 24,
-  },
-  headerText: {
-    flex: 1,
-  },
-  title: {
-    color: "#FFFFFF",
-    fontSize: 24,
-    fontWeight: "800",
-  },
-  subtitle: {
-    color: "#94A3B8",
-    marginTop: 3,
-    fontSize: 13,
-  },
-  newButton: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: "#2563EB",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  newButtonText: {
-    color: "#FFFFFF",
-    fontSize: 28,
-  },
-  sidebar: {
-    position: "absolute",
-    top: 120,
-    left: 0,
-    bottom: 0,
-    width: 300,
-    zIndex: 20,
-    backgroundColor: "#111827",
-    padding: 16,
-    borderRightWidth: 1,
-    borderRightColor: "#1E293B",
-  },
-  sidebarTitle: {
-    color: "#FFFFFF",
-    fontSize: 20,
-    fontWeight: "700",
-    marginBottom: 14,
-  },
-  newChatButton: {
-    padding: 12,
-    borderRadius: 10,
-    backgroundColor: "#1D4ED8",
-    marginBottom: 12,
-  },
-  newChatText: {
-    color: "#FFFFFF",
-    fontWeight: "600",
-  },
-  conversationRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderBottomWidth: 1,
-    borderBottomColor: "#1E293B",
-  },
-  conversationButton: {
-    flex: 1,
-    paddingVertical: 12,
-  },
-  conversationTitle: {
-    color: "#CBD5E1",
-    fontSize: 14,
-  },
-  conversationTime: {
-    color: "#64748B",
-    fontSize: 11,
-    marginTop: 3,
-  },
-  deleteText: {
-    color: "#EF4444",
-    fontSize: 22,
-    paddingHorizontal: 8,
-  },
-  list: {
-    flex: 1,
-  },
-  listContent: {
-    padding: 16,
-    gap: 12,
-  },
-  emptyContent: {
-    flexGrow: 1,
-    justifyContent: "center",
-  },
-  empty: {
-    alignItems: "center",
-    paddingHorizontal: 30,
-  },
-  emptyTitle: {
-    color: "#FFFFFF",
-    fontSize: 30,
-    fontWeight: "800",
-    marginBottom: 12,
-  },
-  emptyText: {
-    color: "#94A3B8",
-    fontSize: 15,
-    lineHeight: 23,
-    textAlign: "center",
-  },
-  message: {
-    padding: 14,
-    borderRadius: 14,
-    maxWidth: "90%",
-  },
-  userMessage: {
-    alignSelf: "flex-end",
-    backgroundColor: "#1D4ED8",
-  },
-  assistantMessage: {
-    alignSelf: "flex-start",
-    backgroundColor: "#1E293B",
-  },
-  messageRole: {
-    color: "#CBD5E1",
-    fontSize: 12,
-    fontWeight: "700",
-    marginBottom: 5,
-  },
-  messageText: {
-    color: "#FFFFFF",
-    fontSize: 15,
-    lineHeight: 22,
-  },
-  messageTime: {
-    color: "#94A3B8",
-    fontSize: 10,
-    textAlign: "right",
-    marginTop: 7,
-  },
-  voiceRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    minWidth: 190,
-  },
-  voicePlay: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "rgba(255,255,255,0.16)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  voicePlayText: {
-    color: "#FFFFFF",
-    fontSize: 15,
-  },
-  voiceTrack: {
-    flex: 1,
-    marginLeft: 10,
-  },
-  voiceTrackLine: {
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: "rgba(255,255,255,0.35)",
-  },
-  voiceDuration: {
-    color: "#CBD5E1",
-    fontSize: 11,
-    marginTop: 5,
-  },
-  loading: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-  },
-  loadingText: {
-    color: "#94A3B8",
-    fontSize: 13,
-  },
-  recordingError: {
-    color: "#FCA5A5",
-    fontSize: 12,
-    paddingHorizontal: 16,
-    paddingBottom: 5,
-  },
-  inputArea: {
-    flexDirection: "row",
-    alignItems: "flex-end",
-    gap: 8,
-    padding: 12,
-    borderTopWidth: 1,
-    borderTopColor: "#1E293B",
-  },
-  input: {
-    flex: 1,
-    minHeight: 46,
-    maxHeight: 130,
-    backgroundColor: "#1E293B",
-    borderRadius: 14,
-    color: "#FFFFFF",
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 15,
-  },
-  voiceButton: {
-    width: 46,
-    height: 46,
-    borderRadius: 14,
-    backgroundColor: "#334155",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  voiceButtonRecording: {
-    backgroundColor: "#DC2626",
-  },
-  voiceButtonText: {
-    color: "#FFFFFF",
-    fontSize: 19,
-  },
-  sendButton: {
-    minHeight: 46,
-    paddingHorizontal: 18,
-    borderRadius: 14,
-    backgroundColor: "#2563EB",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  sendButtonDisabled: {
-    opacity: 0.45,
-  },
-  sendText: {
-    color: "#FFFFFF",
-    fontWeight: "700",
-  },
+  container: { flex: 1, backgroundColor: "#0b1120" },
+  listContainer: { padding: 12, paddingBottom: 20 },
+  bubble: { padding: 12, borderRadius: 12, marginVertical: 6, maxWidth: "85%" },
+  userBubble: { backgroundColor: "#1d4ed8", alignSelf: "flex-end" },
+  aiBubble: { backgroundColor: "#1e293b", alignSelf: "flex-start" },
+  senderText: { color: "#94a3b8", fontSize: 11, marginBottom: 4, fontWeight: "bold" },
+  messageImage: { width: 220, height: 220, borderRadius: 8, marginBottom: 8 },
+  userText: { color: "#fff", fontSize: 15 },
+  timeText: { color: "#64748b", fontSize: 10, alignSelf: "flex-end", marginTop: 4 },
+  previewContainer: { padding: 8, backgroundColor: "#0f172a", flexDirection: "row", alignItems: "center" },
+  previewImage: { width: 50, height: 50, borderRadius: 6 },
+  removePreview: { position: "absolute", top: 4, left: 50, backgroundColor: "red", width: 18, height: 18, borderRadius: 9, justifyContent: "center", alignItems: "center" },
+  inputContainer: { flexDirection: "row", alignItems: "center", padding: 10, backgroundColor: "#0f172a" },
+  attachButton: { padding: 10, justifyContent: "center", alignItems: "center", marginRight: 6 },
+  attachButtonText: { fontSize: 20 },
+  input: { flex: 1, backgroundColor: "#1e293b", color: "#fff", padding: 12, borderRadius: 8, marginRight: 8, fontSize: 15 },
+  sendButton: { backgroundColor: "#2563eb", paddingVertical: 12, paddingHorizontal: 16, borderRadius: 8, justifyContent: "center", alignItems: "center" },
+  disabledButton: { backgroundColor: "#475569" },
+  sendButtonText: { color: "#fff", fontWeight: "bold", fontSize: 14 },
 });
+
+const markdownStyles = {
+  body: { color: "#f8fafc", fontSize: 15 },
+  heading1: { color: "#60a5fa", fontSize: 18, marginTop: 8, marginBottom: 4, fontWeight: "bold" as const },
+  heading2: { color: "#60a5fa", fontSize: 16, marginTop: 6, marginBottom: 3, fontWeight: "bold" as const },
+  heading3: { color: "#93c5fd", fontSize: 15, marginTop: 4, marginBottom: 2, fontWeight: "bold" as const },
+  strong: { color: "#38bdf8", fontWeight: "bold" as const },
+  list_item: { color: "#f1f5f9", marginVertical: 2 },
+  code_inline: { backgroundColor: "#334155", color: "#e2e8f0", padding: 2, borderRadius: 4 },
+};
