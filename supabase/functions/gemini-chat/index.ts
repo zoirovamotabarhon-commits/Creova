@@ -6,7 +6,6 @@ import {
 } from "https://esm.sh/@supabase/supabase-js@2";
 
 type ChatRole = "user" | "assistant" | "system";
-
 type GenerationType = "chat" | "code" | "vision";
 
 interface AIMessage {
@@ -26,7 +25,7 @@ interface RequestBody {
 interface GenerationRow {
   id: string;
   user_id: string;
-  generation_type: string;
+  type: string;
   status: string;
 }
 
@@ -64,6 +63,16 @@ interface GeminiResponse {
   };
 }
 
+interface GeminiResult {
+  text: string;
+  model: string;
+  usage?: {
+    prompt_tokens: number;
+    completion_tokens: number;
+    total_tokens: number;
+  };
+}
+
 const SUPABASE_URL =
   Deno.env.get("SUPABASE_URL") ?? "";
 
@@ -94,7 +103,6 @@ const GEMINI_VISION_FALLBACK_MODEL =
 const MAX_MESSAGES = 40;
 const MAX_CONTENT_LENGTH = 12_000;
 const MAX_IMAGE_URL_LENGTH = 12_000_000;
-
 const RETRY_DELAYS_MS = [800, 1600];
 
 const corsHeaders = {
@@ -173,17 +181,15 @@ function getMaxOutputTokens(
   requested?: number,
 ): number {
   const defaultValue =
-    generationType === "code"
-      ? 8_000
-      : generationType === "vision"
-        ? 4_000
-        : 4_000;
+    generationType === "code" ? 8000 : 4000;
 
-  const value = Number.isFinite(requested)
-    ? Number(requested)
-    : defaultValue;
+  const value =
+    typeof requested === "number" &&
+    Number.isFinite(requested)
+      ? requested
+      : defaultValue;
 
-  return Math.max(256, Math.min(value, 32_000));
+  return Math.max(256, Math.min(value, 32000));
 }
 
 function toGeminiContents(
@@ -194,26 +200,20 @@ function toGeminiContents(
 
   for (const message of messages) {
     const role =
-      message.role === "assistant"
-        ? "model"
-        : "user";
+      message.role === "assistant" ? "model" : "user";
 
     contents.push({
       role,
-      parts: [
-        {
-          text: message.content,
-        },
-      ],
+      parts: [{ text: message.content }],
     });
   }
 
   if (imageUrl) {
     const last = contents[contents.length - 1];
 
-    if (!last) {
+    if (!last || last.role !== "user") {
       throw new Error(
-        "A user message is required with an image.",
+        "A final user message is required with an image.",
       );
     }
 
@@ -228,22 +228,17 @@ function toGeminiContents(
         throw new Error("Invalid image data URL.");
       }
 
-      const mimeType = match[1];
-      const data = match[2];
-
       last.parts.push({
         inlineData: {
-          mimeType,
-          data,
+          mimeType: match[1],
+          data: match[2],
         },
       });
-
-      return contents;
+    } else {
+      last.parts.push({
+        text: `\n\nImage URL:\n${trimmed}`,
+      });
     }
-
-    last.parts.push({
-      text: `\n\nImage URL:\n${trimmed}`,
-    });
   }
 
   return contents;
@@ -252,36 +247,25 @@ function toGeminiContents(
 function extractGeminiText(
   response: GeminiResponse,
 ): string {
-  const text =
+  return (
     response.candidates
       ?.flatMap(
         (candidate) =>
           candidate.content?.parts ?? [],
       )
       .map((part) =>
-        typeof part.text === "string"
-          ? part.text
-          : "",
+        typeof part.text === "string" ? part.text : "",
       )
       .join("")
-      .trim() ?? "";
-
-  return text;
+      .trim() ?? ""
+  );
 }
 
 async function callGeminiOnce(
   model: string,
   contents: GeminiContent[],
   maxOutputTokens: number,
-): Promise<{
-  text: string;
-  model: string;
-  usage?: {
-    prompt_tokens: number;
-    completion_tokens: number;
-    total_tokens: number;
-  };
-}> {
+): Promise<GeminiResult> {
   const endpoint =
     `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
 
@@ -311,8 +295,8 @@ async function callGeminiOnce(
 
   if (!response.ok) {
     const apiMessage =
-      data?.error?.message ??
-      rawText ??
+      data?.error?.message ||
+      rawText ||
       `Gemini request failed with status ${response.status}.`;
 
     throw new Error(
@@ -364,15 +348,7 @@ async function callGemini(
   generationType: GenerationType,
   contents: GeminiContent[],
   maxOutputTokens: number,
-): Promise<{
-  text: string;
-  model: string;
-  usage?: {
-    prompt_tokens: number;
-    completion_tokens: number;
-    total_tokens: number;
-  };
-}> {
+): Promise<GeminiResult> {
   const primaryModel =
     generationType === "vision"
       ? GEMINI_VISION_MODEL
@@ -404,12 +380,12 @@ async function callGemini(
       }
 
       if (attempt < RETRY_DELAYS_MS.length) {
-        await new Promise((resolve) =>
+        await new Promise<void>((resolve) => {
           setTimeout(
             resolve,
             RETRY_DELAYS_MS[attempt],
-          ),
-        );
+          );
+        });
       }
     }
   }
@@ -426,11 +402,9 @@ async function callGemini(
     }
   }
 
-  throw (
-    lastError instanceof Error
-      ? lastError
-      : new Error("Gemini request failed.")
-  );
+  throw lastError instanceof Error
+    ? lastError
+    : new Error("Gemini request failed.");
 }
 
 async function requireUser(
@@ -471,7 +445,7 @@ async function getGeneration(
 ): Promise<GenerationRow> {
   const { data, error } = await supabaseAdmin
     .from("generation_history")
-    .select("id, user_id, generation_type, status")
+    .select("id, user_id, type, status")
     .eq("id", generationId)
     .eq("user_id", userId)
     .maybeSingle();
@@ -489,7 +463,7 @@ async function getGeneration(
   return data as GenerationRow;
 }
 
-Deno.serve(async (request) => {
+Deno.serve(async (request: Request) => {
   if (request.method === "OPTIONS") {
     return new Response("ok", {
       headers: corsHeaders,
@@ -537,11 +511,14 @@ Deno.serve(async (request) => {
     },
   );
 
+  let generationIdForFailure: string | undefined;
+  let userIdForFailure: string | undefined;
+
   try {
-    const body =
-      (await request.json()) as RequestBody;
+    const body = (await request.json()) as RequestBody;
 
     const generationId = body.generationId?.trim();
+    generationIdForFailure = generationId;
 
     const generationType =
       body.generationType ?? "chat";
@@ -560,14 +537,6 @@ Deno.serve(async (request) => {
       );
     }
 
-    const conversationId =
-      body.conversationId?.trim();
-
-    const user = await requireUser(
-      request,
-      supabaseAdmin,
-    );
-
     if (
       !["chat", "code", "vision"].includes(
         generationType,
@@ -582,10 +551,17 @@ Deno.serve(async (request) => {
       );
     }
 
-    if (
-      generationType === "chat" &&
-      conversationId
-    ) {
+    const conversationId =
+      body.conversationId?.trim();
+
+    const user = await requireUser(
+      request,
+      supabaseAdmin,
+    );
+
+    userIdForFailure = user.id;
+
+    if (generationType === "chat" && conversationId) {
       const {
         data: conversation,
         error: conversationError,
@@ -659,9 +635,7 @@ Deno.serve(async (request) => {
       user.id,
     );
 
-    if (
-      generation.generation_type !== generationType
-    ) {
+    if (generation.type !== generationType) {
       return jsonResponse(
         {
           success: false,
@@ -706,23 +680,39 @@ Deno.serve(async (request) => {
         userMessage.content.trim().slice(0, 80) ||
         "New chat";
 
-      await supabaseAdmin
-        .from("chat_conversations")
-        .update({
-          title: nextTitle,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", conversationId)
-        .eq("user_id", user.id);
+      const { error: titleError } =
+        await supabaseAdmin
+          .from("chat_conversations")
+          .update({
+            title: nextTitle,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", conversationId)
+          .eq("user_id", user.id);
+
+      if (titleError) {
+        console.error(
+          "Failed to update conversation title:",
+          titleError,
+        );
+      }
     }
 
-    await supabaseAdmin
-      .from("generation_history")
-      .update({
-        status: "processing",
-      })
-      .eq("id", generationId)
-      .eq("user_id", user.id);
+    const { error: processingError } =
+      await supabaseAdmin
+        .from("generation_history")
+        .update({
+          status: "processing",
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", generationId)
+        .eq("user_id", user.id);
+
+    if (processingError) {
+      throw new Error(
+        `Unable to update generation status: ${processingError.message}`,
+      );
+    }
 
     const contents = toGeminiContents(
       messages,
@@ -742,22 +732,43 @@ Deno.serve(async (request) => {
       maxOutputTokens,
     );
 
-    await supabaseAdmin
-      .from("generation_history")
-      .update({
-        status: "completed",
-        provider: "gemini",
-        model: result.model,
-        result: result.text,
-        output: result.text,
-        metadata: result.usage
-          ? {
-              usage: result.usage,
-            }
-          : undefined,
-      })
-      .eq("id", generationId)
-      .eq("user_id", user.id);
+    const completedAt = new Date().toISOString();
+
+    const generationUpdate: {
+      status: string;
+      provider: string;
+      model: string;
+      result_text: string;
+      completed_at: string;
+      updated_at: string;
+      metadata?: Record<string, unknown>;
+    } = {
+      status: "completed",
+      provider: "gemini",
+      model: result.model,
+      result_text: result.text,
+      completed_at: completedAt,
+      updated_at: completedAt,
+    };
+
+    if (result.usage) {
+      generationUpdate.metadata = {
+        usage: result.usage,
+      };
+    }
+
+    const { error: completionError } =
+      await supabaseAdmin
+        .from("generation_history")
+        .update(generationUpdate)
+        .eq("id", generationId)
+        .eq("user_id", user.id);
+
+    if (completionError) {
+      throw new Error(
+        `Unable to save generation result: ${completionError.message}`,
+      );
+    }
 
     if (
       generationType === "chat" &&
@@ -782,13 +793,21 @@ Deno.serve(async (request) => {
         );
       }
 
-      await supabaseAdmin
-        .from("chat_conversations")
-        .update({
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", conversationId)
-        .eq("user_id", user.id);
+      const { error: conversationUpdateError } =
+        await supabaseAdmin
+          .from("chat_conversations")
+          .update({
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", conversationId)
+          .eq("user_id", user.id);
+
+      if (conversationUpdateError) {
+        console.error(
+          "Failed to update conversation timestamp:",
+          conversationUpdateError,
+        );
+      }
     }
 
     return jsonResponse({
@@ -803,13 +822,35 @@ Deno.serve(async (request) => {
   } catch (error) {
     console.error("gemini-chat error:", error);
 
+    const errorMessage =
+      error instanceof Error
+        ? error.message
+        : "Gemini request failed.";
+
+    if (generationIdForFailure && userIdForFailure) {
+      const { error: failureUpdateError } =
+        await supabaseAdmin
+          .from("generation_history")
+          .update({
+            status: "failed",
+            error_message: errorMessage.slice(0, 2000),
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", generationIdForFailure)
+          .eq("user_id", userIdForFailure);
+
+      if (failureUpdateError) {
+        console.error(
+          "Failed to save generation error:",
+          failureUpdateError,
+        );
+      }
+    }
+
     return jsonResponse(
       {
         success: false,
-        error:
-          error instanceof Error
-            ? error.message
-            : "Gemini request failed.",
+        error: errorMessage,
       },
       500,
     );
