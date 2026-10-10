@@ -22,7 +22,6 @@ export interface ChatMessage {
   id: string;
   conversation_id: string;
   user_id: string;
-  generation_id: string | null;
   role: ChatRole;
   content: string;
   message_type: ChatMessageType;
@@ -37,6 +36,7 @@ export interface ChatResult {
   message?: string;
   error?: string;
   conversationId?: string;
+  userMessageSaved?: boolean;
 }
 
 export type ChatResponse = ChatResult;
@@ -45,7 +45,7 @@ const CONVERSATION_SELECT =
   "id,user_id,title,created_at,updated_at";
 
 const MESSAGE_SELECT =
-  "id,conversation_id,user_id,generation_id,role,content,message_type,audio_url,audio_duration_ms,created_at";
+  "id,conversation_id,user_id,role,content,message_type,audio_url,audio_duration_ms,created_at";
 
 export async function listConversations(): Promise<ChatConversation[]> {
   const { data, error } = await supabase
@@ -69,7 +69,7 @@ export async function createConversation(
     await supabase.auth.getUser();
 
   if (userError || !userData.user) {
-    throw new Error("You must be signed in to create a chat.");
+    throw new Error("Chat yaratish uchun tizimga kiring.");
   }
 
   const { data, error } = await supabase
@@ -82,7 +82,7 @@ export async function createConversation(
     .single();
 
   if (error || !data) {
-    throw new Error(error?.message ?? "Unable to create chat.");
+    throw new Error(error?.message ?? "Chat yaratilmadi.");
   }
 
   return data as ChatConversation;
@@ -146,30 +146,113 @@ export async function generateChat(
   if (!cleanMessage) {
     return {
       success: false,
-      error: "Message is required.",
+      error: "Xabar bo'sh.",
       conversationId,
+      userMessageSaved: false,
     };
   }
 
-  const generation = await createGeneration(
-    "chat",
-    undefined,
-    cleanMessage,
-    { feature: "chat", conversationId },
-  );
+  let activeConversationId = conversationId;
+  let userMessageSaved = false;
+  let generationId: string | undefined;
 
-  if (!generation.success || !generation.generationId) {
-    return {
-      success: false,
-      error:
-        generation.error ??
-        "Generation could not be created.",
-      conversationId,
-    };
-  }
+  try {
+    const { data: authData, error: authError } =
+      await supabase.auth.getUser();
 
-  const messages: AIMessage[] = [
-    ...history
+    if (authError || !authData.user) {
+      return {
+        success: false,
+        error: "Davom etish uchun tizimga kiring.",
+        conversationId: activeConversationId,
+        userMessageSaved: false,
+      };
+    }
+
+    const userId = authData.user.id;
+
+    // Chat ID berilmagan bo'lsa, yangi chat yaratamiz.
+    if (!activeConversationId) {
+      const conversation = await createConversation(cleanMessage);
+      activeConversationId = conversation.id;
+    }
+
+    // Avval chat egasini va mavjudligini tekshiramiz.
+    const { data: conversation, error: conversationError } =
+      await supabase
+        .from("chat_conversations")
+        .select("id")
+        .eq("id", activeConversationId)
+        .eq("user_id", userId)
+        .maybeSingle();
+
+    if (conversationError) {
+      throw new Error(conversationError.message);
+    }
+
+    if (!conversation) {
+      throw new Error("Chat topilmadi yoki unga ruxsat yo'q.");
+    }
+
+    // MUHIM: savol Gemini chaqirilishidan OLDIN saqlanadi.
+    const { error: saveQuestionError } = await supabase
+      .from("chat_messages")
+      .insert({
+        conversation_id: activeConversationId,
+        user_id: userId,
+        role: "user",
+        content: cleanMessage,
+        message_type: "text",
+      });
+
+    if (saveQuestionError) {
+      return {
+        success: false,
+        error: `Savol bazaga saqlanmadi: ${saveQuestionError.message}`,
+        conversationId: activeConversationId,
+        userMessageSaved: false,
+      };
+    }
+
+    userMessageSaved = true;
+
+    // Sarlavha yangilanishi xabar saqlanishiga xalaqit bermasligi kerak.
+    const { error: titleError } = await supabase
+      .from("chat_conversations")
+      .update({
+        title: cleanMessage.slice(0, 80) || "New chat",
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", activeConversationId)
+      .eq("user_id", userId);
+
+    if (titleError) {
+      console.warn("Chat sarlavhasi yangilanmadi:", titleError.message);
+    }
+
+    // Generation yaratilmasa ham, savol bazada saqlanib qoladi.
+    const generation = await createGeneration(
+      "chat",
+      undefined,
+      cleanMessage,
+      {
+        feature: "chat",
+        conversationId: activeConversationId,
+      },
+    );
+
+    if (!generation.success || !generation.generationId) {
+      return {
+        success: false,
+        error: generation.error ?? "Generation yaratilmadi.",
+        conversationId: activeConversationId,
+        userMessageSaved: true,
+      };
+    }
+
+    generationId = generation.generationId;
+
+    const safeHistory: AIMessage[] = history
       .filter(
         (item) =>
           item &&
@@ -179,53 +262,86 @@ export async function generateChat(
           typeof item.content === "string" &&
           item.content.trim().length > 0,
       )
-      .slice(-39),
-    {
-      role: "user",
-      content: cleanMessage,
-    },
-  ];
+      .slice(-39)
+      .map((item) => ({
+        role: item.role,
+        content: item.content.trim(),
+      }));
 
-  const { data, error } = await invokeEdgeFunction<{
-    success: boolean;
-    generationId?: string;
-    conversationId?: string;
-    message?: string;
-    text?: string;
-    error?: string;
-  }>("gemini-chat", {
-    body: {
-      generationId: generation.generationId,
-      generationType: "chat",
-      ...(conversationId ? { conversationId } : {}),
-      messages,
-    },
-  });
+    // Joriy savol tarixga faqat bir marta qo'shiladi.
+    const messages: AIMessage[] = [
+      ...safeHistory,
+      { role: "user", content: cleanMessage },
+    ];
 
-  if (error) {
+    const { data, error } = await invokeEdgeFunction<{
+      success: boolean;
+      generationId?: string;
+      conversationId?: string;
+      message?: string;
+      text?: string;
+      content?: string;
+      error?: string;
+    }>("gemini-chat", {
+      body: {
+        generationId,
+        generationType: "chat",
+        conversationId: activeConversationId,
+        messages,
+      },
+    });
+
+    if (error) {
+      return {
+        success: false,
+        generationId,
+        error: error.message,
+        conversationId: activeConversationId,
+        userMessageSaved: true,
+      };
+    }
+
+    if (!data?.success) {
+      return {
+        success: false,
+        generationId,
+        error: data?.error ?? "Gemini javob qaytarmadi.",
+        conversationId: activeConversationId,
+        userMessageSaved: true,
+      };
+    }
+
+    const answer = data.message ?? data.text ?? data.content ?? "";
+
+    if (!answer.trim()) {
+      return {
+        success: false,
+        generationId,
+        error: "Gemini bo'sh javob qaytardi.",
+        conversationId: activeConversationId,
+        userMessageSaved: true,
+      };
+    }
+
+    return {
+      success: true,
+      generationId,
+      conversationId: data.conversationId ?? activeConversationId,
+      message: answer,
+      userMessageSaved: true,
+    };
+  } catch (error) {
     return {
       success: false,
-      generationId: generation.generationId,
-      error: error.message,
-      conversationId,
+      generationId,
+      error:
+        error instanceof Error
+          ? error.message
+          : "Chatda kutilmagan xatolik yuz berdi.",
+      conversationId: activeConversationId,
+      userMessageSaved,
     };
   }
-
-  if (!data?.success) {
-    return {
-      success: false,
-      generationId: generation.generationId,
-      error: data?.error ?? "AI request failed.",
-      conversationId,
-    };
-  }
-
-  return {
-    success: true,
-    generationId: generation.generationId,
-    conversationId: data.conversationId ?? conversationId,
-    message: data.message ?? data.text ?? "",
-  };
 }
 
 export async function sendMessage(
@@ -245,13 +361,17 @@ export async function uploadVoiceMessage(
     await supabase.auth.getUser();
 
   if (userError || !userData.user) {
-    throw new Error("You must be signed in to send a voice message.");
+    throw new Error("Ovozli xabar yuborish uchun tizimga kiring.");
   }
 
   const userId = userData.user.id;
   const filePath = `${userId}/${conversationId}/${Date.now()}.m4a`;
 
   const response = await fetch(fileUri);
+  if (!response.ok) {
+    throw new Error("Ovozli faylni o'qib bo'lmadi.");
+  }
+
   const body = await response.arrayBuffer();
 
   const { error: uploadError } = await supabase.storage
@@ -276,9 +396,9 @@ export async function uploadVoiceMessage(
 
   if (messageError || !message) {
     throw new Error(
-      messageError?.message ?? "Unable to save voice message.",
+      messageError?.message ?? "Ovozli xabarni saqlab bo'lmadi.",
     );
   }
 
   return message;
-  }
+}
