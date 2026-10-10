@@ -11,7 +11,6 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
-import Markdown from "react-native-markdown-display";
 import * as ImagePicker from "expo-image-picker";
 import { supabase } from "../services/supabase";
 
@@ -134,11 +133,7 @@ export default function AIChatScreen() {
             ) : null}
 
             {item.text ? (
-              item.sender === "ai" ? (
-                <Markdown style={markdownStyles}>{item.text}</Markdown>
-              ) : (
-                <Text style={styles.userText}>{item.text}</Text>
-              )
+              <Text style={styles.messageText}>{item.text}</Text>
             ) : null}
 
             <Text style={styles.timeText}>{item.timestamp}</Text>
@@ -193,7 +188,7 @@ const styles = StyleSheet.create({
   aiBubble: { backgroundColor: "#1e293b", alignSelf: "flex-start" },
   senderText: { color: "#94a3b8", fontSize: 11, marginBottom: 4, fontWeight: "bold" },
   messageImage: { width: 220, height: 220, borderRadius: 8, marginBottom: 8 },
-  userText: { color: "#fff", fontSize: 15 },
+  messageText: { color: "#f8fafc", fontSize: 15 },
   timeText: { color: "#64748b", fontSize: 10, alignSelf: "flex-end", marginTop: 4 },
   previewContainer: { padding: 8, backgroundColor: "#0f172a", flexDirection: "row", alignItems: "center" },
   previewImage: { width: 50, height: 50, borderRadius: 6 },
@@ -206,13 +201,3 @@ const styles = StyleSheet.create({
   disabledButton: { backgroundColor: "#475569" },
   sendButtonText: { color: "#fff", fontWeight: "bold", fontSize: 14 },
 });
-
-const markdownStyles = {
-  body: { color: "#f8fafc", fontSize: 15 },
-  heading1: { color: "#60a5fa", fontSize: 18, marginTop: 8, marginBottom: 4, fontWeight: "bold" as const },
-  heading2: { color: "#60a5fa", fontSize: 16, marginTop: 6, marginBottom: 3, fontWeight: "bold" as const },
-  heading3: { color: "#93c5fd", fontSize: 15, marginTop: 4, marginBottom: 2, fontWeight: "bold" as const },
-  strong: { color: "#38bdf8", fontWeight: "bold" as const },
-  list_item: { color: "#f1f5f9", marginVertical: 2 },
-  code_inline: { backgroundColor: "#334155", color: "#e2e8f0", padding: 2, borderRadius: 4 },
-};
