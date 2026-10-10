@@ -35,6 +35,7 @@ import {
 
 function formatMessageTime(value: string): string {
   const date = new Date(value);
+
   if (Number.isNaN(date.getTime())) {
     return "";
   }
@@ -52,10 +53,15 @@ function formatDuration(milliseconds: number | null): string {
   );
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
+
   return `${minutes}:${String(seconds).padStart(2, "0")}`;
 }
 
-function VoiceMessageBubble({ message }: { message: ChatMessage }) {
+function VoiceMessageBubble({
+  message,
+}: {
+  message: ChatMessage;
+}) {
   const playerRef = useRef<AudioPlayer | null>(null);
   const statusSubscriptionRef = useRef<{
     remove: () => void;
@@ -79,15 +85,18 @@ function VoiceMessageBubble({ message }: { message: ChatMessage }) {
     if (!playerRef.current) {
       const player = createAudioPlayer(message.audio_url);
       playerRef.current = player;
+
       statusSubscriptionRef.current = player.addListener(
         "playbackStatusUpdate",
         (status) => {
           setPlaying(status.playing);
+
           if (status.didJustFinish) {
             setPlaying(false);
           }
         },
       );
+
       player.play();
       setPlaying(true);
       return;
@@ -104,9 +113,15 @@ function VoiceMessageBubble({ message }: { message: ChatMessage }) {
 
   return (
     <View style={styles.voiceRow}>
-      <Pressable style={styles.voicePlay} onPress={togglePlayback}>
-        <Text style={styles.voicePlayText}>{playing ? "❚❚" : "▶"}</Text>
+      <Pressable
+        style={styles.voicePlay}
+        onPress={togglePlayback}
+      >
+        <Text style={styles.voicePlayText}>
+          {playing ? "❚❚" : "▶"}
+        </Text>
       </Pressable>
+
       <View style={styles.voiceTrack}>
         <View style={styles.voiceTrackLine} />
         <Text style={styles.voiceDuration}>
@@ -118,27 +133,40 @@ function VoiceMessageBubble({ message }: { message: ChatMessage }) {
 }
 
 export default function AIChatScreen() {
-  const [conversations, setConversations] = useState<ChatConversation[]>([]);
-  const [conversationId, setConversationId] = useState<string>();
+  const [conversations, setConversations] = useState<
+    ChatConversation[]
+  >([]);
+  const [conversationId, setConversationId] = useState<
+    string | undefined
+  >();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [loadingHistory, setLoadingHistory] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [recordingError, setRecordingError] = useState<string | null>(null);
+  const [recordingError, setRecordingError] = useState<
+    string | null
+  >(null);
 
-  const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
+  const audioRecorder = useAudioRecorder(
+    RecordingPresets.HIGH_QUALITY,
+  );
   const recorderState = useAudioRecorderState(audioRecorder);
 
   const loadConversations = useCallback(async () => {
     try {
       const result = await listConversations();
+
       setConversations(result);
 
       setConversationId((current) => {
-        if (current && result.some((item) => item.id === current)) {
+        if (
+          current &&
+          result.some((item) => item.id === current)
+        ) {
           return current;
         }
+
         return result[0]?.id;
       });
     } catch (error) {
@@ -148,8 +176,10 @@ export default function AIChatScreen() {
 
   const loadMessages = useCallback(async (id: string) => {
     setLoadingHistory(true);
+
     try {
-      setMessages(await getConversationMessages(id));
+      const result = await getConversationMessages(id);
+      setMessages(result);
     } catch (error) {
       console.error("Load messages error:", error);
       setMessages([]);
@@ -159,46 +189,114 @@ export default function AIChatScreen() {
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
+
     void setAudioModeAsync({
       playsInSilentMode: true,
       allowsRecording: true,
     });
-    void loadConversations();
+
+    const initializeConversations = async () => {
+      await Promise.resolve();
+
+      if (cancelled) {
+        return;
+      }
+
+      await loadConversations();
+    };
+
+    void initializeConversations();
+
+    return () => {
+      cancelled = true;
+    };
   }, [loadConversations]);
 
   useEffect(() => {
-    if (conversationId) {
-      void loadMessages(conversationId);
-    } else {
-      setMessages([]);
-      setLoadingHistory(false);
-    }
-  }, [conversationId, loadMessages]);
+    let cancelled = false;
 
-  const ensureConversation = useCallback(async (): Promise<string> => {
-    if (conversationId) {
-      return conversationId;
-    }
+    const initializeMessages = async () => {
+      await Promise.resolve();
 
-    const conversation = await createConversation();
-    setConversations((previous) => [conversation, ...previous]);
-    setConversationId(conversation.id);
-    return conversation.id;
+      if (cancelled) {
+        return;
+      }
+
+      if (!conversationId) {
+        setMessages([]);
+        setLoadingHistory(false);
+        return;
+      }
+
+      setLoadingHistory(true);
+
+      try {
+        const result = await getConversationMessages(
+          conversationId,
+        );
+
+        if (!cancelled) {
+          setMessages(result);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          console.error("Load messages error:", error);
+          setMessages([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoadingHistory(false);
+        }
+      }
+    };
+
+    void initializeMessages();
+
+    return () => {
+      cancelled = true;
+    };
   }, [conversationId]);
+
+  const ensureConversation = useCallback(
+    async (): Promise<string> => {
+      if (conversationId) {
+        return conversationId;
+      }
+
+      const conversation = await createConversation();
+
+      setConversations((previous) => [
+        conversation,
+        ...previous,
+      ]);
+      setConversationId(conversation.id);
+
+      return conversation.id;
+    },
+    [conversationId],
+  );
 
   const handleNewChat = async () => {
     try {
       const conversation = await createConversation();
-      setConversations((previous) => [conversation, ...previous]);
+
+      setConversations((previous) => [
+        conversation,
+        ...previous,
+      ]);
       setConversationId(conversation.id);
       setMessages([]);
       setInput("");
       setSidebarOpen(false);
     } catch (error) {
       console.error("New conversation error:", error);
+
       Alert.alert(
         "CREOVA AI",
-        error instanceof Error ? error.message : "Chat yaratilmadi.",
+        error instanceof Error
+          ? error.message
+          : "Unable to create chat.",
       );
     }
   };
@@ -206,20 +304,28 @@ export default function AIChatScreen() {
   const handleDeleteChat = async (id: string) => {
     try {
       await deleteConversation(id);
-      const remaining = conversations.filter((item) => item.id !== id);
+
+      const remaining = conversations.filter(
+        (item) => item.id !== id,
+      );
+
       setConversations(remaining);
 
       if (conversationId === id) {
         setConversationId(remaining[0]?.id);
+
         if (!remaining[0]) {
           setMessages([]);
         }
       }
     } catch (error) {
       console.error("Delete conversation error:", error);
+
       Alert.alert(
         "CREOVA AI",
-        error instanceof Error ? error.message : "Chat o'chirilmadi.",
+        error instanceof Error
+          ? error.message
+          : "Chatni o'chirishda xatolik yuz berdi.",
       );
     }
   };
@@ -227,19 +333,25 @@ export default function AIChatScreen() {
   const handleSend = async () => {
     const cleanMessage = input.trim();
 
-    if (!cleanMessage || loading || recorderState.isRecording) {
+    if (
+      !cleanMessage ||
+      loading ||
+      recorderState.isRecording
+    ) {
       return;
     }
 
+    setInput("");
     setLoading(true);
-    let activeConversationId: string | undefined;
-    let userMessageSaved = false;
 
     try {
-      activeConversationId = await ensureConversation();
+      const activeConversationId =
+        await ensureConversation();
 
       const history: AIMessage[] = messages
-        .filter((message) => message.message_type === "text")
+        .filter(
+          (message) => message.message_type === "text",
+        )
         .map((message) => ({
           role: message.role,
           content: message.content,
@@ -251,55 +363,25 @@ export default function AIChatScreen() {
         activeConversationId,
       );
 
-      userMessageSaved = response.userMessageSaved === true;
-
-      // Savol bazaga yozilgan bo'lsa, inputni tozalash mumkin.
-      if (userMessageSaved) {
-        setInput("");
-      }
-
-      // Gemini muvaffaqiyatli bo'lsa ham, xato bersa ham,
-      // avval bazadagi xabarlarni qayta yuklaymiz.
-      if (userMessageSaved && activeConversationId) {
-        await loadMessages(activeConversationId);
-        await loadConversations();
-      }
-
       if (!response.success) {
         Alert.alert(
           "CREOVA AI",
           response.error ??
-            (userMessageSaved
-              ? "Savolingiz saqlandi, ammo AI javobini olishda xatolik yuz berdi."
-              : "Savol bazaga saqlanmadi. Matn inputda qoldi."),
+            "AI bilan bog'lanishda xatolik yuz berdi.",
         );
         return;
       }
 
-      // Javob muvaffaqiyatli bo'lsa, xabarlar yana tekshiriladi.
-      if (activeConversationId) {
-        await loadMessages(activeConversationId);
-        await loadConversations();
-      }
+      await loadMessages(activeConversationId);
+      await loadConversations();
     } catch (error) {
       console.error("AI chat error:", error);
-
-      // Xatolik bo'lganda inputni o'chirmaymiz.
-      // Saqlangan savolni ham imkon qadar qayta yuklaymiz.
-      if (activeConversationId) {
-        try {
-          await loadMessages(activeConversationId);
-          await loadConversations();
-        } catch (reloadError) {
-          console.error("Reload after send error:", reloadError);
-        }
-      }
 
       Alert.alert(
         "CREOVA AI",
         error instanceof Error
           ? error.message
-          : "Kutilmagan xatolik yuz berdi. Savolingiz inputda qoladi.",
+          : "Kutilmagan xatolik yuz berdi.",
       );
     } finally {
       setLoading(false);
@@ -308,6 +390,7 @@ export default function AIChatScreen() {
 
   const startRecording = async () => {
     setRecordingError(null);
+
     try {
       const permission =
         await AudioModule.requestRecordingPermissionsAsync();
@@ -327,6 +410,7 @@ export default function AIChatScreen() {
       audioRecorder.record();
     } catch (error) {
       console.error("Start recording error:", error);
+
       setRecordingError(
         error instanceof Error
           ? error.message
@@ -341,9 +425,12 @@ export default function AIChatScreen() {
     }
 
     setLoading(true);
+
     try {
       const durationMs = recorderState.durationMillis;
+
       await audioRecorder.stop();
+
       const uri = audioRecorder.uri;
       const activeConversationId = conversationId;
 
@@ -361,6 +448,7 @@ export default function AIChatScreen() {
       await loadConversations();
     } catch (error) {
       console.error("Send voice message error:", error);
+
       setRecordingError(
         error instanceof Error
           ? error.message
@@ -371,14 +459,20 @@ export default function AIChatScreen() {
     }
   };
 
-  const renderMessage = ({ item }: { item: ChatMessage }) => {
+  const renderMessage = ({
+    item,
+  }: {
+    item: ChatMessage;
+  }) => {
     const isUser = item.role === "user";
 
     return (
       <View
         style={[
           styles.message,
-          isUser ? styles.userMessage : styles.assistantMessage,
+          isUser
+            ? styles.userMessage
+            : styles.assistantMessage,
         ]}
       >
         <Text style={styles.messageRole}>
@@ -388,7 +482,9 @@ export default function AIChatScreen() {
         {item.message_type === "voice" ? (
           <VoiceMessageBubble message={item} />
         ) : (
-          <Text style={styles.messageText}>{item.content}</Text>
+          <Text style={styles.messageText}>
+            {item.content}
+          </Text>
         )}
 
         <Text style={styles.messageTime}>
@@ -406,7 +502,9 @@ export default function AIChatScreen() {
     >
       <View style={styles.header}>
         <Pressable
-          onPress={() => setSidebarOpen((open) => !open)}
+          onPress={() =>
+            setSidebarOpen((open) => !open)
+          }
           style={styles.menuButton}
         >
           <Text style={styles.menuText}>☰</Text>
@@ -414,7 +512,9 @@ export default function AIChatScreen() {
 
         <View style={styles.headerText}>
           <Text style={styles.title}>🤖 CREOVA AI</Text>
-          <Text style={styles.subtitle}>AI Assistant</Text>
+          <Text style={styles.subtitle}>
+            AI Assistant
+          </Text>
         </View>
 
         <Pressable
@@ -427,13 +527,17 @@ export default function AIChatScreen() {
 
       {sidebarOpen && (
         <View style={styles.sidebar}>
-          <Text style={styles.sidebarTitle}>Chat History</Text>
+          <Text style={styles.sidebarTitle}>
+            Chat History
+          </Text>
 
           <Pressable
             style={styles.newChatButton}
             onPress={() => void handleNewChat()}
           >
-            <Text style={styles.newChatText}>+ New chat</Text>
+            <Text style={styles.newChatText}>
+              + New chat
+            </Text>
           </Pressable>
 
           <FlatList
@@ -454,13 +558,16 @@ export default function AIChatScreen() {
                   >
                     {item.title}
                   </Text>
+
                   <Text style={styles.conversationTime}>
                     {formatMessageTime(item.updated_at)}
                   </Text>
                 </Pressable>
 
                 <Pressable
-                  onPress={() => void handleDeleteChat(item.id)}
+                  onPress={() =>
+                    void handleDeleteChat(item.id)
+                  }
                 >
                   <Text style={styles.deleteText}>×</Text>
                 </Pressable>
@@ -476,15 +583,20 @@ export default function AIChatScreen() {
         style={styles.list}
         contentContainerStyle={[
           styles.listContent,
-          messages.length === 0 && styles.emptyContent,
+          messages.length === 0 &&
+            styles.emptyContent,
         ]}
         renderItem={renderMessage}
         ListEmptyComponent={
           <View style={styles.empty}>
-            <Text style={styles.emptyTitle}>CREOVA AI</Text>
+            <Text style={styles.emptyTitle}>
+              CREOVA AI
+            </Text>
+
             <Text style={styles.emptyText}>
-              Men sizning AI Assistant'ingizman.{"\n\n"}
-              Savol bering, g'oya bering yoki vazifa bering.
+              Men sizning AI Assistant&apos;ingizman.
+              {"\n\n"}
+              Savol bering, g&apos;oya bering yoki vazifa bering.
             </Text>
           </View>
         }
@@ -493,7 +605,9 @@ export default function AIChatScreen() {
       {loadingHistory && (
         <View style={styles.loading}>
           <ActivityIndicator />
-          <Text style={styles.loadingText}>Chat yuklanmoqda...</Text>
+          <Text style={styles.loadingText}>
+            Chat yuklanmoqda...
+          </Text>
         </View>
       )}
 
@@ -507,7 +621,9 @@ export default function AIChatScreen() {
       )}
 
       {recordingError && (
-        <Text style={styles.recordingError}>{recordingError}</Text>
+        <Text style={styles.recordingError}>
+          {recordingError}
+        </Text>
       )}
 
       <View style={styles.inputArea}>
@@ -518,18 +634,23 @@ export default function AIChatScreen() {
           placeholder="Xabaringizni yozing..."
           placeholderTextColor="#64748B"
           multiline
-          editable={!loading && !recorderState.isRecording}
+          editable={
+            !loading && !recorderState.isRecording
+          }
         />
 
         <Pressable
           style={[
             styles.voiceButton,
-            recorderState.isRecording && styles.voiceButtonRecording,
+            recorderState.isRecording &&
+              styles.voiceButtonRecording,
           ]}
           onPress={() =>
-            void (recorderState.isRecording
-              ? stopRecording()
-              : startRecording())
+            void (
+              recorderState.isRecording
+                ? stopRecording()
+                : startRecording()
+            )
           }
           disabled={loading}
         >
@@ -541,15 +662,22 @@ export default function AIChatScreen() {
         <Pressable
           style={[
             styles.sendButton,
-            (!input.trim() || loading || recorderState.isRecording) &&
-              styles.sendButtonDisabled,
+            (
+              !input.trim() ||
+              loading ||
+              recorderState.isRecording
+            ) && styles.sendButtonDisabled,
           ]}
           onPress={() => void handleSend()}
           disabled={
-            !input.trim() || loading || recorderState.isRecording
+            !input.trim() ||
+            loading ||
+            recorderState.isRecording
           }
         >
-          <Text style={styles.sendText}>Yuborish</Text>
+          <Text style={styles.sendText}>
+            Yuborish
+          </Text>
         </Pressable>
       </View>
     </KeyboardAvoidingView>
@@ -557,7 +685,10 @@ export default function AIChatScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#0F172A" },
+  container: {
+    flex: 1,
+    backgroundColor: "#0F172A",
+  },
   header: {
     paddingTop: 56,
     paddingHorizontal: 16,
@@ -573,10 +704,23 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  menuText: { color: "#FFFFFF", fontSize: 24 },
-  headerText: { flex: 1 },
-  title: { color: "#FFFFFF", fontSize: 24, fontWeight: "800" },
-  subtitle: { color: "#94A3B8", marginTop: 3, fontSize: 13 },
+  menuText: {
+    color: "#FFFFFF",
+    fontSize: 24,
+  },
+  headerText: {
+    flex: 1,
+  },
+  title: {
+    color: "#FFFFFF",
+    fontSize: 24,
+    fontWeight: "800",
+  },
+  subtitle: {
+    color: "#94A3B8",
+    marginTop: 3,
+    fontSize: 13,
+  },
   newButton: {
     width: 42,
     height: 42,
@@ -585,7 +729,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  newButtonText: { color: "#FFFFFF", fontSize: 28 },
+  newButtonText: {
+    color: "#FFFFFF",
+    fontSize: 28,
+  },
   sidebar: {
     position: "absolute",
     top: 120,
@@ -610,21 +757,49 @@ const styles = StyleSheet.create({
     backgroundColor: "#1D4ED8",
     marginBottom: 12,
   },
-  newChatText: { color: "#FFFFFF", fontWeight: "600" },
+  newChatText: {
+    color: "#FFFFFF",
+    fontWeight: "600",
+  },
   conversationRow: {
     flexDirection: "row",
     alignItems: "center",
     borderBottomWidth: 1,
     borderBottomColor: "#1E293B",
   },
-  conversationButton: { flex: 1, paddingVertical: 12 },
-  conversationTitle: { color: "#CBD5E1", fontSize: 14 },
-  conversationTime: { color: "#64748B", fontSize: 11, marginTop: 3 },
-  deleteText: { color: "#EF4444", fontSize: 22, paddingHorizontal: 8 },
-  list: { flex: 1 },
-  listContent: { padding: 16, gap: 12 },
-  emptyContent: { flexGrow: 1, justifyContent: "center" },
-  empty: { alignItems: "center", paddingHorizontal: 30 },
+  conversationButton: {
+    flex: 1,
+    paddingVertical: 12,
+  },
+  conversationTitle: {
+    color: "#CBD5E1",
+    fontSize: 14,
+  },
+  conversationTime: {
+    color: "#64748B",
+    fontSize: 11,
+    marginTop: 3,
+  },
+  deleteText: {
+    color: "#EF4444",
+    fontSize: 22,
+    paddingHorizontal: 8,
+  },
+  list: {
+    flex: 1,
+  },
+  listContent: {
+    padding: 16,
+    gap: 12,
+  },
+  emptyContent: {
+    flexGrow: 1,
+    justifyContent: "center",
+  },
+  empty: {
+    alignItems: "center",
+    paddingHorizontal: 30,
+  },
   emptyTitle: {
     color: "#FFFFFF",
     fontSize: 30,
@@ -637,23 +812,41 @@ const styles = StyleSheet.create({
     lineHeight: 23,
     textAlign: "center",
   },
-  message: { padding: 14, borderRadius: 14, maxWidth: "90%" },
-  userMessage: { alignSelf: "flex-end", backgroundColor: "#1D4ED8" },
-  assistantMessage: { alignSelf: "flex-start", backgroundColor: "#1E293B" },
+  message: {
+    padding: 14,
+    borderRadius: 14,
+    maxWidth: "90%",
+  },
+  userMessage: {
+    alignSelf: "flex-end",
+    backgroundColor: "#1D4ED8",
+  },
+  assistantMessage: {
+    alignSelf: "flex-start",
+    backgroundColor: "#1E293B",
+  },
   messageRole: {
     color: "#CBD5E1",
     fontSize: 12,
     fontWeight: "700",
     marginBottom: 5,
   },
-  messageText: { color: "#FFFFFF", fontSize: 15, lineHeight: 22 },
+  messageText: {
+    color: "#FFFFFF",
+    fontSize: 15,
+    lineHeight: 22,
+  },
   messageTime: {
     color: "#94A3B8",
     fontSize: 10,
     textAlign: "right",
     marginTop: 7,
   },
-  voiceRow: { flexDirection: "row", alignItems: "center", minWidth: 190 },
+  voiceRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    minWidth: 190,
+  },
   voicePlay: {
     width: 40,
     height: 40,
@@ -662,14 +855,24 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  voicePlayText: { color: "#FFFFFF", fontSize: 15 },
-  voiceTrack: { flex: 1, marginLeft: 10 },
+  voicePlayText: {
+    color: "#FFFFFF",
+    fontSize: 15,
+  },
+  voiceTrack: {
+    flex: 1,
+    marginLeft: 10,
+  },
   voiceTrackLine: {
     height: 4,
     borderRadius: 2,
     backgroundColor: "rgba(255,255,255,0.35)",
   },
-  voiceDuration: { color: "#CBD5E1", fontSize: 11, marginTop: 5 },
+  voiceDuration: {
+    color: "#CBD5E1",
+    fontSize: 11,
+    marginTop: 5,
+  },
   loading: {
     flexDirection: "row",
     alignItems: "center",
@@ -677,7 +880,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
   },
-  loadingText: { color: "#94A3B8", fontSize: 13 },
+  loadingText: {
+    color: "#94A3B8",
+    fontSize: 13,
+  },
   recordingError: {
     color: "#FCA5A5",
     fontSize: 12,
@@ -711,8 +917,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  voiceButtonRecording: { backgroundColor: "#DC2626" },
-  voiceButtonText: { color: "#FFFFFF", fontSize: 19 },
+  voiceButtonRecording: {
+    backgroundColor: "#DC2626",
+  },
+  voiceButtonText: {
+    color: "#FFFFFF",
+    fontSize: 19,
+  },
   sendButton: {
     minHeight: 46,
     paddingHorizontal: 18,
@@ -721,6 +932,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  sendButtonDisabled: { opacity: 0.45 },
-  sendText: { color: "#FFFFFF", fontWeight: "700" },
+  sendButtonDisabled: {
+    opacity: 0.45,
+  },
+  sendText: {
+    color: "#FFFFFF",
+    fontWeight: "700",
+  },
 });
