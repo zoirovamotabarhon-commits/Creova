@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   View,
   TextInput,
@@ -9,9 +9,11 @@ import {
   StyleSheet,
   Image,
   KeyboardAvoidingView,
+  Keyboard,
   Platform,
   Alert,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
 import {
   AudioModule,
@@ -96,6 +98,8 @@ function VoicePlayer({ uri, durationMs }: { uri: string; durationMs?: number }) 
 }
 
 export default function AIChatScreen() {
+  const insets = useSafeAreaInsets();
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -107,6 +111,18 @@ export default function AIChatScreen() {
 
   const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
   const recorderState = useAudioRecorderState(recorder);
+
+  useEffect(() => {
+    const show = Keyboard.addListener("keyboardDidShow", () => setKeyboardVisible(true));
+    const hide = Keyboard.addListener("keyboardDidHide", () => setKeyboardVisible(false));
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
+
+  // Klaviatura yopiq bo'lsa, panel navigatsiya tugmalaridan yuqorida turadi
+  const bottomPad = keyboardVisible ? 10 : insets.bottom + 16;
 
   const applyAsset = (result: ImagePicker.ImagePickerResult) => {
     if (!result.canceled && result.assets && result.assets.length > 0) {
@@ -198,7 +214,7 @@ export default function AIChatScreen() {
 
   const sendMessage = async (voice?: { uri: string; durationMs: number }) => {
     const trimmedInput = voice ? "" : input.trim();
-    if (!voice && ((!trimmedInput && !selectedImage) || loading)) return;
+    if (!voice && !trimmedInput && !selectedImage) return;
     if (loading) return;
 
     const userMsg: Message = {
@@ -297,8 +313,8 @@ export default function AIChatScreen() {
 
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      style={styles.container}
+      behavior="padding"
+      style={[styles.container, { paddingTop: insets.top }]}
     >
       <FlatList
         ref={flatListRef}
@@ -357,7 +373,7 @@ export default function AIChatScreen() {
       )}
 
       {isRecording ? (
-        <View style={styles.inputContainer}>
+        <View style={[styles.inputContainer, { paddingBottom: bottomPad }]}>
           <TouchableOpacity style={styles.attachButton} onPress={cancelRecording}>
             <Text style={styles.attachButtonText}>🗑</Text>
           </TouchableOpacity>
@@ -372,7 +388,7 @@ export default function AIChatScreen() {
           </TouchableOpacity>
         </View>
       ) : (
-        <View style={styles.inputContainer}>
+        <View style={[styles.inputContainer, { paddingBottom: bottomPad }]}>
           <TouchableOpacity
             style={styles.attachButton}
             onPress={() => setShowAttach((v) => !v)}
@@ -434,7 +450,7 @@ const styles = StyleSheet.create({
   attachMenu: { backgroundColor: "#0f172a", paddingHorizontal: 10, paddingTop: 8, flexDirection: "row" },
   attachOption: { backgroundColor: "#1e293b", paddingVertical: 10, paddingHorizontal: 14, borderRadius: 8, marginRight: 8 },
   attachOptionText: { color: "#f8fafc", fontSize: 14 },
-  inputContainer: { flexDirection: "row", alignItems: "flex-end", padding: 10, backgroundColor: "#0f172a" },
+  inputContainer: { flexDirection: "row", alignItems: "flex-end", paddingTop: 10, paddingHorizontal: 10, backgroundColor: "#0f172a" },
   attachButton: { paddingHorizontal: 10, paddingVertical: 10, justifyContent: "center", alignItems: "center", marginRight: 6 },
   attachButtonText: { fontSize: 20 },
   input: { flex: 1, backgroundColor: "#1e293b", color: "#fff", paddingHorizontal: 12, paddingTop: 12, paddingBottom: 12, borderRadius: 8, marginRight: 8, fontSize: 15, minHeight: 46, maxHeight: 140 },
