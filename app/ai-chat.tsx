@@ -62,7 +62,10 @@ export default function AIChatScreen() {
 
     try {
       let endpoint = "gemini-chat";
-      let requestBody: any = { prompt: userText, history: messages.map(m => ({ role: m.sender === "user" ? "user" : "model", text: m.text })) };
+      let requestBody: any = { 
+        prompt: userText || "Describe this image", 
+        history: messages.map(m => ({ role: m.sender === "user" ? "user" : "model", text: m.text })) 
+      };
 
       const lowerText = userText.toLowerCase();
       const isImageGen = 
@@ -75,7 +78,7 @@ export default function AIChatScreen() {
         endpoint = "image-generate";
       } else if (currentImage) {
         endpoint = "vision-analyze";
-        requestBody = { prompt: userText, imageUri: currentImage };
+        requestBody = { prompt: userText || "Describe this image in detail.", imageUri: currentImage };
       }
 
       const { data, error } = await supabase.functions.invoke(endpoint, {
