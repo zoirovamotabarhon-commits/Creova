@@ -12,15 +12,16 @@ serve(async (req) => {
   }
 
   try {
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      throw new Error("Missing Authorization header");
-    }
-
-    const { prompt, history } = await req.json();
+    const body = await req.json().catch(() => ({}));
+    // Qaysi nom bilan kelishidan qat'iy nazar promptni ushlab olamiz
+    const prompt = body?.prompt || body?.message || body?.text || "";
+    const history = body?.history || [];
     
     if (!prompt) {
-      throw new Error("Prompt is required");
+      return new Response(
+        JSON.stringify({ error: "Prompt is required" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     const apiKey = Deno.env.get("GEMINI_API_KEY");
@@ -32,14 +33,13 @@ serve(async (req) => {
 
     const chatHistory = Array.isArray(history) ? history.map((item: any) => ({
       role: item.role === "user" ? "user" : "model",
-      parts: [{ text: item.text }]
+      parts: [{ text: item.text || item.prompt || "" }]
     })) : [];
 
     let text = "";
     const primaryModelName = "gemini-3.8-flash";
     const fallbackModelName = "gemini-3.5-flash";
 
-    // Try primary model first, fallback to secondary if overloaded or fails
     try {
       const primaryModel = genAI.getGenerativeModel({ model: primaryModelName });
       const chat = primaryModel.startChat({
@@ -52,14 +52,18 @@ serve(async (req) => {
     } catch (primaryError) {
       console.warn(`Primary model (${primaryModelName}) failed, switching to fallback (${fallbackModelName}). Error:`, primaryError);
       
-      const fallbackModel = genAI.getGenerativeModel({ model: fallbackModelName });
-      const fallbackChat = fallbackModel.startChat({
-        history: chatHistory,
-        generationConfig: { maxOutputTokens: 2048 },
-      });
-      const fallbackResult = await fallbackChat.sendMessage(prompt);
-      const fallbackResponse = await fallbackResult.response;
-      text = fallbackResponse.text();
+      try {
+        const fallbackModel = genAI.getGenerativeModel({ model: fallbackModelName });
+        const fallbackChat = fallbackModel.startChat({
+          history: chatHistory,
+          generationConfig: { maxOutputTokens: 2048 },
+        });
+        const fallbackResult = await fallbackChat.sendMessage(prompt);
+        const fallbackResponse = await fallbackResult.response;
+        text = fallbackResponse.text();
+      } catch (fallbackError: any) {
+        throw new Error(`All models failed. Primary: ${primaryError?.message}, Fallback: ${fallbackError?.message}`);
+      }
     }
 
     return new Response(
@@ -70,7 +74,8 @@ serve(async (req) => {
       }
     );
 
-  } catch (error: any) {
+  }
+  catch (error: any) {
     console.error("Error in gemini-chat function:", error);
     return new Response(
       JSON.stringify({ error: error.message || "Internal Server Error" }),
