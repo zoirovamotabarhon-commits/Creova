@@ -1,23 +1,48 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { GoogleGenerativeAI } from "npm:@google/generative-ai";
+import { encode } from "https://deno.land/std@0.168.0/encoding/base64.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-async function fileToGenerativePart(imageUri: string) {
-  const response = await fetch(imageUri);
-  const blob = await response.blob();
-  const arrayBuffer = await blob.arrayBuffer();
-  const base64Data = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+async function buildImagePart(imageBase64?: string, mimeType?: string, imageUri?: string) {
+  if (imageBase64) {
+    const clean = imageBase64.replace(/^data:[^;]+;base64,/, "");
+    return { inlineData: { data: clean, mimeType: mimeType || "image/jpeg" } };
+  }
+  if (imageUri && /^https?:\/\//i.test(imageUri)) {
+    const response = await fetch(imageUri);
+    if (!response.ok) throw new Error(`Rasmni yuklab bo'lmadi (${response.status})`);
+    const bytes = new Uint8Array(await response.arrayBuffer());
+    return {
+      inlineData: {
+        data: encode(bytes),
+        mimeType: response.headers.get("content-type") || "image/jpeg",
+      },
+    };
+  }
+  throw new Error("Rasm yuborilmadi: file:// manzilni server o'qiy olmaydi, base64 yuboring.");
+}
 
-  return {
-    inlineData: {
-      data: base64Data,
-      mimeType: blob.type || "image/jpeg",
-    },
-  };
+async function generateWithRetry(genAI: GoogleGenerativeAI, models: string[], parts: any[]) {
+  let lastErr: any;
+  for (const name of models) {
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const model = genAI.getGenerativeModel({ model: name });
+        const result = await model.generateContent(parts);
+        return result.response.text();
+      } catch (e: any) {
+        lastErr = e;
+        console.warn(`${name} attempt ${attempt + 1} failed:`, e?.status, e?.message);
+        if (e?.status !== 503 && e?.status !== 429) break;
+        await new Promise((r) => setTimeout(r, 800 * (attempt + 1)));
+      }
+    }
+  }
+  throw new Error(`All models failed: ${lastErr?.message}`);
 }
 
 serve(async (req) => {
@@ -27,42 +52,25 @@ serve(async (req) => {
 
   try {
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      throw new Error("Missing Authorization header");
-    }
+    if (!authHeader) throw new Error("Missing Authorization header");
 
-    const { prompt, imageUri } = await req.json();
+    const { prompt, imageUri, imageBase64, mimeType } = await req.json();
     const apiKey = Deno.env.get("GEMINI_API_KEY");
+    if (!apiKey) throw new Error("GEMINI_API_KEY environment variable is not configured.");
 
-    if (!apiKey) {
-      throw new Error("GEMINI_API_KEY environment variable is not configured.");
-    }
-
-    if (!imageUri) {
-      throw new Error("Image URI is required for vision analysis.");
+    if (!imageUri && !imageBase64) {
+      throw new Error("Image is required for vision analysis.");
     }
 
     const genAI = new GoogleGenerativeAI(apiKey);
-    const imagePart = await fileToGenerativePart(imageUri);
+    const imagePart = await buildImagePart(imageBase64, mimeType, imageUri);
     const userPrompt = prompt || "Describe this image in detail.";
 
-    let description = "";
-    const primaryModelName = "gemini-3.8-flash";
-    const fallbackModelName = "gemini-3.5-flash";
-
-    try {
-      const primaryModel = genAI.getGenerativeModel({ model: primaryModelName });
-      const result = await primaryModel.generateContent([userPrompt, imagePart]);
-      const response = await result.response;
-      description = response.text();
-    } catch (primaryError) {
-      console.warn(`Primary vision model (${primaryModelName}) failed, switching to fallback (${fallbackModelName}). Error:`, primaryError);
-
-      const fallbackModel = genAI.getGenerativeModel({ model: fallbackModelName });
-      const fallbackResult = await fallbackModel.generateContent([userPrompt, imagePart]);
-      const fallbackResponse = await fallbackResult.response;
-      description = fallbackResponse.text();
-    }
+    const description = await generateWithRetry(
+      genAI,
+      ["gemini-3.8-flash", "gemini-3.5-flash"],
+      [userPrompt, imagePart],
+    );
 
     return new Response(JSON.stringify({ text: description }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
