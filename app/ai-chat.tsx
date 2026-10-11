@@ -42,32 +42,33 @@ export default function AIChatScreen() {
   };
 
   const sendMessage = async () => {
-    if ((!input.trim() && !selectedImage) || loading) return;
-
-    const userText = input.trim();
-    const currentImage = selectedImage;
+    const trimmedInput = input.trim();
+    if ((!trimmedInput && !selectedImage) || loading) return;
 
     const userMsg: Message = {
       id: Date.now().toString(),
       sender: "user",
-      text: userText,
-      imageUri: currentImage || undefined,
+      text: trimmedInput,
+      imageUri: selectedImage || undefined,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     };
 
     setMessages((prev) => [...prev, userMsg]);
     setInput("");
+    const currentImage = selectedImage;
     setSelectedImage(null);
     setLoading(true);
 
     try {
       let endpoint = "gemini-chat";
+      // Har ehtimolga qarshi prompt va message larni birga yuboramiz
       let requestBody: any = { 
-        prompt: userText || "Describe this image", 
+        prompt: trimmedInput || "Describe this image",
+        message: trimmedInput || "Describe this image",
         history: messages.map(m => ({ role: m.sender === "user" ? "user" : "model", text: m.text })) 
       };
 
-      const lowerText = userText.toLowerCase();
+      const lowerText = trimmedInput.toLowerCase();
       const isImageGen = 
         lowerText.includes("generate image") || 
         lowerText.includes("create image") || 
@@ -78,7 +79,11 @@ export default function AIChatScreen() {
         endpoint = "image-generate";
       } else if (currentImage) {
         endpoint = "vision-analyze";
-        requestBody = { prompt: userText || "Describe this image in detail.", imageUri: currentImage };
+        requestBody = { 
+          prompt: trimmedInput || "Describe this image in detail.", 
+          message: trimmedInput || "Describe this image in detail.",
+          imageUri: currentImage 
+        };
       }
 
       const { data, error } = await supabase.functions.invoke(endpoint, {
