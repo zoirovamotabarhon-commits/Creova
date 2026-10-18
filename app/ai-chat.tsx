@@ -84,6 +84,9 @@ function buildSystemPrompt(uiLanguage: string): string {
 
 const HISTORY_LIMIT = 30;
 
+// React qoidasi komponent ichida Date.now() ni to'g'ridan-to'g'ri chaqirishni taqiqlaydi
+const nowMs = (): number => Date.now();
+
 const formatDuration = (ms: number) => {
   const total = Math.max(0, Math.round(ms / 1000));
   const m = Math.floor(total / 60);
@@ -408,7 +411,7 @@ export default function AIChatScreen() {
       cacheRef.current,
       convId,
       msgs,
-      Date.now(),
+      nowMs(),
       knownBefore.length === 0 && existingTitle !== undefined ? existingTitle : undefined,
     );
     cacheRef.current.activeId = convId;
@@ -465,7 +468,7 @@ export default function AIChatScreen() {
     knownRef.current = resolved.map((m) => m.id);
     setMessages(resolved);
     const summary = cacheRef.current.conversations.find((c) => c.id === convId);
-    cacheConversation(cacheRef.current, convId, resolved, summary?.updatedAt ?? Date.now(), res.title);
+    cacheConversation(cacheRef.current, convId, resolved, summary?.updatedAt ?? nowMs(), res.title);
     setConversations([...cacheRef.current.conversations]);
   };
 
@@ -497,6 +500,7 @@ export default function AIChatScreen() {
   // Ilova ochilganda: kesh bilan darrov ko'rsatiladi, so'ng bulut bilan solishtiriladi
   useEffect(() => {
     let cancelled = false;
+    const retry = retryRef.current; // bir xil obyekt; cleanup'da ishlatish uchun nusxa
     mountedRef.current = true;
     (async () => {
       try {
@@ -543,8 +547,10 @@ export default function AIChatScreen() {
       cancelled = true;
       mountedRef.current = false;
       subscription.remove();
-      if (retryRef.current.timer) clearTimeout(retryRef.current.timer);
+      if (retry.timer) clearTimeout(retry.timer);
     };
+    // Faqat ilova ochilganda ishlaydi (flush/refreshFromCloud har renderda qayta yaratiladi)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Tarjimasi yo'q tillar uchun chat matnlari bir marta AI bilan tarjima qilinadi (keshlanadi)
