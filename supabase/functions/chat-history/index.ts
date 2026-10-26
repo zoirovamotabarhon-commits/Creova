@@ -22,6 +22,7 @@ const SERVICE_ROLE_KEY =
   "";
 
 const BUCKET = "generation-assets";
+const FILE_BUCKET = "chat-files";
 const LIST_LIMIT = 200;
 const GET_LIMIT = 500;
 const MAX_UPSERT = 100;
@@ -92,10 +93,14 @@ interface ParsedMessage {
   id: string;
   role: "user" | "assistant";
   content: string;
-  message_type: "text" | "voice" | "image";
+  message_type: "text" | "voice" | "image" | "file";
   audio_url: string | null;
   audio_duration_ms: number | null;
   image_path: string | null;
+  file_path: string | null;
+  file_name: string | null;
+  file_size: number | null;
+  file_mime: string | null;
   generation_id: string | null;
   created_at: string;
 }
@@ -122,7 +127,9 @@ function parseMessages(raw: unknown, userId: string, now: number): ParsedMessage
     if (!role) throw new HttpError(400, "Invalid message role.");
 
     const type =
-      m.messageType === "voice" || m.messageType === "image" ? m.messageType : "text";
+      m.messageType === "voice" || m.messageType === "image" || m.messageType === "file"
+        ? m.messageType
+        : "text";
     const content = typeof m.content === "string" ? safeSlice(m.content, MAX_CONTENT) : "";
     if (type === "text" && content.trim().length === 0) {
       throw new HttpError(400, "Text message is empty.");
@@ -144,6 +151,28 @@ function parseMessages(raw: unknown, userId: string, now: number): ParsedMessage
       image = m.imagePath;
     }
 
+    let file: string | null = null;
+    if (m.filePath !== undefined && m.filePath !== null) {
+      if (typeof m.filePath !== "string" || !isSafePath(m.filePath, userId)) {
+        throw new HttpError(400, "Invalid file path.");
+      }
+      file = m.filePath;
+    }
+    const fileName =
+      typeof m.fileName === "string" && m.fileName.length > 0
+        // deno-lint-ignore no-control-regex
+        ? safeSlice(m.fileName.replace(/[\u0000-\u001f\u007f]/g, "?"), 200)
+        : null;
+    const fs = m.fileSize;
+    const fileSize =
+      typeof fs === "number" && Number.isFinite(fs) && fs >= 0 && fs <= 2 ** 40 ? Math.floor(fs) : null;
+    const fileMime =
+      typeof m.fileMime === "string" &&
+      m.fileMime.length <= 100 &&
+      /^[a-z0-9.+-]+\/[a-z0-9.+-]+$/i.test(m.fileMime)
+        ? m.fileMime.toLowerCase()
+        : null;
+
     const d = m.audioDurationMs;
     const duration =
       typeof d === "number" && Number.isInteger(d) && d >= 0 && d <= 600000 ? d : null;
@@ -156,6 +185,10 @@ function parseMessages(raw: unknown, userId: string, now: number): ParsedMessage
       audio_url: audio,
       audio_duration_ms: duration,
       image_path: image,
+      file_path: file,
+      file_name: fileName,
+      file_size: fileSize,
+      file_mime: fileMime,
       generation_id: isUuid(m.generationId) ? m.generationId : null,
       created_at: clampTime(m.createdAt, now),
     });
@@ -290,7 +323,7 @@ async function getConversation(admin: Admin, userId: string, conversationId: unk
   const { data: rows, error } = await admin
     .from("chat_messages")
     .select(
-      "id,role,content,message_type,audio_url,audio_duration_ms,image_path,generation_id,created_at",
+      "id,role,content,message_type,audio_url,audio_duration_ms,image_path,file_path,file_name,file_size,file_mime,generation_id,created_at",
     )
     .eq("conversation_id", conversationId)
     .eq("user_id", userId)
@@ -317,6 +350,10 @@ async function getConversation(admin: Admin, userId: string, conversationId: unk
       audioPath: r.audio_url ?? null,
       audioDurationMs: r.audio_duration_ms ?? null,
       imagePath: r.image_path ?? null,
+      filePath: r.file_path ?? null,
+      fileName: r.file_name ?? null,
+      fileSize: r.file_size == null ? null : Number(r.file_size),
+      fileMime: r.file_mime ?? null,
       generationId: r.generation_id ?? null,
       createdAt: r.created_at,
     })),
@@ -328,6 +365,7 @@ async function removeRecordings(
   userId: string,
   conversationId: string,
   paths: unknown[],
+  bucket: string = BUCKET,
 ) {
   // Only files uploaded for this chat (<user>/<conversation>/...) are deleted.
   // Generated media (<user>/<generation>.*) belongs to the generation history.
@@ -339,7 +377,7 @@ async function removeRecordings(
   ];
   if (own.length === 0) return;
   try {
-    await admin.storage.from(BUCKET).remove(own);
+    await admin.storage.from(bucket).remove(own);
   } catch (e) {
     console.warn("chat-history: could not remove recordings:", e);
   }
@@ -421,7 +459,7 @@ async function syncConversation(
   if (removeIds.length > 0) {
     const { data: doomed } = await admin
       .from("chat_messages")
-      .select("id,audio_url,image_path")
+      .select("id,audio_url,image_path,file_path")
       .eq("conversation_id", conversationId)
       .eq("user_id", userId)
       .in("id", removeIds);
@@ -436,6 +474,8 @@ async function syncConversation(
 
     // deno-lint-ignore no-explicit-any
     await removeRecordings(admin, userId, conversationId, (doomed ?? []).flatMap((d: any) => [d.audio_url, d.image_path]));
+    // deno-lint-ignore no-explicit-any
+    await removeRecordings(admin, userId, conversationId, (doomed ?? []).map((d: any) => d.file_path), FILE_BUCKET);
   }
 
   return { success: true, updatedAt: convRow.updated_at };
@@ -455,7 +495,7 @@ async function deleteConversation(admin: Admin, userId: string, conversationId: 
 
   const { data: msgs } = await admin
     .from("chat_messages")
-    .select("audio_url,image_path")
+    .select("audio_url,image_path,file_path")
     .eq("conversation_id", conversationId)
     .eq("user_id", userId);
 
@@ -469,5 +509,7 @@ async function deleteConversation(admin: Admin, userId: string, conversationId: 
 
   // deno-lint-ignore no-explicit-any
   await removeRecordings(admin, userId, conversationId, (msgs ?? []).flatMap((m: any) => [m.audio_url, m.image_path]));
+  // deno-lint-ignore no-explicit-any
+  await removeRecordings(admin, userId, conversationId, (msgs ?? []).map((m: any) => m.file_path), FILE_BUCKET);
   return { success: true };
-  }
+    }
