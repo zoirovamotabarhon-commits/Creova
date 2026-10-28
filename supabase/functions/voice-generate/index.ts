@@ -11,9 +11,21 @@ import {
 const GEMINI_API_KEY =
   Deno.env.get("GEMINI_API_KEY") ?? "";
 
+// gemini-3.8-flash-tts supports 130+ languages (flash-lite: 100+, it lacks Thai, Swedish,
+// Finnish, Slovenian, Lithuanian, Tajik and Swahili), so the full model is the default.
 const GEMINI_TTS_MODEL =
   Deno.env.get("GEMINI_TTS_MODEL") ??
-  "gemini-3.8-flash-lite-tts";
+  "gemini-3.8-flash-tts";
+
+// Female assistant voice ("Sulafat" is Warm). To get a custom persona (for example a warm,
+// friendly young woman) create it in Google AI Studio -> Voice design and put its
+// voice_... id into the GEMINI_TTS_VOICE secret.
+const GEMINI_TTS_VOICE =
+  Deno.env.get("GEMINI_TTS_VOICE") ?? "Sulafat";
+
+// Turn-level delivery. Do not put age or gender here: those come from the voice itself.
+const GEMINI_TTS_STYLE =
+  Deno.env.get("GEMINI_TTS_STYLE") ?? "warm, friendly and calm";
 
 const SUPABASE_URL =
   Deno.env.get("SUPABASE_URL") ?? "";
@@ -326,6 +338,10 @@ async function generateSpeech(
               parts: [
                 {
                   text,
+                  // speech_metadata exists only in the Gemini 3.8 TTS API
+                  ...(GEMINI_TTS_MODEL.startsWith("gemini-3.8") && GEMINI_TTS_STYLE
+                    ? { speech_metadata: { style: GEMINI_TTS_STYLE } }
+                    : {}),
                 },
               ],
             },
@@ -339,7 +355,7 @@ async function generateSpeech(
             speechConfig: {
               voiceConfig: {
                 voice:
-                  "Kore",
+                  GEMINI_TTS_VOICE,
               },
             },
           },
