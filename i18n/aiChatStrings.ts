@@ -51,6 +51,13 @@ const en = {
   errNetwork: "No internet connection, or it's too slow. Check your connection and try again.",
   errTimeout: "The response took too long. Please try again.",
   errUnknown: "An unexpected error occurred. Please try again.",
+  syncPending: "Waiting to sync your chats…",
+  offlineNotice: "You're offline. Showing saved chats.",
+  listen: "Listen",
+  preparingAudio: "Preparing audio…",
+  file: "File",
+  usingFile: "Using file: {{name}}",
+  uploadingFile: "Uploading file…",
 } as const;
 
 export type AiChatKey = keyof typeof en;
@@ -92,6 +99,13 @@ const uz: Strings = {
   errNetwork: "Internet aloqasi yo'q yoki juda sekin. Aloqani tekshirib, qayta urinib ko'ring.",
   errTimeout: "Javob juda sekin keldi. Qayta urinib ko'ring.",
   errUnknown: "Kutilmagan xatolik yuz berdi. Qayta urinib ko'ring.",
+  syncPending: "Suhbatlar sinxronlanishi kutilmoqda…",
+  offlineNotice: "Internet yo'q. Saqlangan suhbatlar ko'rsatilmoqda.",
+  listen: "Tinglash",
+  preparingAudio: "Ovoz tayyorlanmoqda…",
+  file: "Fayl",
+  usingFile: "Fayl ishlatilmoqda: {{name}}",
+  uploadingFile: "Fayl yuklanmoqda…",
 };
 
 const ru: Strings = {
@@ -130,6 +144,13 @@ const ru: Strings = {
   errNetwork: "Нет подключения к интернету или оно слишком медленное. Проверьте соединение и повторите.",
   errTimeout: "Ответ шёл слишком долго. Попробуйте ещё раз.",
   errUnknown: "Произошла непредвиденная ошибка. Попробуйте ещё раз.",
+  syncPending: "Ожидание синхронизации чатов…",
+  offlineNotice: "Нет сети. Показаны сохранённые чаты.",
+  listen: "Прослушать",
+  preparingAudio: "Подготовка аудио…",
+  file: "Файл",
+  usingFile: "Используется файл: {{name}}",
+  uploadingFile: "Загрузка файла…",
 };
 
 const tr: Strings = {
@@ -168,6 +189,13 @@ const tr: Strings = {
   errNetwork: "İnternet bağlantısı yok veya çok yavaş. Bağlantınızı kontrol edip tekrar deneyin.",
   errTimeout: "Yanıt çok uzun sürdü. Lütfen tekrar deneyin.",
   errUnknown: "Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin.",
+  syncPending: "Sohbetlerin eşitlenmesi bekleniyor…",
+  offlineNotice: "Çevrimdışısınız. Kayıtlı sohbetler gösteriliyor.",
+  listen: "Dinle",
+  preparingAudio: "Ses hazırlanıyor…",
+  file: "Dosya",
+  usingFile: "Kullanılan dosya: {{name}}",
+  uploadingFile: "Dosya yükleniyor…",
 };
 
 const es: Strings = {
@@ -206,6 +234,13 @@ const es: Strings = {
   errNetwork: "Sin conexión a internet o es muy lenta. Revisa tu conexión e inténtalo de nuevo.",
   errTimeout: "La respuesta tardó demasiado. Inténtalo de nuevo.",
   errUnknown: "Ocurrió un error inesperado. Inténtalo de nuevo.",
+  syncPending: "Esperando para sincronizar tus chats…",
+  offlineNotice: "Sin conexión. Mostrando chats guardados.",
+  listen: "Escuchar",
+  preparingAudio: "Preparando audio…",
+  file: "Archivo",
+  usingFile: "Usando el archivo: {{name}}",
+  uploadingFile: "Subiendo archivo…",
 };
 
 const fr: Strings = {
@@ -244,6 +279,13 @@ const fr: Strings = {
   errNetwork: "Pas de connexion internet ou connexion trop lente. Vérifiez-la puis réessayez.",
   errTimeout: "La réponse a pris trop de temps. Veuillez réessayer.",
   errUnknown: "Une erreur inattendue s'est produite. Veuillez réessayer.",
+  syncPending: "En attente de synchronisation de vos discussions…",
+  offlineNotice: "Vous êtes hors ligne. Affichage des discussions enregistrées.",
+  listen: "Écouter",
+  preparingAudio: "Préparation de l'audio…",
+  file: "Fichier",
+  usingFile: "Fichier utilisé : {{name}}",
+  uploadingFile: "Envoi du fichier…",
 };
 
 const de: Strings = {
@@ -282,6 +324,13 @@ const de: Strings = {
   errNetwork: "Keine Internetverbindung oder sie ist zu langsam. Prüfe die Verbindung und versuche es erneut.",
   errTimeout: "Die Antwort hat zu lange gedauert. Bitte versuche es erneut.",
   errUnknown: "Ein unerwarteter Fehler ist aufgetreten. Bitte versuche es erneut.",
+  syncPending: "Warte auf die Synchronisierung deiner Chats…",
+  offlineNotice: "Du bist offline. Gespeicherte Chats werden angezeigt.",
+  listen: "Anhören",
+  preparingAudio: "Audio wird vorbereitet…",
+  file: "Datei",
+  usingFile: "Verwendete Datei: {{name}}",
+  uploadingFile: "Datei wird hochgeladen…",
 };
 
 const ar: Strings = {
@@ -320,6 +369,13 @@ const ar: Strings = {
   errNetwork: "لا يوجد اتصال بالإنترنت أو أنه بطيء جدًا. تحقق من اتصالك وحاول مرة أخرى.",
   errTimeout: "استغرق الرد وقتًا طويلًا. يرجى المحاولة مرة أخرى.",
   errUnknown: "حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى.",
+  syncPending: "في انتظار مزامنة محادثاتك…",
+  offlineNotice: "أنت غير متصل. يتم عرض المحادثات المحفوظة.",
+  listen: "استماع",
+  preparingAudio: "جارٍ تجهيز الصوت…",
+  file: "ملف",
+  usingFile: "الملف المستخدم: {{name}}",
+  uploadingFile: "جارٍ رفع الملف…",
 };
 
 const hi: Strings = {
@@ -358,6 +414,13 @@ const hi: Strings = {
   errNetwork: "इंटरनेट कनेक्शन नहीं है या बहुत धीमा है। कनेक्शन जाँचकर फिर कोशिश करें।",
   errTimeout: "जवाब आने में बहुत समय लगा। कृपया फिर कोशिश करें।",
   errUnknown: "एक अनपेक्षित त्रुटि हुई। कृपया फिर कोशिश करें।",
+  syncPending: "आपकी चैट सिंक होने की प्रतीक्षा है…",
+  offlineNotice: "आप ऑफ़लाइन हैं। सहेजी गई चैट दिखाई जा रही हैं।",
+  listen: "सुनें",
+  preparingAudio: "ऑडियो तैयार हो रहा है…",
+  file: "फ़ाइल",
+  usingFile: "उपयोग में फ़ाइल: {{name}}",
+  uploadingFile: "फ़ाइल अपलोड हो रही है…",
 };
 
 const zh: Strings = {
@@ -396,6 +459,13 @@ const zh: Strings = {
   errNetwork: "没有网络连接或网速太慢，请检查网络后重试。",
   errTimeout: "响应时间过长，请重试。",
   errUnknown: "发生意外错误，请重试。",
+  syncPending: "正在等待同步聊天记录…",
+  offlineNotice: "当前离线，显示已保存的聊天。",
+  listen: "收听",
+  preparingAudio: "正在准备音频…",
+  file: "文件",
+  usingFile: "正在使用文件：{{name}}",
+  uploadingFile: "正在上传文件…",
 };
 
 export const AI_CHAT_STRINGS: Record<string, Strings> = {
@@ -422,4 +492,4 @@ export function registerAiChatStrings(): void {
     i18n.addResourceBundle(code, "aiChat", AI_CHAT_STRINGS[code] ?? en, true, true);
   }
   registered = true;
-  }
+    }
