@@ -30,6 +30,13 @@ import {
 import { invokeEdgeFunction } from "../services/edgeFunctions";
 import { generateImage } from "../services/image";
 import { generateVoice } from "../services/voice";
+import {
+  formatFileSize,
+  pickChatFile,
+  storagePathFor,
+  uploadChatFile,
+  type PickedFile,
+} from "../services/chatFiles";
 import { supabase } from "../services/supabase";
 import {
   ChatCache,
@@ -58,12 +65,22 @@ import { ensureAiChatTranslation } from "../i18n/aiChatTranslate";
 
 type Message = ChatMessage;
 
+// Oxirgi yuborilgan fayl: keyingi savollar ham shu fayl haqida bo'ladi (✕ bilan o'chiriladi)
+interface ActiveFile {
+  messageId: string;
+  path: string;
+  name: string;
+  mime: string;
+}
+
 interface Req {
   text: string;
   imageUri?: string;
   imageBase64?: string | null;
   voice?: { uri: string; durationMs: number };
   forceImage?: boolean;
+  file?: PickedFile;
+  fileMsgId?: string;
 }
 
 function buildSystemPrompt(uiLanguage: string): string {
@@ -94,8 +111,18 @@ const formatDuration = (ms: number) => {
   return `${m}:${s.toString().padStart(2, "0")}`;
 };
 
-const formatTime = (ts: number) =>
-  new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+// Har bir xabar ostidagi vaqt: bugungi xabarda faqat soat, eskisida sana ham ko'rsatiladi
+const formatStamp = (ts: number): string => {
+  const d = new Date(ts);
+  const n = new Date(nowMs());
+  const time = d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  const sameDay =
+    d.getFullYear() === n.getFullYear() &&
+    d.getMonth() === n.getMonth() &&
+    d.getDate() === n.getDate();
+  if (sameDay) return time;
+  return `${d.toLocaleDateString([], { day: "2-digit", month: "2-digit" })} ${time}`;
+};
 
 const formatDate = (ts: number) =>
   new Date(ts).toLocaleString([], {
@@ -115,6 +142,22 @@ function messagesBeforeEdit(msgs: Message[], id: string): Message[] | null {
   const idx = msgs.findIndex((m) => m.id === id);
   if (idx === -1 || !isEditable(msgs[idx])) return null;
   return msgs.slice(0, idx);
+}
+
+// Suhbatdagi oxirgi (buluttagi) fayl: keyingi savollar uchun "faol fayl"
+function lastFileOf(msgs: Message[]): ActiveFile | null {
+  for (let i = msgs.length - 1; i >= 0; i--) {
+    const m = msgs[i];
+    if (m.attachment === "file" && m.filePath) {
+      return {
+        messageId: m.id,
+        path: m.filePath,
+        name: m.fileName ?? "file",
+        mime: m.fileMime ?? "application/octet-stream",
+      };
+    }
+  }
+  return null;
 }
 
 // Rasm yaratish so'rovini tanib olish (o'zbekcha, inglizcha, ruscha)
@@ -198,7 +241,7 @@ function describeError(err: any): FriendlyError {
   // Tarif limiti: "The image limit (5) for the free plan has been reached."
   if (/limit.*reached|has been reached|monthly|\bplan\b/.test(lower)) return make("errPlanLimit", false);
   if (status === 429 || /rate limit|too many|quota/.test(lower)) return make("errRateLimit", true);
-  if (status === 413 || /too large|payload/.test(lower)) return make("errTooLarge", false);
+  if (status === 413 || /too large|payload|exceed|maximum allowed/.test(lower)) return make("errTooLarge", false);
   if (status === 404) return make("errUnknown", false);
   if (
     name === "FunctionsFetchError" ||
@@ -235,11 +278,17 @@ function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
   });
 }
 
-async function callFunction(name: string, body: Record<string, unknown>): Promise<any> {
+async function callFunction(
+  name: string,
+  body: Record<string, unknown>,
+  opts: { timeoutMs?: number; attempts?: number } = {},
+): Promise<any> {
+  const timeoutMs = opts.timeoutMs ?? 60000;
+  const attempts = opts.attempts ?? 2;
   let lastError: any = null;
-  for (let attempt = 0; attempt < 2; attempt++) {
+  for (let attempt = 0; attempt < attempts; attempt++) {
     try {
-      const result = await withTimeout(invokeEdgeFunction<any>(name, { body }), 60000);
+      const result = await withTimeout(invokeEdgeFunction<any>(name, { body }), timeoutMs);
       if (!result.error) {
         const data = result.data;
         if (data && data.success === false) {
@@ -325,6 +374,8 @@ export default function AIChatScreen() {
   const [ready, setReady] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [imageMode, setImageMode] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<PickedFile | null>(null);
+  const [activeFile, setActiveFile] = useState<ActiveFile | null>(null);
   const [pendingCount, setPendingCount] = useState(0);
   const [offline, setOffline] = useState(false);
   const [ttsId, setTtsId] = useState<string | null>(null);
@@ -467,6 +518,7 @@ export default function AIChatScreen() {
     messagesRef.current = resolved;
     knownRef.current = resolved.map((m) => m.id);
     setMessages(resolved);
+    setActiveFile(lastFileOf(resolved));
     const summary = cacheRef.current.conversations.find((c) => c.id === convId);
     cacheConversation(cacheRef.current, convId, resolved, summary?.updatedAt ?? nowMs(), res.title);
     setConversations([...cacheRef.current.conversations]);
@@ -519,6 +571,7 @@ export default function AIChatScreen() {
             knownRef.current = restored.map((m) => m.id);
             messagesRef.current = restored;
             setMessages(restored);
+            setActiveFile(lastFileOf(restored));
             void resolveActiveMedia(uid);
           }
           const ops = await loadOutbox(uid);
@@ -580,6 +633,7 @@ export default function AIChatScreen() {
     const first = c.messages?.find((m) => m.sender === "user");
     if (first?.attachment === "voice") return t("voiceMessage");
     if (first?.attachment === "image") return t("photo");
+    if (first?.attachment === "file") return first.fileName || t("file");
     return t("newChatTitle");
   };
 
@@ -600,6 +654,8 @@ export default function AIChatScreen() {
     lastReqRef.current = null;
     messagesRef.current = [];
     setMessages([]);
+    setActiveFile(null);
+    setSelectedFile(null);
     setHistoryOpen(false);
     cacheRef.current.activeId = null;
     const uid = userIdRef.current;
@@ -620,6 +676,8 @@ export default function AIChatScreen() {
     knownRef.current = restored.map((m) => m.id);
     messagesRef.current = restored;
     setMessages(restored);
+    setActiveFile(lastFileOf(restored));
+    setSelectedFile(null);
     cacheRef.current.activeId = id;
 
     const uid = userIdRef.current;
@@ -649,6 +707,7 @@ export default function AIChatScreen() {
             lastReqRef.current = null;
             messagesRef.current = [];
             setMessages([]);
+            setActiveFile(null);
             cacheRef.current.activeId = null;
           }
           cacheRef.current.conversations = cacheRef.current.conversations.filter(
@@ -713,6 +772,7 @@ export default function AIChatScreen() {
 
   const applyAsset = (result: ImagePicker.ImagePickerResult) => {
     if (!result.canceled && result.assets && result.assets.length > 0) {
+      setSelectedFile(null);
       setSelectedImage(result.assets[0].uri);
       setSelectedBase64(result.assets[0].base64 ?? null);
     }
@@ -757,6 +817,20 @@ export default function AIChatScreen() {
       applyAsset(result);
     } catch {
       Alert.alert(t("errorTitle"), t("somethingWrong"));
+    }
+  };
+
+  // Istalgan fayl: zip, pdf, hujjat, musiqa, video... (telefon xotirasi yoki bulut)
+  const pickFile = async () => {
+    setShowAttach(false);
+    try {
+      const file = await pickChatFile();
+      if (!file) return;
+      clearImage();
+      setImageMode(false);
+      setSelectedFile(file);
+    } catch (err: any) {
+      Alert.alert(t("errorTitle"), t(describeError(err).key));
     }
   };
 
@@ -805,6 +879,7 @@ export default function AIChatScreen() {
     setImageMode(false);
     setShowAttach(false);
     clearImage();
+    setSelectedFile(null);
     setInput(m.text);
     setTimeout(() => inputRef.current?.focus(), 50);
   };
@@ -816,7 +891,7 @@ export default function AIChatScreen() {
 
   const submit = async () => {
     const text = input.trim();
-    if (!text && !selectedImage) return;
+    if (!text && !selectedImage && !selectedFile) return;
     if (!readyRef.current || busyRef.current) return;
 
     // Tahrirlash: eski xabar va undan keyingi javoblar olib tashlanadi, yangi matn qayta yuboriladi
@@ -830,11 +905,13 @@ export default function AIChatScreen() {
       text,
       imageUri: selectedImage || undefined,
       imageBase64: selectedBase64,
-      forceImage: imageMode && !selectedImage,
+      forceImage: imageMode && !selectedImage && !selectedFile,
+      file: !selectedImage ? (selectedFile ?? undefined) : undefined,
     };
     setInput("");
     setImageMode(false);
     clearImage();
+    setSelectedFile(null);
     await run(req, true);
   };
 
@@ -856,6 +933,12 @@ export default function AIChatScreen() {
     const voice = req.voice;
     const text = req.text;
     const hasImage = !voice && !!req.imageUri;
+    const newFile = !voice && !hasImage ? req.file : undefined;
+    if (newFile && !req.fileMsgId) req.fileMsgId = uuid();
+    const fileMsgId = newFile ? req.fileMsgId : undefined;
+    // Oldingi fayl haqida keyingi savol (rasm yaratish/ovozli savol bundan mustasno)
+    const followUp: ActiveFile | null =
+      !newFile && !voice && !hasImage && !req.forceImage && !isImageRequest(text) ? activeFile : null;
     const uiLanguage = LANGUAGES.find((l) => l.code === i18n.language)?.name ?? "English";
 
     // Tarix: joriy xabardan oldingi suhbat (xato xabarlarsiz)
@@ -867,13 +950,19 @@ export default function AIChatScreen() {
         role: m.sender === "user" ? "user" : "model",
         text:
           m.text ||
-          (m.attachment === "voice" ? "[voice message]" : m.attachment === "image" ? "[image]" : ""),
+          (m.attachment === "voice"
+            ? "[voice message]"
+            : m.attachment === "image"
+              ? "[image]"
+              : m.attachment === "file"
+                ? `[file: ${m.fileName ?? ""}]`
+                : ""),
       }))
       .filter((m) => m.text.trim().length > 0);
 
     if (addBubble) {
       const userMsg: Message = {
-        id: uuid(),
+        id: fileMsgId ?? uuid(),
         sender: "user",
         text,
         createdAt: nextTimestamp(),
@@ -887,14 +976,48 @@ export default function AIChatScreen() {
           : hasImage
             ? "image/jpeg" // foydalanuvchi rasmi ham bulutga yuklanadi
             : undefined,
-        attachment: voice ? "voice" : hasImage ? "image" : undefined,
+        attachment: voice ? "voice" : hasImage ? "image" : newFile ? "file" : undefined,
+        ...(newFile
+          ? {
+              fileName: newFile.name,
+              fileSize: newFile.size ?? undefined,
+              fileMime: newFile.mime,
+              fileUri: newFile.uri,
+              fileStatus: "uploading" as const,
+            }
+          : {}),
       };
       commit((prev) => [...prev, userMsg]);
     }
 
     try {
+      // 0) Yangi fayl: avval bulutga yuklanadi (katta fayl telefon xotirasini to'ldirmaydi)
+      let askFile: ActiveFile | null = followUp;
+      if (newFile && fileMsgId) {
+        const uid = userIdRef.current;
+        if (!uid) throw new Error("Authentication required.");
+        if (!convIdRef.current) convIdRef.current = uuid();
+        const sent = messagesRef.current.find((m) => m.id === fileMsgId);
+        let path = sent?.filePath;
+        if (!path) {
+          path = storagePathFor(uid, convIdRef.current, fileMsgId, newFile.name);
+          const uploadedPath = path;
+          await withTimeout(uploadChatFile(uploadedPath, newFile), 15 * 60 * 1000);
+          commit(
+            (prev) =>
+              prev.map((m) =>
+                m.id === fileMsgId
+                  ? { ...m, filePath: uploadedPath, fileStatus: undefined, fileUri: undefined }
+                  : m,
+              ),
+            [fileMsgId],
+          );
+        }
+        askFile = { messageId: fileMsgId, path, name: newFile.name, mime: newFile.mime };
+      }
+
       // 1) Rasm yaratish: "Rasm yaratish" tugmasi (istalgan til) yoki tanilgan ibora
-      if (!voice && !hasImage && (req.forceImage || isImageRequest(text))) {
+      if (!voice && !hasImage && !newFile && (req.forceImage || isImageRequest(text))) {
         const result = await withTimeout(generateImage(text), 120000);
         if (!result.success || !result.imageUrl) {
           throw new Error(result.error || "Image generation failed.");
@@ -916,7 +1039,18 @@ export default function AIChatScreen() {
       let endpoint = "gemini-chat";
       let body: Record<string, unknown>;
 
-      if (voice) {
+      if (askFile) {
+        endpoint = "chat-file";
+        body = {
+          filePath: askFile.path,
+          fileName: askFile.name,
+          fileMime: askFile.mime,
+          messageId: askFile.messageId,
+          prompt: text,
+          systemPrompt: buildSystemPrompt(uiLanguage),
+          history,
+        };
+      } else if (voice) {
         const { base64, mimeType } = await uriToBase64(voice.uri);
         body = {
           prompt:
@@ -946,7 +1080,11 @@ export default function AIChatScreen() {
         };
       }
 
-      const data = await callFunction(endpoint, body);
+      const data = await callFunction(
+        endpoint,
+        body,
+        endpoint === "chat-file" ? { timeoutMs: 150000, attempts: 1 } : undefined,
+      );
       const answer = String(data?.text || data?.description || data?.message || "").trim();
       if (!answer) {
         throw new Error("AI returned an empty response.");
@@ -958,9 +1096,46 @@ export default function AIChatScreen() {
         text: answer,
         createdAt: nextTimestamp(),
       };
+      // Avval matnli javobni darhol saqlab/ko'rsatamiz.
       commit((prev) => [...prev, aiMsg]);
+      if (askFile) setActiveFile(askFile);
+
+      // Ovozli savolga ovozli javob: matn darhol ko'rinadi, ovoz fon rejimida tayyorlanadi.
+      // Matnli savolga ovoz faqat 🔊 tugmasi bosilganda yaratiladi (tangani behuda sarflamaslik uchun).
+      if (voice) {
+        void (async () => {
+          setTtsId(aiMsg.id);
+          try {
+            const voiceResult = await withTimeout(generateVoice(answer), 180000);
+            if (!voiceResult.success || !voiceResult.audioUrl || !voiceResult.generationId) {
+              console.warn("AI voice reply failed:", voiceResult.error || "No audio URL.");
+              return;
+            }
+            const uid = userIdRef.current;
+            const audioPath = uid ? `${uid}/${voiceResult.generationId}.wav` : undefined;
+            commit(
+              (prev) =>
+                prev.map((item) =>
+                  item.id === aiMsg.id
+                    ? { ...item, audioUri: voiceResult.audioUrl, audioPath }
+                    : item,
+                ),
+              [aiMsg.id],
+            );
+          } catch (voiceError) {
+            console.warn("AI voice reply failed:", voiceError);
+          } finally {
+            if (mountedRef.current) setTtsId(null);
+          }
+        })();
+      }
     } catch (err: any) {
       console.warn("AI chat error:", err);
+      if (fileMsgId) {
+        commit((prev) =>
+          prev.map((m) => (m.id === fileMsgId ? { ...m, fileStatus: undefined } : m)),
+        );
+      }
       const friendly = describeError(err);
       const errorMsg: Message = {
         id: uuid(),
@@ -979,7 +1154,7 @@ export default function AIChatScreen() {
     }
   };
 
-  const hasContent = input.trim().length > 0 || !!selectedImage;
+  const hasContent = input.trim().length > 0 || !!selectedImage || !!selectedFile;
 
   return (
     <KeyboardAvoidingView
@@ -1037,7 +1212,19 @@ export default function AIChatScreen() {
               <Text style={styles.chipText}>🖼 {t("photo")}</Text>
             ) : null}
 
-            {item.audioUri ? (
+            {item.attachment === "file" ? (
+                <View style={styles.fileChip}>
+                  <Text style={styles.fileChipText} numberOfLines={2}>
+                    📄 {item.fileName || t("file")}
+                    {item.fileSize ? ` · ${formatFileSize(item.fileSize)}` : ""}
+                  </Text>
+                  {item.fileStatus === "uploading" ? (
+                    <Text style={styles.fileChipStatus}>⏳ {t("uploadingFile")}</Text>
+                  ) : null}
+                </View>
+              ) : null}
+
+              {item.audioUri ? (
               <VoicePlayer uri={item.audioUri} durationMs={item.audioDurationMs} />
             ) : item.attachment === "voice" ? (
               <Text style={styles.chipText}>
@@ -1087,10 +1274,33 @@ export default function AIChatScreen() {
               </TouchableOpacity>
             ) : null}
 
-            <Text style={styles.timeText}>{formatTime(item.createdAt)}</Text>
+            <Text style={styles.timeText}>{formatStamp(item.createdAt)}</Text>
           </View>
         )}
       />
+      )}
+
+      {selectedFile && (
+        <View style={styles.fileBanner}>
+          <Text style={styles.fileBannerText} numberOfLines={1}>
+            📄 {selectedFile.name}
+            {selectedFile.size ? ` · ${formatFileSize(selectedFile.size)}` : ""}
+          </Text>
+          <TouchableOpacity onPress={() => setSelectedFile(null)}>
+            <Text style={styles.modeBannerClose}>✕</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {!selectedFile && activeFile && (
+        <View style={styles.fileBanner}>
+          <Text style={styles.fileBannerText} numberOfLines={1}>
+            📎 {t("usingFile", { name: activeFile.name })}
+          </Text>
+          <TouchableOpacity onPress={() => setActiveFile(null)}>
+            <Text style={styles.modeBannerClose}>✕</Text>
+          </TouchableOpacity>
+        </View>
       )}
 
       {selectedImage && (
@@ -1106,6 +1316,9 @@ export default function AIChatScreen() {
         <View style={styles.attachMenu}>
           <TouchableOpacity style={styles.attachOption} onPress={pickFromGallery}>
             <Text style={styles.attachOptionText}>🖼  {t("gallery")}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.attachOption} onPress={pickFile}>
+            <Text style={styles.attachOptionText}>📄  {t("file")}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.attachOption} onPress={takePhoto}>
             <Text style={styles.attachOptionText}>📷  {t("camera")}</Text>
@@ -1310,4 +1523,9 @@ const styles = StyleSheet.create({
   detailText: { color: "#64748b", fontSize: 11, marginTop: 6 },
   retryButton: { alignSelf: "flex-start", backgroundColor: "#334155", paddingVertical: 8, paddingHorizontal: 12, borderRadius: 8, marginTop: 8 },
   retryButtonText: { color: "#f8fafc", fontSize: 13, fontWeight: "bold" },
+  fileChip: { backgroundColor: "rgba(15,23,42,0.35)", borderRadius: 8, paddingVertical: 8, paddingHorizontal: 10, marginBottom: 8 },
+  fileChipText: { color: "#f8fafc", fontSize: 14 },
+  fileChipStatus: { color: "#fcd34d", fontSize: 12, marginTop: 4 },
+  fileBanner: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: "#1e293b", paddingHorizontal: 12, paddingVertical: 8 },
+  fileBannerText: { color: "#bfdbfe", fontSize: 13, flex: 1 },
 });
