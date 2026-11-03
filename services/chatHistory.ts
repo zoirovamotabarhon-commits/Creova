@@ -21,7 +21,7 @@ import { supabase } from "./supabase";
 
 // ---------------------------------------------------------------- types
 
-export type Attachment = "image" | "voice";
+export type Attachment = "image" | "voice" | "file";
 
 export interface ChatMessage {
   id: string; // UUID (client generated)
@@ -36,6 +36,12 @@ export interface ChatMessage {
   imagePath?: string; // storage path of a photo the user sent
   generationId?: string; // generated image => file is <user>/<generationId>.png
   mediaMime?: string; // mime of a local file that still has to be uploaded
+  filePath?: string; // path in the private chat-files bucket
+  fileName?: string;
+  fileSize?: number;
+  fileMime?: string;
+  fileUri?: string; // local copy while the file is being uploaded (never saved)
+  fileStatus?: "uploading"; // transient, never saved
   isError?: boolean;
   retryable?: boolean;
   detail?: string;
@@ -52,6 +58,10 @@ export interface CachedMessage {
   audioDurationMs?: number;
   imagePath?: string;
   generationId?: string;
+  filePath?: string;
+  fileName?: string;
+  fileSize?: number;
+  fileMime?: string;
 }
 
 export interface ConversationSummary {
@@ -71,7 +81,7 @@ export interface PendingMessage {
   id: string;
   role: "user" | "assistant";
   content: string;
-  messageType: "text" | "voice" | "image";
+  messageType: "text" | "voice" | "image" | "file";
   createdAt: number;
   audioPath?: string;
   audioDurationMs?: number;
@@ -81,6 +91,10 @@ export interface PendingMessage {
   localAudioMime?: string;
   localImageUri?: string; // photo that must be uploaded before saving
   localImageMime?: string;
+  filePath?: string;
+  fileName?: string;
+  fileSize?: number;
+  fileMime?: string;
 }
 
 export type OutboxOp =
@@ -176,7 +190,14 @@ export function imageStoragePath(userId: string, m: ChatMessage): string | undef
 // ------------------------------------------------- message <-> cloud
 
 function toPending(m: ChatMessage): PendingMessage {
-  const messageType = m.attachment === "voice" ? "voice" : m.attachment === "image" ? "image" : "text";
+  const messageType =
+    m.attachment === "voice"
+      ? "voice"
+      : m.attachment === "image"
+        ? "image"
+        : m.attachment === "file"
+          ? "file"
+          : "text";
   const mime = m.mediaMime ?? "";
   const upload =
     messageType === "voice" &&
@@ -200,6 +221,10 @@ function toPending(m: ChatMessage): PendingMessage {
       typeof m.audioDurationMs === "number" ? Math.max(0, Math.round(m.audioDurationMs)) : undefined,
     imagePath: m.imagePath,
     generationId: m.generationId,
+    filePath: m.filePath,
+    fileName: m.fileName,
+    fileSize: typeof m.fileSize === "number" ? Math.max(0, Math.round(m.fileSize)) : undefined,
+    fileMime: m.fileMime,
     localAudioUri: upload ? m.audioUri : undefined,
     localAudioMime: upload ? mime : undefined,
     localImageUri: uploadImage ? m.imageUri : undefined,
@@ -217,10 +242,20 @@ export function rowToMessage(row: any): ChatMessage | null {
     text: typeof row.content === "string" ? row.content : "",
     createdAt: Number.isFinite(created) ? created : 0,
     attachment:
-      row.messageType === "voice" ? "voice" : row.messageType === "image" ? "image" : undefined,
+      row.messageType === "voice"
+        ? "voice"
+        : row.messageType === "image"
+          ? "image"
+          : row.messageType === "file"
+            ? "file"
+            : undefined,
     audioPath: typeof row.audioPath === "string" ? row.audioPath : undefined,
     audioDurationMs: typeof row.audioDurationMs === "number" ? row.audioDurationMs : undefined,
     imagePath: typeof row.imagePath === "string" ? row.imagePath : undefined,
+    filePath: typeof row.filePath === "string" ? row.filePath : undefined,
+    fileName: typeof row.fileName === "string" ? row.fileName : undefined,
+    fileSize: typeof row.fileSize === "number" ? row.fileSize : undefined,
+    fileMime: typeof row.fileMime === "string" ? row.fileMime : undefined,
     generationId: typeof row.generationId === "string" ? row.generationId : undefined,
   };
 }
@@ -295,6 +330,10 @@ export function toCached(m: ChatMessage): CachedMessage {
     audioDurationMs: m.audioDurationMs,
     imagePath: m.imagePath,
     generationId: m.generationId,
+    filePath: m.filePath,
+    fileName: m.fileName,
+    fileSize: m.fileSize,
+    fileMime: m.fileMime,
   };
 }
 
@@ -336,11 +375,17 @@ export function sanitizeCache(raw: unknown): ChatCache {
           text: msg.text,
           createdAt: typeof msg.createdAt === "number" ? msg.createdAt : 0,
           attachment:
-            msg.attachment === "image" || msg.attachment === "voice" ? msg.attachment : undefined,
+            msg.attachment === "image" || msg.attachment === "voice" || msg.attachment === "file"
+              ? msg.attachment
+              : undefined,
           audioPath: typeof msg.audioPath === "string" ? msg.audioPath : undefined,
           audioDurationMs: typeof msg.audioDurationMs === "number" ? msg.audioDurationMs : undefined,
           imagePath: typeof msg.imagePath === "string" ? msg.imagePath : undefined,
           generationId: typeof msg.generationId === "string" ? msg.generationId : undefined,
+          filePath: typeof msg.filePath === "string" ? msg.filePath : undefined,
+          fileName: typeof msg.fileName === "string" ? msg.fileName : undefined,
+          fileSize: typeof msg.fileSize === "number" ? msg.fileSize : undefined,
+          fileMime: typeof msg.fileMime === "string" ? msg.fileMime : undefined,
         });
       }
     }
@@ -687,6 +732,10 @@ async function flushOnce(userId: string, deps: HistoryDeps): Promise<FlushResult
           audioPath: m.audioPath ?? null,
           audioDurationMs: m.audioDurationMs ?? null,
           imagePath: m.imagePath ?? null,
+          filePath: m.filePath ?? null,
+          fileName: m.fileName ?? null,
+          fileSize: m.fileSize ?? null,
+          fileMime: m.fileMime ?? null,
           generationId: m.generationId ?? null,
           createdAt: m.createdAt,
         })),
