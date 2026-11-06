@@ -26,3 +26,9 @@ verify_jwt = true
 
 [functions.chat-voice-message]
 verify_jwt = true
+
+[functions.chat-history]
+verify_jwt = true
+
+[functions.chat-file]
+verify_jwt = true
