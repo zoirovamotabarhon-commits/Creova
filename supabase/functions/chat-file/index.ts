@@ -1,6 +1,4 @@
-import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "npm:@supabase/supabase-js@2.57.0";
 import { GoogleGenerativeAI } from "npm:@google/generative-ai";
 
 // CREOVA AI chat: answers questions about a file the user attached.
