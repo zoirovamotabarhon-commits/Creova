@@ -231,6 +231,7 @@ Deno.serve(async (request) => {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
+  let action = "";
   try {
     const { data: authData, error: authError } = await admin.auth.getUser(token);
     if (authError || !authData.user) {
@@ -242,6 +243,8 @@ Deno.serve(async (request) => {
     if (!body || typeof body !== "object") {
       throw new HttpError(400, "Invalid JSON body.");
     }
+
+    action = String(body.action ?? "");
 
     switch (body.action) {
       case "list":
@@ -257,9 +260,12 @@ Deno.serve(async (request) => {
     }
   } catch (error) {
     if (error instanceof HttpError) {
+      if (error.status >= 500) {
+        console.error("chat-history failed:", action, error.status, error.message);
+      }
       return json({ success: false, error: error.message }, error.status);
     }
-    console.error("chat-history error:", error);
+    console.error("chat-history error:", action, error);
     return json(
       {
         success: false,
@@ -510,4 +516,4 @@ async function deleteConversation(admin: Admin, userId: string, conversationId: 
   // deno-lint-ignore no-explicit-any
   await removeRecordings(admin, userId, conversationId, (msgs ?? []).map((m: any) => m.file_path), FILE_BUCKET);
   return { success: true };
-    }
+}
