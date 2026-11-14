@@ -53,10 +53,10 @@ class HttpError extends Error {
 }
 
 // ---- limits -----------------------------------------------------------
-const MAX_CONTEXT_TOKENS = 600_000; // Gemini Flash has a 1M token window: keep room for history and the answer
+const MAX_CONTEXT_TOKENS = 150_000; // kept well below the 1M window: big prompts hit per-minute token limits and fail with 503/429
 const PER_FILE_BYTES = 400_000; // read at most this much of one file inside an archive
 const PER_FILE_CHARS = 100_000;
-const MAX_PLAN_BYTES = 2_400_000; // selection budget for an archive (uncompressed, capped per file)
+const MAX_PLAN_BYTES = 600_000; // selection budget for an archive (uncompressed, capped per file)
 const MAX_READ_FILES = 800;
 const MAX_CD_BYTES = 64 * 1024 * 1024;
 const MAX_ENTRIES = 120_000; // ~0.9 s of CPU to list; Edge Functions allow 2 s per request
@@ -1022,6 +1022,7 @@ Deno.serve(async (request) => {
     return json({ success: true, text, message: text, model, file: info });
   } catch (error) {
     if (error instanceof HttpError) {
+      if (error.status >= 500) console.error("chat-file failed:", error.status, error.message);
       return json({ success: false, error: error.message }, error.status);
     }
     console.error("chat-file error:", error);
