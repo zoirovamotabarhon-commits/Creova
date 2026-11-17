@@ -90,9 +90,13 @@ function buildSystemPrompt(uiLanguage: string): string {
     "(for example Uzbek in Latin letters if they write that way). " +
     `If the user's language is unclear, use ${uiLanguage}. ` +
     "Be natural, friendly and accurate. " +
-    "You can analyze images the user attaches and listen to voice messages they send; " +
-    "when the user asks you to draw or create a picture, the app generates the image for them. " +
-    "If a picture is requested but the description is too vague, ask what they want. " +
+    "You can analyze images the user attaches and listen to voice messages they send. " +
+    "You can also create pictures, but only in this way: when the user wants a picture (a drawing, photo, logo or illustration) " +
+    "and you know what it should show, reply with exactly one line, [[IMAGE: <a detailed description of the picture in English>]], and nothing else. " +
+    "Do this also when the user asks where a picture you promised is, or answers your question about what to draw. " +
+    "If the user wants a picture but the subject is unclear, ask ONE short question instead. " +
+    "Never say that you drew a picture, are drawing it or that it will appear, unless your whole reply is that [[IMAGE: ...]] line. " +
+    "Earlier pictures appear in the conversation as: (a picture was generated and shown to the user). " +
     "Never say that you are only a text model. " +
     "Write plain text only: do not use markdown symbols such as ** or #; use a hyphen (-) for lists. " +
     "If you do not know something, say so instead of making it up."
@@ -158,6 +162,23 @@ function lastFileOf(msgs: Message[]): ActiveFile | null {
     }
   }
   return null;
+}
+
+// AI rasm yaratishni [[IMAGE: ...]] belgisi bilan so'raydi. Belgi javobdan olib tashlanadi,
+// ichidagi tavsif esa rasm yaratishga beriladi (ovozli savol va oddiy suhbatda ham ishlaydi).
+const IMAGE_TAG_CLOSED = /\[\[\s*IMAGE\s*:\s*([\s\S]*?)\]\]/i;
+const IMAGE_TAG_OPEN = /\[\[\s*IMAGE\s*:\s*([\s\S]*)$/i;
+
+function extractImageRequest(answer: string): { prompt: string | null; rest: string } {
+  const match = IMAGE_TAG_CLOSED.exec(answer) ?? IMAGE_TAG_OPEN.exec(answer);
+  if (!match) return { prompt: null, rest: answer };
+  const prompt = match[1].replace(/\s+/g, " ").trim().slice(0, 1500);
+  const rest = answer
+    .replace(match[0], "")
+    .replace(new RegExp(IMAGE_TAG_CLOSED.source, "gi"), "")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+  return { prompt: prompt.length > 0 ? prompt : null, rest };
 }
 
 // Rasm yaratish so'rovini tanib olish (o'zbekcha, inglizcha, ruscha)
@@ -953,7 +974,9 @@ export default function AIChatScreen() {
           (m.attachment === "voice"
             ? "[voice message]"
             : m.attachment === "image"
-              ? "[image]"
+              ? m.sender === "ai"
+                ? "(a picture was generated and shown to the user)"
+                : "[image]"
               : m.attachment === "file"
                 ? `[file: ${m.fileName ?? ""}]`
                 : ""),
@@ -1085,8 +1108,20 @@ export default function AIChatScreen() {
         body,
         endpoint === "chat-file" ? { timeoutMs: 150000, attempts: 1 } : undefined,
       );
-      const answer = String(data?.text || data?.description || data?.message || "").trim();
-      if (!answer) {
+      const rawAnswer = String(data?.text || data?.description || data?.message || "").trim();
+      if (!rawAnswer) {
+        throw new Error("AI returned an empty response.");
+      }
+
+      // AI rasm so'ragan bo'lsa ([[IMAGE: ...]]), belgi olib tashlanadi va rasm yaratiladi
+      let answer = rawAnswer;
+      let imagePrompt: string | null = null;
+      if (endpoint === "gemini-chat") {
+        const extracted = extractImageRequest(rawAnswer);
+        answer = extracted.rest;
+        imagePrompt = extracted.prompt;
+      }
+      if (!answer && !imagePrompt) {
         throw new Error("AI returned an empty response.");
       }
 
@@ -1097,12 +1132,12 @@ export default function AIChatScreen() {
         createdAt: nextTimestamp(),
       };
       // Avval matnli javobni darhol saqlab/ko'rsatamiz.
-      commit((prev) => [...prev, aiMsg]);
+      if (answer) commit((prev) => [...prev, aiMsg]);
       if (askFile) setActiveFile(askFile);
 
       // Ovozli savolga ovozli javob: matn darhol ko'rinadi, ovoz fon rejimida tayyorlanadi.
       // Matnli savolga ovoz faqat 🔊 tugmasi bosilganda yaratiladi (tangani behuda sarflamaslik uchun).
-      if (voice) {
+      if (voice && answer) {
         void (async () => {
           setTtsId(aiMsg.id);
           try {
@@ -1128,6 +1163,24 @@ export default function AIChatScreen() {
             if (mountedRef.current) setTtsId(null);
           }
         })();
+      }
+
+      // AI rasm so'radi: rasm yaratiladi va suhbatga qo'shiladi
+      if (imagePrompt) {
+        const result = await withTimeout(generateImage(imagePrompt), 120000);
+        if (!result.success || !result.imageUrl) {
+          throw new Error(result.error || "Image generation failed.");
+        }
+        const imageMsg: Message = {
+          id: uuid(),
+          sender: "ai",
+          text: "",
+          createdAt: nextTimestamp(),
+          imageUri: result.imageUrl,
+          attachment: "image",
+          generationId: result.generationId,
+        };
+        commit((prev) => [...prev, imageMsg]);
       }
     } catch (err: any) {
       console.warn("AI chat error:", err);
